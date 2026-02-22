@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Cancelled</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .confirmation-box {
+            background-color: #e8e8ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .confirmation-box h3 {
+            margin-top: 0;
+            color: #4c3aa3;
+        }
+        .cancellation-details {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .cancellation-details h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .access-info {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .access-info h3 {
+            margin-top: 0;
+            color: #1565c0;
+        }
+        .summary-box {
+            background-color: #f0f0f0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .summary-box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #764ba2;
+        }
+        .secondary-button {
+            display: inline-block;
+            background-color: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            margin-left: 10px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .secondary-button:hover {
+            background-color: #5a6268;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Membership Cancelled</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <p>Hi {{ client_name }},</p>
+                <p>Your {{ plan_name }} membership has been cancelled as requested.</p>
+            </div>
+
+            <div class="confirmation-box">
+                <h3>✓ Cancellation Confirmed</h3>
+                <p>Your membership cancellation has been processed. Below are the details of your cancellation.</p>
+            </div>
+
+            <div class="cancellation-details">
+                <h3>Cancellation Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Plan:</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Cancellation Date:</span>
+                    <span class="detail-value">{{ cancellation_date }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Reason:</span>
+                    <span class="detail-value">{{ cancellation_reason }}</span>
+                </div>
+                {% if membership_duration %}
+                <div class="detail-row">
+                    <span class="detail-label">Membership Duration:</span>
+                    <span class="detail-value">{{ membership_duration }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if access_until_date %}
+            <div class="access-info">
+                <h3>📅 Access Information</h3>
+                <p>You will have access to your membership benefits until <strong>{{ access_until_date }}</strong>.</p>
+                <p>After this date, your membership benefits will no longer be available.</p>
+            </div>
+            {% endif %}
+
+            {% if total_savings %}
+            <div class="summary-box">
+                <h3>Your Membership Summary</h3>
+                <div class="summary-row">
+                    <span>Total Amount Paid:</span>
+                    <span><strong>{{ currency_symbol }}{{ total_paid }}</strong></span>
+                </div>
+                <div class="summary-row">
+                    <span>Total Savings:</span>
+                    <span><strong>{{ currency_symbol }}{{ total_savings }}</strong></span>
+                </div>
+            </div>
+            {% endif %}
+
+            <p>We're sorry to see you go! If you'd like to rejoin or have any feedback about your experience, please let us know.</p>
+
+            <div style="text-align: center;">
+                <a href="{{ rejoin_url }}" class="cta-button">Rejoin Membership</a>
+                <a href="{{ feedback_url }}" class="secondary-button">Share Feedback</a>
+            </div>
+
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                <strong>Questions?</strong> If you have any questions about your cancellation or need assistance, please contact our support team.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; {{ salon_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

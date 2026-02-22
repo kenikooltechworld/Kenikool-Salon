@@ -1,0 +1,241 @@
+/**
+ * Salon Detail Map Styles
+ */
+
+.salon-detail-map-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.salon-detail-map {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+}
+
+.salon-detail-map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.error-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error-message p {
+  margin: 0.5rem 0;
+}
+
+.error-message .fallback-address {
+  font-size: 0.9rem;
+  color: #999;
+  margin: 1rem 0;
+}
+
+.map-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  background: white;
+  border-radius: 0 0 8px 8px;
+  gap: 1rem;
+}
+
+.address-info {
+  flex: 1;
+}
+
+.address-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.address-info p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.phone-info {
+  margin-top: 0.5rem !important;
+}
+
+.phone-info a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.phone-info a:hover {
+  text-decoration: underline;
+}
+
+.directions-info {
+  display: flex;
+  align-items: center;
+}
+
+.directions-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.directions-button:hover {
+  background: #0056b3;
+}
+
+.directions-button:active {
+  background: #004085;
+}
+
+/* Salon marker styles */
+.salon-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Popup styles */
+.salon-popup {
+  padding: 0.5rem;
+  min-width: 250px;
+}
+
+.salon-popup h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.salon-popup p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.salon-popup .address {
+  font-weight: 500;
+}
+
+.salon-popup .city-state {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.popup-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.directions-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.directions-link:hover {
+  background: #0056b3;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .map-info {
+    flex-direction: column;
+  }
+
+  .salon-detail-map {
+    height: 300px !important;
+  }
+
+  .directions-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .salon-detail-map {
+    height: 250px !important;
+  }
+
+  .map-info {
+    padding: 0.75rem;
+  }
+
+  .address-info h4 {
+    font-size: 0.9rem;
+  }
+
+  .address-info p {
+    font-size: 0.85rem;
+  }
+
+  .directions-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Mapbox GL controls styling */
+.mapboxgl-ctrl-group {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.mapboxgl-ctrl-group button {
+  background: white;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.mapboxgl-ctrl-group button:hover {
+  background: #f0f0f0;
+}
+
+.mapboxgl-ctrl-group button:active {
+  background: #e0e0e0;
+}

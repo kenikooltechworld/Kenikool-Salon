@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Renewal Confirmed</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .success-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success-box h3 {
+            margin-top: 0;
+            color: #155724;
+        }
+        .transaction-details {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .transaction-details h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .next-renewal {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .next-renewal h3 {
+            margin-top: 0;
+            color: #1565c0;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #218838;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Membership Renewed Successfully! ✓</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <p>Hi {{ client_name }},</p>
+                <p>Great news! Your {{ plan_name }} membership has been successfully renewed.</p>
+            </div>
+
+            <div class="success-box">
+                <h3>✓ Payment Confirmed</h3>
+                <p>Your payment has been processed successfully. Your membership is now active for another billing cycle.</p>
+            </div>
+
+            <div class="transaction-details">
+                <h3>Transaction Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Plan:</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Amount Charged:</span>
+                    <span class="detail-value">{{ currency_symbol }}{{ plan_price }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Transaction ID:</span>
+                    <span class="detail-value">{{ transaction_id }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Renewal Date:</span>
+                    <span class="detail-value">{{ renewal_date }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Billing Cycle:</span>
+                    <span class="detail-value">{{ billing_cycle }}</span>
+                </div>
+            </div>
+
+            <div class="next-renewal">
+                <h3>📅 Next Renewal</h3>
+                <p><strong>Your next renewal date:</strong> {{ next_renewal_date }}</p>
+                <p>We'll send you a reminder before your next renewal. You can manage your membership anytime from your account.</p>
+            </div>
+
+            <p>Thank you for your continued membership! We appreciate your business and look forward to serving you.</p>
+
+            <div style="text-align: center;">
+                <a href="{{ dashboard_url }}" class="cta-button">View Your Membership</a>
+            </div>
+
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                <strong>Need help?</strong> If you have any questions about your renewal or membership, please contact our support team.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; {{ salon_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

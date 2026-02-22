@@ -1,0 +1,17 @@
+# Salon Management System - Cron Jobs Configuration
+# This file contains all scheduled tasks for the application
+
+# SSL Certificate Renewal - Daily at 2 AM
+# Checks for expiring SSL certificates and renews them automatically
+0 2 * * * cd /app && python -m app.tasks.ssl_renewal_task >> /var/log/ssl_renewal.log 2>&1
+
+# Domain Health Monitoring - Daily at 3 AM
+# Monitors DNS configuration and SSL status for all verified domains
+0 3 * * * cd /app && python -m app.tasks.domain_health_task >> /var/log/domain_health.log 2>&1
+
+# Note: To install these cron jobs, run:
+# crontab -e
+# Then paste the contents of this file (excluding comments)
+#
+# Or use:
+# crontab backend/infrastructure/crontab

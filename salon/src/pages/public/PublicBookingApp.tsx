@@ -1,0 +1,280 @@
+/**
+ * Public Booking App - Main entry point for public booking interface
+ * Accessible via salon's unique subdomain (e.g., acme-salon.kenikool.com)
+ */
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, Button, Spinner } from "@/components/ui";
+import ServiceSelector from "@/components/public/ServiceSelector";
+import StaffSelector from "@/components/public/StaffSelector";
+import TimeSlotSelector from "@/components/public/TimeSlotSelector";
+import BookingForm from "@/components/public/BookingForm";
+import BookingConfirmation from "@/components/public/BookingConfirmation";
+import { useCreatePublicBooking } from "@/hooks/usePublicBooking";
+import { apiClient } from "@/lib/utils/api";
+
+type BookingStep = "service" | "staff" | "time" | "form" | "confirmation";
+
+interface BookingData {
+  service_id: string;
+  staff_id: string;
+  booking_date: string;
+  booking_time: string;
+  duration_minutes: number;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  notes?: string;
+}
+
+interface SalonInfo {
+  id: string;
+  name: string;
+  description: string;
+  email: string;
+  logo_url?: string;
+  primary_color?: string;
+  secondary_color?: string;
+}
+
+export default function PublicBookingApp() {
+  const [currentStep, setCurrentStep] = useState<BookingStep>("service");
+  const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
+  const [confirmationData, setConfirmationData] = useState<any>(null);
+
+  // Fetch salon info from subdomain
+  const { data: salonInfo, isLoading: salonLoading } = useQuery({
+    queryKey: ["salon-info"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<SalonInfo>("/public/salon-info");
+      return data;
+    },
+  });
+
+  const createBooking = useCreatePublicBooking();
+
+  if (salonLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!salonInfo) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Salon Not Found
+          </h1>
+          <p className="text-gray-600">
+            The salon you're looking for is not available.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleServiceSelect = (serviceId: string, durationMinutes: number) => {
+    setBookingData((prev) => ({
+      ...prev,
+      service_id: serviceId,
+      duration_minutes: durationMinutes,
+    }));
+    setCurrentStep("staff");
+  };
+
+  const handleStaffSelect = (staffId: string) => {
+    setBookingData((prev) => ({
+      ...prev,
+      staff_id: staffId,
+    }));
+    setCurrentStep("time");
+  };
+
+  const handleTimeSelect = (bookingDate: string, bookingTime: string) => {
+    setBookingData((prev) => ({
+      ...prev,
+      booking_date: bookingDate,
+      booking_time: bookingTime,
+    }));
+    setCurrentStep("form");
+  };
+
+  const handleFormSubmit = async (formData: {
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    notes?: string;
+  }) => {
+    try {
+      const response = await createBooking.mutateAsync({
+        service_id: bookingData.service_id!,
+        staff_id: bookingData.staff_id!,
+        booking_date: bookingData.booking_date!,
+        booking_time: bookingData.booking_time!,
+        customer_name: formData.customerName,
+        customer_email: formData.customerEmail,
+        customer_phone: formData.customerPhone,
+        notes: formData.notes,
+      });
+
+      setConfirmationData(response);
+      setCurrentStep("confirmation");
+    } catch (error) {
+      console.error("Booking failed:", error);
+      throw error;
+    }
+  };
+
+  const handleBackClick = () => {
+    const steps: BookingStep[] = ["service", "staff", "time", "form"];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1]);
+    }
+  };
+
+  return (
+    <div
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4"
+      style={
+        {
+          "--primary-color": salonInfo?.primary_color || "#3B82F6",
+          "--secondary-color": salonInfo?.secondary_color || "#1F2937",
+        } as React.CSSProperties
+      }
+    >
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          {salonInfo?.logo_url && (
+            <img
+              src={salonInfo.logo_url}
+              alt={salonInfo.name}
+              className="h-16 mx-auto mb-4"
+            />
+          )}
+          <h1 className="text-3xl font-bold mb-2">{salonInfo?.name}</h1>
+          <p className="text-gray-600">{salonInfo?.description}</p>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            {["service", "staff", "time", "form", "confirmation"].map(
+              (step, index) => (
+                <div key={step} className="flex items-center flex-1">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                      [
+                        "service",
+                        "staff",
+                        "time",
+                        "form",
+                        "confirmation",
+                      ].indexOf(currentStep) >= index
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-300 text-gray-600"
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+                  {index < 4 && (
+                    <div
+                      className={`flex-1 h-1 mx-2 ${
+                        [
+                          "service",
+                          "staff",
+                          "time",
+                          "form",
+                          "confirmation",
+                        ].indexOf(currentStep) > index
+                          ? "bg-blue-600"
+                          : "bg-gray-300"
+                      }`}
+                    />
+                  )}
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <Card className="p-8">
+          {currentStep === "service" && (
+            <ServiceSelector onSelect={handleServiceSelect} />
+          )}
+
+          {currentStep === "staff" && bookingData.service_id && (
+            <>
+              <Button
+                variant="ghost"
+                onClick={handleBackClick}
+                className="mb-4"
+              >
+                ← Back
+              </Button>
+              <StaffSelector
+                serviceId={bookingData.service_id}
+                onSelect={handleStaffSelect}
+              />
+            </>
+          )}
+
+          {currentStep === "time" &&
+            bookingData.service_id &&
+            bookingData.staff_id && (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={handleBackClick}
+                  className="mb-4"
+                >
+                  ← Back
+                </Button>
+                <TimeSlotSelector
+                  serviceId={bookingData.service_id}
+                  staffId={bookingData.staff_id}
+                  onSelect={handleTimeSelect}
+                />
+              </>
+            )}
+
+          {currentStep === "form" && bookingData.service_id && (
+            <>
+              <Button
+                variant="ghost"
+                onClick={handleBackClick}
+                className="mb-4"
+              >
+                ← Back
+              </Button>
+              <BookingForm onSubmit={handleFormSubmit} />
+            </>
+          )}
+
+          {currentStep === "confirmation" && confirmationData && (
+            <BookingConfirmation booking={confirmationData} />
+          )}
+        </Card>
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-gray-600">
+          <p>
+            Questions? Contact us at{" "}
+            <a
+              href={`mailto:${salonInfo?.email}`}
+              className="text-blue-600 hover:underline"
+            >
+              {salonInfo?.email}
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

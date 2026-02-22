@@ -1,0 +1,104 @@
+# DDoS Protection Configuration
+
+# Rate limiting thresholds
+rate_limiting:
+  # Requests per second per IP
+  requests_per_second: 10.0
+  
+  # Burst allowance (requests allowed above threshold)
+  burst_allowance: 20
+  
+  # Duration to block IP (seconds)
+  block_duration_seconds: 300
+  
+  # Multiplier for adaptive thresholds
+  adaptive_threshold_multiplier: 2.0
+  
+  # Multiplier for trusted IPs
+  trusted_ip_multiplier: 5.0
+
+# Threat detection thresholds
+threat_detection:
+  # Request frequency threshold (requests per second)
+  frequency_threshold: 20.0
+  
+  # Response time threshold (milliseconds)
+  response_time_threshold_ms: 5000
+  
+  # Payload size threshold (bytes)
+  payload_size_threshold: 10485760  # 10MB
+  
+  # Error rate threshold (0-1)
+  error_rate_threshold: 0.5
+  
+  # Endpoint diversity threshold (unique endpoints in 20 requests)
+  endpoint_diversity_threshold: 15
+
+# Threat scoring
+threat_scoring:
+  # Points for high request frequency
+  frequency_score: 20.0
+  
+  # Points for high response times
+  response_time_score: 15.0
+  
+  # Points for large payloads
+  payload_size_score: 25.0
+  
+  # Points for high error rates
+  error_rate_score: 15.0
+  
+  # Points for endpoint scanning
+  endpoint_diversity_score: 10.0
+  
+  # Threat level thresholds
+  critical_threshold: 70
+  high_threshold: 50
+  medium_threshold: 30
+
+# Circuit breaker configuration
+circuit_breaker:
+  # Number of failures before opening circuit
+  failure_threshold: 5
+  
+  # Timeout before attempting to close circuit (seconds)
+  timeout_seconds: 60
+  
+  # Endpoints to monitor
+  monitored_endpoints:
+    - /api/appointments
+    - /api/customers
+    - /api/staff
+    - /api/services
+    - /api/invoices
+
+# Trusted IPs (whitelist)
+trusted_ips:
+  - 127.0.0.1
+  - ::1
+  # Add your trusted IPs here
+
+# Exponential backoff configuration
+exponential_backoff:
+  # Initial backoff (milliseconds)
+  initial_backoff_ms: 100
+  
+  # Maximum backoff (milliseconds)
+  max_backoff_ms: 30000
+  
+  # Backoff multiplier
+  multiplier: 2.0
+
+# Monitoring and alerting
+monitoring:
+  # Alert threshold for threat score
+  alert_threshold: 50
+  
+  # Alert threshold for blocked IPs
+  blocked_ip_alert_threshold: 10
+  
+  # Metrics collection interval (seconds)
+  metrics_interval_seconds: 60
+  
+  # Retention period for metrics (seconds)
+  metrics_retention_seconds: 86400  # 24 hours

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Status Updated</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .status-box {
+            background-color: #e8e8ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .status-box h3 {
+            margin-top: 0;
+            color: #4c3aa3;
+        }
+        .status-box.paused {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .status-box.paused h3 {
+            color: #856404;
+        }
+        .status-box.resumed {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+        }
+        .status-box.resumed h3 {
+            color: #155724;
+        }
+        .details {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .details h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #1565c0;
+        }
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin: 5px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #764ba2;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Membership Status Updated</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <p>Hi {{ client_name }},</p>
+                <p>Your {{ plan_name }} membership status has been updated.</p>
+            </div>
+
+            {% if action == 'pause' %}
+            <div class="status-box paused">
+                <h3>⏸️ Membership Paused</h3>
+                <p>Your membership has been successfully paused. You will not be charged during this period.</p>
+            </div>
+
+            <div class="details">
+                <h3>Pause Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Plan:</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Pause Date:</span>
+                    <span class="detail-value">{{ action_date }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Original End Date:</span>
+                    <span class="detail-value">{{ original_end_date }}</span>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h3>ℹ️ What Happens While Paused</h3>
+                <ul>
+                    <li>You will not be charged for your membership</li>
+                    <li>Your membership benefits will be suspended</li>
+                    <li>You can resume your membership anytime</li>
+                    <li>Your original end date will be extended when you resume</li>
+                </ul>
+            </div>
+
+            {% elif action == 'resume' %}
+            <div class="status-box resumed">
+                <h3>▶️ Membership Resumed</h3>
+                <p>Your membership has been successfully resumed. Your benefits are now active again.</p>
+            </div>
+
+            <div class="details">
+                <h3>Resume Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Plan:</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Resume Date:</span>
+                    <span class="detail-value">{{ action_date }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">New End Date:</span>
+                    <span class="detail-value">{{ new_end_date }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Billing Cycle:</span>
+                    <span class="detail-value">{{ billing_cycle }}</span>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h3>ℹ️ Your Membership is Active</h3>
+                <ul>
+                    <li>All membership benefits are now available</li>
+                    <li>Your discount will be applied at checkout</li>
+                    <li>Billing will resume on your next renewal date</li>
+                    <li>You can pause or cancel anytime</li>
+                </ul>
+            </div>
+
+            {% endif %}
+
+            <p>If you have any questions about your membership status or need further assistance, please don't hesitate to contact us.</p>
+
+            <div style="text-align: center;">
+                <a href="{{ dashboard_url }}" class="cta-button">View Your Membership</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; {{ salon_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

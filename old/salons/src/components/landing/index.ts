@@ -1,0 +1,17 @@
+export { LandingHeader } from "./landing-header";
+export { LandingFooter } from "./landing-footer";
+export { HeroSection } from "./hero-section";
+export { FeaturesSection } from "./features-section";
+export { FeatureCard } from "./feature-card";
+export { BenefitsSection } from "./benefits-section";
+export { BenefitItem } from "./benefit-item";
+export { CTASection } from "./cta-section";
+export { TestimonialsSection } from "./testimonials-section";
+export { HowItWorksSection } from "./how-it-works-section";
+export { PricingPreviewSection } from "./pricing-preview-section";
+export { FAQSection } from "./faq-section";
+export { SalonDirectorySection } from "./salon-directory-section";
+export { StickyHeader } from "./sticky-header";
+export { StickyCTA } from "./sticky-cta";
+export { FloatingCTA } from "./floating-cta";
+export { ExitIntentPopup } from "./exit-intent-popup";

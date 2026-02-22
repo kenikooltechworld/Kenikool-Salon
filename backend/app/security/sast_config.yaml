@@ -1,0 +1,124 @@
+# SAST (Static Application Security Testing) Configuration
+
+# Bandit configuration for code security scanning
+bandit:
+  # Severity levels: LOW, MEDIUM, HIGH
+  severity: MEDIUM
+  # Confidence levels: LOW, MEDIUM, HIGH
+  confidence: MEDIUM
+  # Exclude patterns
+  exclude:
+    - /tests/
+    - /test/
+    - /.venv/
+    - /venv/
+  # Include patterns
+  include:
+    - "*.py"
+
+# Detect-secrets configuration for hardcoded secrets
+detect_secrets:
+  # Baseline file for known secrets
+  baseline: .secrets.baseline
+  # Plugins to use
+  plugins:
+    - type: ArtifactoryDetector
+    - type: AWSKeyDetector
+    - type: AzureStorageKeyDetector
+    - type: BasicAuthDetector
+    - type: CloudantDetector
+    - type: DiscordBotTokenDetector
+    - type: GitHubTokenDetector
+    - type: HexHighEntropyString
+      hex_limit: 3.0
+    - type: IbmCloudIamDetector
+    - type: IbmCosHmacDetector
+    - type: JwtTokenDetector
+    - type: KeywordDetector
+    - type: MailchimpDetector
+    - type: NpmDetector
+    - type: PrivateKeyDetector
+    - type: SendGridDetector
+    - type: SlackDetector
+    - type: SoftlayerDetector
+    - type: SquareOAuthDetector
+    - type: StripeDetector
+    - type: TwilioKeyDetector
+
+# Security scanning rules
+security_rules:
+  # SQL Injection prevention
+  sql_injection:
+    enabled: true
+    severity: HIGH
+  
+  # NoSQL Injection prevention
+  nosql_injection:
+    enabled: true
+    severity: HIGH
+  
+  # XSS prevention
+  xss:
+    enabled: true
+    severity: HIGH
+  
+  # CSRF prevention
+  csrf:
+    enabled: true
+    severity: MEDIUM
+  
+  # Command Injection prevention
+  command_injection:
+    enabled: true
+    severity: HIGH
+  
+  # Path Traversal prevention
+  path_traversal:
+    enabled: true
+    severity: HIGH
+  
+  # XXE prevention
+  xxe:
+    enabled: true
+    severity: HIGH
+  
+  # Insecure Deserialization prevention
+  insecure_deserialization:
+    enabled: true
+    severity: HIGH
+  
+  # Hardcoded secrets detection
+  hardcoded_secrets:
+    enabled: true
+    severity: CRITICAL
+  
+  # Weak cryptography detection
+  weak_cryptography:
+    enabled: true
+    severity: HIGH
+  
+  # Insecure random number generation
+  insecure_random:
+    enabled: true
+    severity: MEDIUM
+  
+  # Hardcoded passwords
+  hardcoded_passwords:
+    enabled: true
+    severity: CRITICAL
+  
+  # Insecure SSL/TLS
+  insecure_ssl:
+    enabled: true
+    severity: HIGH
+
+# Reporting configuration
+reporting:
+  # Report format: json, csv, html
+  format: json
+  # Output file
+  output_file: security_report.json
+  # Include detailed information
+  detailed: true
+  # Fail on severity level
+  fail_on_severity: HIGH

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urgent: Payment Required to Keep Your Membership</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .urgent-alert {
+            background-color: #ffe5e5;
+            border-left: 4px solid #f5576c;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .urgent-alert h3 {
+            margin-top: 0;
+            color: #c41e3a;
+        }
+        .grace-period-info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .grace-period-info h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .grace-period-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .grace-period-info li {
+            margin: 5px 0;
+        }
+        .timeline {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .timeline h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .timeline-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+        .timeline-date {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .timeline-desc {
+            color: #666;
+            font-size: 14px;
+            margin-top: 3px;
+        }
+        .payment-details {
+            background-color: #f0f0f0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .payment-details h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #f5576c;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #c41e3a;
+        }
+        .secondary-button {
+            display: inline-block;
+            background-color: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            margin-left: 10px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .secondary-button:hover {
+            background-color: #5a6268;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Urgent: Payment Required</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <p>Hi {{ client_name }},</p>
+                <p>Your {{ plan_name }} membership is in a grace period due to a failed payment. Please update your payment method immediately to keep your membership active.</p>
+            </div>
+
+            <div class="urgent-alert">
+                <h3>❌ Payment Failed - Action Required</h3>
+                <p>We were unable to process your membership renewal payment. Your membership is currently suspended but you have time to fix this.</p>
+            </div>
+
+            <div class="grace-period-info">
+                <h3>📋 Grace Period Details</h3>
+                <p>You are in a <strong>14-day grace period</strong>. During this time:</p>
+                <ul>
+                    <li>Your membership benefits are temporarily suspended</li>
+                    <li>We will automatically retry your payment every 2 days (up to 3 attempts)</li>
+                    <li>You can manually update your payment method anytime</li>
+                    <li>If payment succeeds, your membership will be restored immediately</li>
+                </ul>
+            </div>
+
+            <div class="timeline">
+                <h3>📅 What Happens Next</h3>
+                <div class="timeline-item">
+                    <div class="timeline-date">Today</div>
+                    <div class="timeline-desc">Grace period started - payment failed</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ retry_date_1 }}</div>
+                    <div class="timeline-desc">Automatic retry attempt #1</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ retry_date_2 }}</div>
+                    <div class="timeline-desc">Automatic retry attempt #2</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ retry_date_3 }}</div>
+                    <div class="timeline-desc">Automatic retry attempt #3</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ cancellation_date }}</div>
+                    <div class="timeline-desc"><strong>Membership will be cancelled if payment not received</strong></div>
+                </div>
+            </div>
+
+            <div class="payment-details">
+                <h3>Payment Information</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Plan:</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Amount Due:</span>
+                    <span class="detail-value">{{ currency_symbol }}{{ plan_price }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Grace Period Ends:</span>
+                    <span class="detail-value">{{ grace_period_end_date }}</span>
+                </div>
+            </div>
+
+            <p><strong>Don't wait!</strong> Update your payment method now to avoid losing your membership benefits:</p>
+
+            <div style="text-align: center;">
+                <a href="{{ update_payment_url }}" class="cta-button">Update Payment Method Now</a>
+                <a href="{{ contact_support_url }}" class="secondary-button">Contact Support</a>
+            </div>
+
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                <strong>Need help?</strong> If you're experiencing issues with your payment method or have questions, our support team is here to help. Contact us immediately.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; {{ salon_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

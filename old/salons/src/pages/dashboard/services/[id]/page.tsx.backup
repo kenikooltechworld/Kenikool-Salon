@@ -1,0 +1,966 @@
+"use client";
+
+import { useState, lazy, Suspense, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert } from "@/components/ui/alert";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import {
+  ArrowLeftIcon,
+  EditIcon,
+  TrashIcon,
+  ScissorsIcon,
+  AlertTriangleIcon,
+  DollarIcon,
+  CalendarIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  StarIcon,
+} from "@/components/icons";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api/client";
+import type { Service } from "@/lib/api/types";
+import { RecentBookingsList } from "@/components/services/recent-bookings-list";
+import { StylistPerformanceWidget } from "@/components/services/stylist-performance-widget";
+import { ServiceFormModal } from "@/components/services";
+import { useStylists } from "@/lib/api/hooks/useStylists";
+
+// Lazy load heavy tab components for better performance
+const AuditLogViewer = lazy(() =>
+  import("@/components/services/audit-log-viewer").then((mod) => ({
+    default: mod.AuditLogViewer,
+  }))
+);
+const ServiceVariantManager = lazy(() =>
+  import("@/components/services/service-variant-manager").then((mod) => ({
+    default: mod.ServiceVariantManager,
+  }))
+);
+const TieredPricingEditor = lazy(() =>
+  import("@/components/services/tiered-pricing-editor").then((mod) => ({
+    default: mod.TieredPricingEditor,
+  }))
+);
+const BookingRulesEditor = lazy(() =>
+  import("@/components/services/booking-rules-editor").then((mod) => ({
+    default: mod.BookingRulesEditor,
+  }))
+);
+const AvailabilityScheduler = lazy(() =>
+  import("@/components/services/availability-scheduler").then((mod) => ({
+    default: mod.AvailabilityScheduler,
+  }))
+);
+const CapacityManager = lazy(() =>
+  import("@/components/services/capacity-manager").then((mod) => ({
+    default: mod.CapacityManager,
+  }))
+);
+const CommissionEditor = lazy(() =>
+  import("@/components/services/commission-editor").then((mod) => ({
+    default: mod.CommissionEditor,
+  }))
+);
+const ResourceManager = lazy(() =>
+  import("@/components/services/resource-manager").then((mod) => ({
+    default: mod.ResourceManager,
+  }))
+);
+const ServiceRecommendations = lazy(() =>
+  import("@/components/services/service-recommendations").then((mod) => ({
+    default: mod.ServiceRecommendations,
+  }))
+);
+const MarketingSettings = lazy(() =>
+  import("@/components/services/marketing-settings").then((mod) => ({
+    default: mod.MarketingSettings,
+  }))
+);
+const ServiceReviewsSection = lazy(() =>
+  import("@/components/services/service-reviews-section").then((mod) => ({
+    default: mod.ServiceReviewsSection,
+  }))
+);
+const DependencyManager = lazy(() =>
+  import("@/components/services/dependency-manager").then((mod) => ({
+    default: mod.DependencyManager,
+  }))
+);
+const PerformanceReport = lazy(() =>
+  import("@/components/services/performance-report").then((mod) => ({
+    default: mod.PerformanceReport,
+  }))
+);
+
+interface ServiceStatistics {
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  totalRevenue: number;
+  averageBookingValue: number;
+  revenueTrend: number | null;
+  popularityRank?: number;
+  averageRating?: number;
+  conversionRate?: number;
+}
+
+interface ServiceDetails {
+  service: Service;
+  statistics: ServiceStatistics;
+}
+
+export default function ServiceDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const serviceId = params.id as string;
+  const [activeTab, setActiveTab] = useState<
+    | "overview"
+    | "variants"
+    | "pricing"
+    | "rules"
+    | "availability"
+    | "capacity"
+    | "commission"
+    | "resources"
+    | "marketing"
+    | "reports"
+    | "dependencies"
+    | "audit"
+  >("overview");
+
+  // Modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const { data, isLoading, error, refetch } = useQuery<ServiceDetails>({
+    queryKey: ["service-details", serviceId],
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `/api/services/${serviceId}`
+      );
+      return response.data;
+    },
+  });
+
+  // Fetch staff for edit modal
+  const { data: stylistsData = [] } = useStylists({ is_active: true });
+  const stylists = Array.isArray(stylistsData) ? stylistsData : [];
+
+  // Memoize tab content to prevent unnecessary re-renders
+  const tabContent = useMemo(() => {
+    if (!data) return null;
+
+    const { service, statistics } = data;
+
+    switch (activeTab) {
+      case "overview":
+        return (
+          <div className="space-y-6">
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Total Revenue
+                    </p>
+                    <p className="text-3xl font-bold text-foreground mb-2">
+                      ₦{(statistics.totalRevenue || 0).toLocaleString()}
+                    </p>
+                    {statistics.revenueTrend !== null &&
+                      statistics.revenueTrend !== undefined && (
+                        <div className="flex items-center gap-1">
+                          {statistics.revenueTrend >= 0 ? (
+                            <TrendingUpIcon
+                              size={16}
+                              className="text-green-500"
+                            />
+                          ) : (
+                            <TrendingDownIcon
+                              size={16}
+                              className="text-red-500"
+                            />
+                          )}
+                          <span
+                            className={`text-sm font-medium ${
+                              statistics.revenueTrend >= 0
+                                ? "text-green-500"
+                                : "text-red-500"
+                            }`}
+                          >
+                            {statistics.revenueTrend >= 0 ? "+" : ""}
+                            {(statistics.revenueTrend || 0).toFixed(1)}%
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-1">
+                            vs last period
+                          </span>
+                        </div>
+                      )}
+                  </div>
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <DollarIcon size={24} className="text-primary" />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Total Bookings
+                    </p>
+                    <p className="text-3xl font-bold text-foreground mb-2">
+                      {statistics.totalBookings || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {statistics.completedBookings || 0} completed •{" "}
+                      {statistics.cancelledBookings || 0} cancelled
+                    </p>
+                  </div>
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <CalendarIcon size={24} className="text-primary" />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Avg Booking Value
+                    </p>
+                    <p className="text-3xl font-bold text-foreground mb-2">
+                      ₦{(statistics.averageBookingValue || 0).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Per booking</p>
+                  </div>
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <StarIcon size={24} className="text-primary" />
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Recent Bookings and Stylist Performance */}
+            <RecentBookingsList serviceId={serviceId} />
+            <StylistPerformanceWidget serviceId={serviceId} />
+
+            {/* Service Recommendations */}
+            <Card className="p-6">
+              <Suspense fallback={<Spinner />}>
+                <ServiceRecommendations
+                  serviceId={serviceId}
+                  isEditing={false}
+                />
+              </Suspense>
+            </Card>
+
+            {/* Service Reviews */}
+            <Card className="p-6">
+              <Suspense fallback={<Spinner />}>
+                <ServiceReviewsSection serviceId={serviceId} />
+              </Suspense>
+            </Card>
+          </div>
+        );
+
+      case "variants":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <ServiceVariantManager
+              serviceId={serviceId}
+              basePrice={service.price}
+              baseDuration={service.duration_minutes}
+            />
+          </Suspense>
+        );
+
+      case "pricing":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-4">
+                Tiered Pricing Configuration
+              </h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Set different price multipliers based on stylist experience
+                level.
+              </p>
+              <TieredPricingEditor
+                basePrice={service.price}
+                tiers={service.tiered_pricing || []}
+                onChange={async (newTiers) => {
+                  try {
+                    await apiClient.patch(`/api/services/${serviceId}`, {
+                      tiered_pricing: newTiers,
+                    });
+                    refetch();
+                  } catch (error) {
+                    console.error("Error updating tiered pricing:", error);
+                  }
+                }}
+              />
+            </div>
+          </Suspense>
+        );
+
+      case "rules":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <BookingRulesEditor
+              serviceId={serviceId}
+              initialRules={service.booking_rules}
+            />
+          </Suspense>
+        );
+
+      case "availability":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <AvailabilityScheduler
+              serviceId={serviceId}
+              initialAvailability={service.availability}
+            />
+          </Suspense>
+        );
+
+      case "capacity":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <CapacityManager
+              serviceId={serviceId}
+              initialCapacity={service.max_concurrent_bookings}
+            />
+          </Suspense>
+        );
+
+      case "commission":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <CommissionEditor
+              serviceId={serviceId}
+              servicePrice={service.price}
+              assignedStylists={service.assigned_stylists}
+            />
+          </Suspense>
+        );
+
+      case "resources":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <ResourceManager
+              serviceId={serviceId}
+              initialResources={service.required_resources || []}
+            />
+          </Suspense>
+        );
+
+      case "marketing":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <MarketingSettings
+              serviceId={serviceId}
+              initialSettings={service.marketing_settings}
+            />
+          </Suspense>
+        );
+
+      case "reports":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <PerformanceReport serviceId={serviceId} />
+          </Suspense>
+        );
+
+      case "dependencies":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <DependencyManager
+              serviceId={serviceId}
+              initialPrerequisites={service.prerequisite_services || []}
+              initialMandatoryAddons={service.mandatory_addons || []}
+            />
+          </Suspense>
+        );
+
+      case "audit":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <AuditLogViewer serviceId={serviceId} />
+          </Suspense>
+        );
+
+      default:
+        return null;
+    }
+  }, [activeTab, serviceId, data, refetch]);
+
+  const handleBack = () => {
+    router.push("/dashboard/services");
+  };
+
+  const handleEdit = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    setIsProcessing(true);
+    try {
+      await apiClient.delete(`/api/services/${serviceId}`);
+      router.push("/dashboard/services");
+    } catch (err) {
+      console.error("Error deleting service:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete service";
+      alert(errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setIsProcessing(true);
+    try {
+      const response = await apiClient.post(
+        `/api/services/${serviceId}/duplicate`
+      );
+      const duplicatedService = response.data;
+      router.push(`/dashboard/services/${duplicatedService.id}`);
+    } catch (err) {
+      console.error("Error duplicating service:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to duplicate service";
+      alert(errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setIsDuplicateModalOpen(false);
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!templateName.trim()) {
+      alert("Please enter a template name");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await apiClient.post("/api/services/templates", {
+        name: templateName,
+        description: service.description || `Template for ${service.name}`,
+        category: service.category,
+        template_data: {
+          price: service.price,
+          duration_minutes: service.duration_minutes,
+          description: service.description,
+          category: service.category,
+          tiered_pricing: service.tiered_pricing,
+          booking_rules: service.booking_rules,
+          availability: service.availability,
+          max_concurrent_bookings: service.max_concurrent_bookings,
+          commission_structure: service.commission_structure,
+        },
+      });
+      alert("Template saved successfully!");
+      setTemplateName("");
+    } catch (err) {
+      console.error("Error saving template:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to save template";
+      alert(errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setIsSaveTemplateModalOpen(false);
+    }
+  };
+
+  if (error || !data) {
+    return (
+      <div className="space-y-6">
+        <Alert variant="error">
+          <AlertTriangleIcon size={20} />
+          <div>
+            <h3 className="font-semibold">Error loading service</h3>
+            <p className="text-sm">
+              {error instanceof Error ? error.message : "Service not found"}
+            </p>
+          </div>
+        </Alert>
+        <Button onClick={handleBack}>
+          <ArrowLeftIcon size={20} />
+          Back to Services
+        </Button>
+      </div>
+    );
+  }
+
+  const { service, statistics } = data;
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <StarIcon size={24} className="text-primary" />
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Recent Bookings and Stylist Performance */}
+            <RecentBookingsList serviceId={serviceId} />
+            <StylistPerformanceWidget serviceId={serviceId} />
+
+            {/* Service Recommendations */}
+            <Card className="p-6">
+              <Suspense fallback={<Spinner />}>
+                <ServiceRecommendations
+                  serviceId={serviceId}
+                  isEditing={false}
+                />
+              </Suspense>
+            </Card>
+
+            {/* Service Reviews */}
+            <Card className="p-6">
+              <Suspense fallback={<Spinner />}>
+                <ServiceReviewsSection serviceId={serviceId} />
+              </Suspense>
+            </Card>
+          </div>
+        );
+
+      case "variants":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <ServiceVariantManager
+              serviceId={serviceId}
+              basePrice={service.price}
+              baseDuration={service.duration_minutes}
+            />
+          </Suspense>
+        );
+
+      case "pricing":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-4">
+                Tiered Pricing Configuration
+              </h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Set different price multipliers based on stylist experience
+                level.
+              </p>
+              <TieredPricingEditor
+                basePrice={service.price}
+                tiers={service.tiered_pricing || []}
+                onChange={async (newTiers) => {
+                  try {
+                    await apiClient.patch(`/api/services/${serviceId}`, {
+                      tiered_pricing: newTiers,
+                    });
+                    refetch();
+                  } catch (error) {
+                    console.error("Error updating tiered pricing:", error);
+                  }
+                }}
+              />
+            </div>
+          </Suspense>
+        );
+
+      case "rules":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <BookingRulesEditor
+              serviceId={serviceId}
+              initialRules={service.booking_rules}
+            />
+          </Suspense>
+        );
+
+      case "availability":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <AvailabilityScheduler
+              serviceId={serviceId}
+              initialAvailability={service.availability}
+            />
+          </Suspense>
+        );
+
+      case "capacity":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <CapacityManager
+              serviceId={serviceId}
+              initialCapacity={service.max_concurrent_bookings}
+            />
+          </Suspense>
+        );
+
+      case "commission":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <CommissionEditor
+              serviceId={serviceId}
+              servicePrice={service.price}
+              assignedStylists={service.assigned_stylists}
+            />
+          </Suspense>
+        );
+
+      case "resources":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <ResourceManager
+              serviceId={serviceId}
+              initialResources={service.required_resources || []}
+            />
+          </Suspense>
+        );
+
+      case "marketing":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <MarketingSettings
+              serviceId={serviceId}
+              initialSettings={service.marketing_settings}
+            />
+          </Suspense>
+        );
+
+      case "reports":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <PerformanceReport serviceId={serviceId} />
+          </Suspense>
+        );
+
+      case "dependencies":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <DependencyManager
+              serviceId={serviceId}
+              initialPrerequisites={service.prerequisite_services || []}
+              initialMandatoryAddons={service.mandatory_addons || []}
+            />
+          </Suspense>
+        );
+
+      case "audit":
+        return (
+          <Suspense fallback={<Spinner />}>
+            <AuditLogViewer serviceId={serviceId} />
+          </Suspense>
+        );
+
+      default:
+        return null;
+    }
+  }, [activeTab, serviceId, service, statistics, refetch]);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={handleBack}>
+          <ArrowLeftIcon size={20} />
+          Back to Services
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsSaveTemplateModalOpen(true)}
+          >
+            <ScissorsIcon size={16} />
+            Save as Template
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsDuplicateModalOpen(true)}
+          >
+            <ScissorsIcon size={16} />
+            Duplicate
+          </Button>
+          <Button variant="outline" onClick={handleEdit}>
+            <EditIcon size={16} />
+            Edit
+          </Button>
+          <Button variant="outline" onClick={() => setIsDeleteModalOpen(true)}>
+            <TrashIcon size={16} />
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      {/* Service Header */}
+      <Card className="p-6">
+        <div className="flex gap-6">
+          {/* Service Photo */}
+          <div className="w-48 h-48 rounded-lg overflow-hidden bg-muted flex-shrink-0 relative">
+            {service.photo_url ? (
+              <Image
+                src={service.photo_url}
+                alt={service.name}
+                fill
+                className="object-cover"
+                sizes="192px"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ScissorsIcon size={64} className="text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Service Info */}
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">
+                  {service.name}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{service.category}</Badge>
+                  <Badge
+                    variant={service.is_active ? "default" : "destructive"}
+                  >
+                    {service.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground mb-4">
+              {service.description || "No description available"}
+            </p>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Price</p>
+                <p className="text-2xl font-bold text-foreground">
+                  ₦{service.price.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Duration</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {service.duration_minutes} mins
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Stylists</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {service.assigned_stylists.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Tabs */}
+      <Card className="p-0">
+        <div className="border-b border-border">
+          <div className="flex gap-1 p-1 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "overview"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab("variants")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "variants"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Variants
+            </button>
+            <button
+              onClick={() => setActiveTab("pricing")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "pricing"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Tiered Pricing
+            </button>
+            <button
+              onClick={() => setActiveTab("rules")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "rules"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Booking Rules
+            </button>
+            <button
+              onClick={() => setActiveTab("availability")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "availability"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Availability
+            </button>
+            <button
+              onClick={() => setActiveTab("capacity")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "capacity"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Capacity
+            </button>
+            <button
+              onClick={() => setActiveTab("commission")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "commission"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Commission
+            </button>
+            <button
+              onClick={() => setActiveTab("resources")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "resources"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Resources
+            </button>
+            <button
+              onClick={() => setActiveTab("marketing")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "marketing"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Marketing
+            </button>
+            <button
+              onClick={() => setActiveTab("reports")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "reports"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Reports
+            </button>
+            <button
+              onClick={() => setActiveTab("dependencies")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "dependencies"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Dependencies
+            </button>
+            <button
+              onClick={() => setActiveTab("audit")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                activeTab === "audit"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm"
+              }`}
+            >
+              Audit Log
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">{tabContent}</div>
+      </Card>
+
+      {/* Edit Service Modal */}
+      <ServiceFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          refetch();
+        }}
+        service={service}
+        availableStylists={stylists}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Service"
+        description={`Are you sure you want to delete "${service?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={isProcessing}
+      />
+
+      {/* Duplicate Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => setIsDuplicateModalOpen(false)}
+        onConfirm={handleDuplicate}
+        title="Duplicate Service"
+        description={`Create a copy of "${service?.name}"?`}
+        confirmText="Duplicate"
+        cancelText="Cancel"
+        isLoading={isProcessing}
+      />
+
+      {/* Save as Template Modal */}
+      <ConfirmationModal
+        isOpen={isSaveTemplateModalOpen}
+        onClose={() => {
+          setIsSaveTemplateModalOpen(false);
+          setTemplateName("");
+        }}
+        onConfirm={handleSaveAsTemplate}
+        title="Save as Template"
+        description={
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Enter a name for this template:
+            </p>
+            <Input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Template name"
+              autoFocus
+            />
+          </div>
+        }
+        confirmText="Save Template"
+        cancelText="Cancel"
+        isLoading={isProcessing}
+      />
+    </div>
+  );
+}

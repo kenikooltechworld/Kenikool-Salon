@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed - Action Required</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .alert-box {
+            background-color: #ffe5e5;
+            border-left: 4px solid #f5576c;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .alert-box h3 {
+            margin-top: 0;
+            color: #c41e3a;
+        }
+        .payment-details {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .payment-details h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .grace-period-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .grace-period-box h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .grace-period-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .grace-period-box li {
+            margin: 5px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #f5576c;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #c41e3a;
+        }
+        .secondary-button {
+            display: inline-block;
+            background-color: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            margin-left: 10px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .secondary-button:hover {
+            background-color: #5a6268;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Payment Failed ⚠️</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <p>Hi {{ client_name }},</p>
+                <p>We were unable to process your membership renewal payment. Please update your payment method to keep your membership active.</p>
+            </div>
+
+            <div class="alert-box">
+                <h3>❌ Payment Could Not Be Processed</h3>
+                <p><strong>Reason:</strong> {{ failure_reason }}</p>
+                <p>Your membership is currently in a grace period while we attempt to retry the payment.</p>
+            </div>
+
+            <div class="payment-details">
+                <h3>Payment Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Plan:</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Amount:</span>
+                    <span class="detail-value">{{ currency_symbol }}{{ plan_price }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Billing Cycle:</span>
+                    <span class="detail-value">{{ billing_cycle }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Failed Date:</span>
+                    <span class="detail-value">{{ failure_date }}</span>
+                </div>
+            </div>
+
+            <div class="grace-period-box">
+                <h3>⏱️ Grace Period Information</h3>
+                <p>Your membership is in a grace period. Here's what happens next:</p>
+                <ul>
+                    <li>We'll automatically retry your payment every 2 days (up to 3 attempts)</li>
+                    <li>You can continue using your membership benefits during this period</li>
+                    <li>If payment succeeds, your membership will continue normally</li>
+                    <li>If all retries fail, your membership will be cancelled on {{ grace_period_end_date }}</li>
+                </ul>
+            </div>
+
+            <p><strong>To avoid cancellation, please update your payment method as soon as possible:</strong></p>
+
+            <div style="text-align: center;">
+                <a href="{{ update_payment_url }}" class="cta-button">Update Payment Method</a>
+                <a href="{{ contact_support_url }}" class="secondary-button">Contact Support</a>
+            </div>
+
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                <strong>Common reasons for payment failure:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Insufficient funds</li>
+                    <li>Card expired or blocked</li>
+                    <li>Incorrect card details</li>
+                    <li>Bank declined the transaction</li>
+                </ul>
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; {{ salon_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

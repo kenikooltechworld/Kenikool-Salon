@@ -1,0 +1,9 @@
+export { SalonHeader } from "./salon-header";
+export { SalonGallery } from "./salon-gallery";
+export { SalonInfo } from "./salon-info";
+export { ServiceList } from "./service-list";
+export { StylistProfiles } from "./stylist-profiles";
+export { ReviewsSection } from "./reviews-section";
+export { PortfolioGallery } from "./portfolio-gallery";
+export { LocationMap } from "./location-map";
+export { BookingButtons } from "./booking-buttons";

@@ -1,0 +1,213 @@
+/* MapboxGLMap Component Styles - Theme-aware with CSS Variables */
+
+/* Marker Styles */
+.marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease-in-out;
+}
+
+.marker:hover {
+  transform: scale(1.1);
+}
+
+.marker--hovered {
+  transform: scale(1.15);
+}
+
+.marker__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 40px;
+  background: hsl(var(--card));
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid hsl(var(--border));
+  transition: all 0.2s ease-in-out;
+}
+
+.marker__icon svg {
+  transform: rotate(45deg);
+  transition: all 0.2s ease-in-out;
+}
+
+.marker:hover .marker__icon {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-color: hsl(var(--primary));
+}
+
+.marker:hover .marker__icon svg {
+  filter: drop-shadow(0 0 4px hsl(var(--primary)));
+}
+
+/* Marker Label */
+.marker__label {
+  position: absolute;
+  top: -20px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.marker:hover .marker__label {
+  opacity: 1;
+}
+
+/* Popup Styles - Theme-aware */
+.marker-popup {
+  background: hsl(var(--card));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  min-width: 250px;
+  max-width: 300px;
+  border: 2px solid hsl(var(--border));
+}
+
+.marker-popup__content {
+  padding: 12px;
+}
+
+.marker-popup__title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  line-height: 1.3;
+}
+
+.marker-popup__address {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.4;
+}
+
+.marker-popup__distance {
+  margin: 4px 0;
+  font-size: 12px;
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+
+.marker-popup__rating {
+  margin: 4px 0;
+  font-size: 12px;
+  color: hsl(var(--warning));
+  font-weight: 500;
+}
+
+.marker-popup__phone {
+  margin: 4px 0;
+  font-size: 12px;
+  color: hsl(var(--foreground));
+}
+
+.marker-popup__website {
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.marker-popup__website a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.marker-popup__website a:hover {
+  color: hsl(var(--primary-hover));
+  text-decoration: underline;
+}
+
+.marker-popup__link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: hsl(var(--primary));
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.marker-popup__link:hover {
+  color: hsl(var(--primary-hover));
+  text-decoration: underline;
+}
+
+/* Mapbox GL Control Overrides - Theme-aware */
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: hsl(var(--card));
+}
+
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+  border-top-color: hsl(var(--card));
+}
+
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: hsl(var(--card));
+}
+
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: hsl(var(--card));
+}
+
+.mapboxgl-popup {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Navigation Controls - Theme-aware */
+.mapboxgl-ctrl-group {
+  background-color: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mapboxgl-ctrl-group button {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.mapboxgl-ctrl-group button:last-child {
+  border-bottom: none;
+}
+
+.mapboxgl-ctrl-group button:hover {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--primary));
+}
+
+.mapboxgl-ctrl-group button.active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .marker-popup {
+    min-width: 200px;
+    max-width: 250px;
+  }
+
+  .marker-popup__title {
+    font-size: 14px;
+  }
+
+  .marker-popup__address {
+    font-size: 12px;
+  }
+}

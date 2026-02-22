@@ -1,0 +1,102 @@
+# Core Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Real-time Communication
+python-socketio
+python-engineio
+
+# Database
+motor
+pymongo
+pydantic
+pydantic-settings
+email-validator
+
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+pyotp
+
+# Task Queue
+celery
+redis
+
+# Cloud Services
+cloudinary
+
+# Payment Gateways & HTTP
+requests
+httpx
+
+# AI/ML & Voice Assistant
+scikit-learn
+pandas
+numpy
+openpyxl
+
+# Voice Assistant - Speech-to-Text
+# Using SpeechRecognition library (lightweight, no heavy dependencies)
+SpeechRecognition
+
+# Voice Assistant - Text-to-Speech
+pyttsx3
+
+# Voice Assistant - Language Detection
+langdetect
+
+# Voice Assistant - NLU
+nltk>=3.8.1
+
+# Voice Assistant - Audio Processing
+librosa
+soundfile
+
+# Utilities
+python-dotenv
+qrcode[pil]
+Jinja2
+reportlab
+python-magic
+
+# Geolocation
+geopy
+
+# Rate Limiting
+slowapi
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+hypothesis
+httpx
+
+# Development
+black
+flake8
+mypy
+
+# Encryption
+cryptography
+
+# Analytics & Data Processing
+plotly
+scipy
+statsmodels
+python-dateutil
+
+# Data Export
+openpyxl
+xlsxwriter
+python-pptx
+
+# White Label System
+Pillow
+dnspython
+cssutils
+acme
+certbot
+minio
