@@ -9,6 +9,11 @@ class Tenant(Document):
 
     name = StringField(required=True, max_length=255)
     subdomain = StringField(required=True, unique=True, max_length=63)
+    email = StringField(null=True, max_length=255)
+    description = StringField(null=True, max_length=1000)
+    logo_url = StringField(null=True, max_length=500)
+    primary_color = StringField(null=True, max_length=7)  # Hex color code
+    secondary_color = StringField(null=True, max_length=7)  # Hex color code
     subscription_tier = StringField(
         choices=["trial", "starter", "professional", "enterprise"],
         default="trial",

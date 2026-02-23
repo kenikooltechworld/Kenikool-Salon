@@ -122,6 +122,7 @@ class PublicServiceResponse(BaseModel):
     public_description: Optional[str] = None
     public_image_url: Optional[str] = None
     allow_public_booking: bool
+    benefits: Optional[list[str]] = Field(None, description="Service benefits/features")
 
     class Config:
         populate_by_name = True
@@ -136,6 +137,9 @@ class PublicStaffResponse(BaseModel):
     is_available_for_public_booking: bool
     bio: Optional[str] = None
     profile_image_url: Optional[str] = None
+    specialties: Optional[list[str]] = Field(None, description="Staff specialties")
+    rating: Optional[float] = Field(None, description="Average rating (1-5)")
+    review_count: Optional[int] = Field(None, description="Number of reviews")
 
     class Config:
         populate_by_name = True

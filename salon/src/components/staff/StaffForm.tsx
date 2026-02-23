@@ -1,6 +1,7 @@
 import { useState } from "react";
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { XIcon } from "@/components/icons";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { ImageLightbox } from "@/components/services/ImageLightbox";
@@ -20,6 +21,7 @@ export function StaffForm({
   initialData,
 }: StaffFormProps) {
   const isEditing = !!initialData?.id;
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     firstName: initialData?.firstName || "",
     lastName: initialData?.lastName || "",
@@ -152,10 +154,20 @@ export function StaffForm({
           ...prev,
           profile_image_url: url,
         }));
+        showToast({
+          variant: "success",
+          title: "Success",
+          description: "Profile image uploaded successfully",
+        });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to upload profile image",
-        );
+        const errorMsg =
+          err instanceof Error ? err.message : "Failed to upload profile image";
+        setError(errorMsg);
+        showToast({
+          variant: "error",
+          title: "Error",
+          description: errorMsg,
+        });
       }
     }
   };
@@ -180,12 +192,22 @@ export function StaffForm({
       }
       // Reset file input
       e.target.value = "";
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: `${files.length} certificate file(s) uploaded successfully`,
+      });
     } catch (err) {
-      setError(
+      const errorMsg =
         err instanceof Error
           ? err.message
-          : "Failed to upload certificate file(s)",
-      );
+          : "Failed to upload certificate file(s)";
+      setError(errorMsg);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMsg,
+      });
     }
   };
 
@@ -203,17 +225,35 @@ export function StaffForm({
     setError("");
 
     if (!formData.firstName.trim()) {
-      setError("First name is required");
+      const msg = "First name is required";
+      setError(msg);
+      showToast({
+        variant: "error",
+        title: "Validation Error",
+        description: msg,
+      });
       return;
     }
 
     if (!formData.lastName.trim()) {
-      setError("Last name is required");
+      const msg = "Last name is required";
+      setError(msg);
+      showToast({
+        variant: "error",
+        title: "Validation Error",
+        description: msg,
+      });
       return;
     }
 
     if (!formData.email.trim()) {
-      setError("Email is required");
+      const msg = "Email is required";
+      setError(msg);
+      showToast({
+        variant: "error",
+        title: "Validation Error",
+        description: msg,
+      });
       return;
     }
 
@@ -235,6 +275,14 @@ export function StaffForm({
         status: formData.status,
       } as any);
 
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: isEditing
+          ? "Staff member updated successfully"
+          : "Staff member added successfully",
+      });
+
       setFormData({
         firstName: "",
         lastName: "",
@@ -255,13 +303,18 @@ export function StaffForm({
       setCertificationInput("");
       profileImageUpload.clearPreview();
     } catch (err) {
-      setError(
+      const errorMsg =
         err instanceof Error
           ? err.message
           : isEditing
             ? "Failed to update staff member"
-            : "Failed to add staff member",
-      );
+            : "Failed to add staff member";
+      setError(errorMsg);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMsg,
+      });
     }
   };
 

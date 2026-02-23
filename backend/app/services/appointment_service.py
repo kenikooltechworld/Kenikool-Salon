@@ -22,41 +22,76 @@ class AppointmentService:
     @staticmethod
     def create_appointment(
         tenant_id: ObjectId,
-        customer_id: ObjectId,
         staff_id: ObjectId,
         service_id: ObjectId,
         start_time: datetime,
         end_time: datetime,
+        customer_id: Optional[ObjectId] = None,
         location_id: Optional[ObjectId] = None,
         notes: Optional[str] = None,
         payment_option: Optional[str] = None,
         payment_id: Optional[ObjectId] = None,
+        idempotency_key: Optional[str] = None,
+        guest_name: Optional[str] = None,
+        guest_email: Optional[str] = None,
+        guest_phone: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Appointment:
         """
-        Create a new appointment with double-booking prevention and balance enforcement.
+        Create a new appointment - handles both internal and public bookings.
+        
+        For internal bookings: customer_id must be provided
+        For public bookings: guest_* fields must be provided
         
         Args:
             tenant_id: Tenant ID
-            customer_id: Customer ID
             staff_id: Staff member ID
             service_id: Service ID
             start_time: Appointment start time (UTC)
             end_time: Appointment end time (UTC)
+            customer_id: Optional customer ID (for internal bookings)
             location_id: Optional location ID
             notes: Optional appointment notes
             payment_option: Optional payment option ('now' or 'later')
+            payment_id: Optional payment ID
+            idempotency_key: Optional idempotency key (prevents duplicate bookings)
+            guest_name: Optional guest name (for public bookings)
+            guest_email: Optional guest email (for public bookings)
+            guest_phone: Optional guest phone (for public bookings)
+            ip_address: Optional IP address (for public bookings)
+            user_agent: Optional user agent (for public bookings)
             
         Returns:
             Created Appointment document
             
         Raises:
-            ValueError: If appointment overlaps with existing appointment or customer has outstanding balance
+            ValueError: If appointment overlaps or customer has outstanding balance
         """
+        # Handle idempotency - check if this booking already exists
+        if idempotency_key:
+            existing = Appointment.objects(
+                tenant_id=tenant_id,
+                idempotency_key=idempotency_key
+            ).first()
+            if existing:
+                return existing
+        
         # Check for double-booking
         AppointmentService._check_double_booking(tenant_id, staff_id, start_time, end_time)
         
-        # Check customer balance
-        AppointmentService._check_customer_balance(tenant_id, customer_id)
+        # Determine if this is a guest booking
+        is_guest = bool(guest_name)
+        
+        # For internal bookings, check customer balance
+        if not is_guest and customer_id:
+            AppointmentService._check_customer_balance(tenant_id, customer_id)
+        
+        # For guest bookings, get or create guest customer
+        if is_guest and guest_email:
+            customer_id = AppointmentService._get_or_create_guest_customer(
+                tenant_id, guest_name, guest_email, guest_phone
+            )
         
         # Get service to capture price
         service = Service.objects(tenant_id=tenant_id, id=service_id).first()
@@ -74,6 +109,14 @@ class AppointmentService:
             notes=notes,
             price=price,
             payment_id=payment_id,
+            payment_option=payment_option,
+            idempotency_key=idempotency_key,
+            is_guest=is_guest,
+            guest_name=guest_name,
+            guest_email=guest_email,
+            guest_phone=guest_phone,
+            ip_address=ip_address,
+            user_agent=user_agent,
             status="scheduled",
         )
         appointment.save()
@@ -93,12 +136,16 @@ class AppointmentService:
             from app.services.appointment_reminder_service import AppointmentReminderService
             customer = Customer.objects(tenant_id=tenant_id, id=customer_id).first()
             if customer:
+                reminder_name = guest_name if is_guest else f"{customer.first_name} {customer.last_name}"
+                reminder_email = guest_email if is_guest else customer.email
+                reminder_phone = guest_phone if is_guest else customer.phone
+                
                 AppointmentReminderService.schedule_reminders_for_appointment(
                     tenant_id,
                     appointment.id,
-                    customer.email,
-                    customer.phone,
-                    f"{customer.first_name} {customer.last_name}",
+                    reminder_email,
+                    reminder_phone,
+                    reminder_name,
                 )
         except Exception as e:
             logger.error(f"Error scheduling reminders: {str(e)}")
@@ -214,6 +261,53 @@ class AppointmentService:
                 f"Customer has outstanding balance of {outstanding_balance}. "
                 f"Please settle outstanding invoices before booking."
             )
+
+    @staticmethod
+    def _get_or_create_guest_customer(
+        tenant_id: ObjectId,
+        guest_name: str,
+        guest_email: str,
+        guest_phone: Optional[str] = None,
+    ) -> ObjectId:
+        """
+        Get or create a guest customer for public bookings.
+        
+        Args:
+            tenant_id: Tenant ID
+            guest_name: Guest name
+            guest_email: Guest email
+            guest_phone: Optional guest phone
+            
+        Returns:
+            Customer ID
+        """
+        # Check if customer with this email already exists
+        existing_customer = Customer.objects(
+            tenant_id=tenant_id,
+            email=guest_email
+        ).first()
+        
+        if existing_customer:
+            return existing_customer.id
+        
+        # Create new guest customer
+        # Parse name into first and last name
+        name_parts = guest_name.split(' ', 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+        
+        customer = Customer(
+            tenant_id=tenant_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=guest_email,
+            phone=guest_phone,
+            is_guest=True,  # Mark as guest customer
+        )
+        customer.save()
+        
+        logger.info(f"[GuestBooking] Created guest customer {customer.id} for {guest_email}")
+        return customer.id
 
     @staticmethod
     def get_available_slots(

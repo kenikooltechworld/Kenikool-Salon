@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import {
   PlusIcon,
   SearchIcon,
@@ -19,6 +20,7 @@ interface InvoiceFilters {
 
 export default function Invoices() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [filters] = useState<InvoiceFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
   const { data, isLoading, error } = useInvoices(filters);
@@ -37,8 +39,18 @@ export default function Invoices() {
     if (confirm("Are you sure you want to delete this invoice?")) {
       try {
         await deleteInvoiceMutation.mutateAsync(id);
+        showToast({
+          variant: "success",
+          title: "Success",
+          description: "Invoice deleted successfully",
+        });
       } catch (error) {
-        alert("Failed to delete invoice");
+        showToast({
+          variant: "error",
+          title: "Error",
+          description:
+            error instanceof Error ? error.message : "Failed to delete invoice",
+        });
       }
     }
   };

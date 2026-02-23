@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateInvoice } from "@/hooks/useInvoices";
 import { useCustomers, type Customer } from "@/hooks/useCustomers";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import {
   AlertCircleIcon,
@@ -12,6 +13,7 @@ import {
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,12 +122,24 @@ export default function CreateInvoice() {
         due_date: formData.due_date,
       });
 
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Invoice created successfully",
+      });
       setShowSuccess(true);
       setTimeout(() => {
         navigate("/invoices");
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to create invoice");
+      const errorMessage =
+        err.response?.data?.detail || "Failed to create invoice";
+      setError(errorMessage);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMessage,
+      });
     }
   };
 

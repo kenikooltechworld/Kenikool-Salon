@@ -5,6 +5,7 @@ from datetime import datetime, date, time, timedelta
 from typing import List, Optional, Tuple
 from bson import ObjectId
 from mongoengine import Q
+import pytz
 
 from app.models.availability import Availability
 from app.models.appointment import Appointment

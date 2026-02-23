@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { usePayment } from "@/hooks/usePayments";
 import { useCreateRefund } from "@/hooks/useRefunds";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -9,6 +10,7 @@ import { AlertCircleIcon } from "@/components/icons";
 export default function RefundRequest() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { data: payment, isLoading } = usePayment(paymentId || "");
   const createRefundMutation = useCreateRefund();
   const [reason, setReason] = useState("");
@@ -33,9 +35,20 @@ export default function RefundRequest() {
         amount: payment?.amount || 0,
         reason,
       });
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Refund request submitted successfully",
+      });
       navigate("/payments");
     } catch (err: any) {
-      setError(err.message || "Failed to create refund request");
+      const errorMessage = err.message || "Failed to create refund request";
+      setError(errorMessage);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMessage,
+      });
     }
   };
 

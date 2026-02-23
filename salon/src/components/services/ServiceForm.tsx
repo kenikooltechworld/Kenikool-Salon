@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 import { PlusIcon } from "@/components/icons";
 import { useCreateService, useUpdateService } from "@/hooks/useServices";
 import { useServiceCategories } from "@/hooks/useServiceCategories";
@@ -22,6 +23,7 @@ export function ServiceForm({
   onSuccess,
   onCancel,
 }: ServiceFormProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: service?.name || "",
     description: service?.description || "",
@@ -113,12 +115,46 @@ export function ServiceForm({
           ...submitData,
         },
         {
-          onSuccess,
+          onSuccess: (updatedService: any) => {
+            showToast({
+              variant: "success",
+              title: "Success",
+              description: `${updatedService.name || "Service"} has been updated successfully`,
+            });
+            onSuccess?.();
+          },
+          onError: (error: any) => {
+            showToast({
+              variant: "error",
+              title: "Error",
+              description:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to update service",
+            });
+          },
         },
       );
     } else {
       createService(submitData as any, {
-        onSuccess,
+        onSuccess: (newService: any) => {
+          showToast({
+            variant: "success",
+            title: "Success",
+            description: `${newService.name || "Service"} has been created successfully`,
+          });
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          showToast({
+            variant: "error",
+            title: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to create service",
+          });
+        },
       });
     }
   };

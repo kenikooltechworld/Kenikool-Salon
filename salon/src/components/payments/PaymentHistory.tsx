@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/toast";
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -27,6 +28,7 @@ export function PaymentHistory({
   const [retryingPaymentId, setRetryingPaymentId] = useState<string | null>(
     null,
   );
+  const { showToast } = useToast();
 
   const {
     data: payments,
@@ -43,6 +45,18 @@ export function PaymentHistory({
     setRetryingPaymentId(paymentId);
     try {
       await retryPaymentMutation.mutateAsync(paymentId);
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Payment retry initiated successfully",
+      });
+    } catch (error) {
+      showToast({
+        variant: "error",
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to retry payment",
+      });
     } finally {
       setRetryingPaymentId(null);
     }

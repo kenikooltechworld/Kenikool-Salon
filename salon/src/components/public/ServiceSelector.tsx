@@ -86,6 +86,19 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
                 <p className="text-muted-foreground text-sm mt-1">
                   {service.public_description || service.description}
                 </p>
+                {service.benefits && service.benefits.length > 0 && (
+                  <ul className="mt-3 space-y-1">
+                    {service.benefits.map((benefit, idx) => (
+                      <li
+                        key={idx}
+                        className="text-sm text-muted-foreground flex items-start gap-2"
+                      >
+                        <span className="text-primary mt-1">✓</span>
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               {selectedServiceId === service.id && (
                 <CheckIcon size={20} className="text-primary flex-shrink-0" />

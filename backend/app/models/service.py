@@ -20,7 +20,9 @@ class Service(BaseDocument):
     public_description = StringField(null=True, max_length=1000)
     public_image_url = StringField(null=True, max_length=500)
     allow_public_booking = BooleanField(default=False)
+    allow_pay_now = BooleanField(default=False)  # Whether service allows immediate payment
     tags = ListField(StringField(max_length=50), default=[])
+    benefits = ListField(StringField(max_length=200), default=[])  # Service benefits/features
     # Option B: Per-service commission rate (overrides staff default)
     commission_percentage = DecimalField(null=True, min_value=0, max_value=100)
     created_at = DateTimeField(default=datetime.utcnow)

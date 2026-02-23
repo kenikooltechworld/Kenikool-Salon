@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import { ArrowLeftIcon, CheckIcon } from "@/components/icons";
 import { ServiceSelector } from "@/components/bookings/ServiceSelector";
 import { AvailabilityPicker } from "@/components/bookings/AvailabilityPicker";
@@ -34,6 +35,7 @@ interface BookingFormData {
 
 export default function CreateBooking() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [step, setStep] = useState<WizardStep>("customer");
   const [paymentOption, setPaymentOption] = useState<"now" | "later">("later");
   const [error, setError] = useState<string | null>(null);
@@ -116,9 +118,14 @@ export default function CreateBooking() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        setError(
-          errorData.detail || "Failed to save customer. Please try again.",
-        );
+        const errorMessage =
+          errorData.detail || "Failed to save customer. Please try again.";
+        setError(errorMessage);
+        showToast({
+          variant: "error",
+          title: "Error",
+          description: errorMessage,
+        });
         return;
       }
 
@@ -134,11 +141,23 @@ export default function CreateBooking() {
         customerMode: "new",
       });
 
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: `Customer ${name} has been created successfully`,
+      });
+
       // Refresh customers list to include the newly created customer
       // This will be picked up by the useCustomers hook
       setStep("service");
     } catch (err) {
-      setError("Failed to save customer. Please try again.");
+      const errorMessage = "Failed to save customer. Please try again.";
+      setError(errorMessage);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMessage,
+      });
       console.error("[CreateBooking] Error saving customer:", err);
     }
   };
@@ -245,6 +264,12 @@ export default function CreateBooking() {
           localStorage.removeItem("bookingFormData");
           setError(null);
 
+          showToast({
+            variant: "success",
+            title: "Success",
+            description: "Booking has been created successfully",
+          });
+
           // Navigate to confirmation page with booking data
           navigate("/bookings/confirmation", {
             state: { booking: bookingData },
@@ -256,6 +281,11 @@ export default function CreateBooking() {
             error?.message ||
             "Failed to create booking. Please try again.";
           setError(errorMessage);
+          showToast({
+            variant: "error",
+            title: "Error",
+            description: errorMessage,
+          });
           console.error("[CreateBooking] Error:", errorMessage);
         },
       });

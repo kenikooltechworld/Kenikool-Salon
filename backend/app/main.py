@@ -15,7 +15,7 @@ from .middleware.audit_logging import AuditLoggingMiddleware
 from .middleware.public_booking import PublicBookingMiddleware, PublicBookingRateLimitMiddleware
 from .middleware_setup import setup_middleware
 from .db import init_db, close_db
-from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, billing
+from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, billing
 from .routes import settings as settings_router
 # Import celery app to register all tasks
 from .tasks import celery_app  # noqa: F401
@@ -203,23 +203,23 @@ def create_app() -> FastAPI:
     # Add audit logging middleware
     app.add_middleware(AuditLoggingMiddleware)
 
-    # Add public booking rate limiting middleware
-    app.add_middleware(PublicBookingRateLimitMiddleware)
-
-    # Add public booking middleware
-    app.add_middleware(PublicBookingMiddleware)
+    # Add validation middleware
+    app.add_middleware(ValidationMiddleware)
 
     # Add rate limiting middleware
     app.add_middleware(RateLimitMiddleware)
 
-    # Add validation middleware
-    app.add_middleware(ValidationMiddleware)
+    # Add public booking middleware (registered before subdomain so it executes after)
+    app.add_middleware(PublicBookingMiddleware)
 
-    # Add subdomain context middleware (before tenant context)
-    app.add_middleware(SubdomainContextMiddleware)
+    # Add public booking rate limiting middleware
+    app.add_middleware(PublicBookingRateLimitMiddleware)
 
     # Add tenant context middleware
     app.add_middleware(TenantContextMiddleware)
+
+    # Add subdomain context middleware (registered last so it executes first)
+    app.add_middleware(SubdomainContextMiddleware)
 
     # Register routes
     app.include_router(auth.router, prefix=settings.api_prefix)
@@ -247,6 +247,7 @@ def create_app() -> FastAPI:
     app.include_router(resources.router, prefix=settings.api_prefix)
     app.include_router(waiting_room.router, prefix=settings.api_prefix)
     app.include_router(public_booking.router, prefix=settings.api_prefix)
+    app.include_router(public_booking_management.router, prefix=settings.api_prefix)
     app.include_router(pos_transactions.router, prefix=settings.api_prefix)
     app.include_router(pos_carts.router, prefix=settings.api_prefix)
     app.include_router(pos_refunds.router, prefix=settings.api_prefix)

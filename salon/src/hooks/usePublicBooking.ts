@@ -41,6 +41,7 @@ interface CreatePublicBookingInput {
   customer_email: string;
   customer_phone: string;
   notes?: string;
+  payment_option?: "now" | "later";
 }
 
 interface PublicBookingResponse {

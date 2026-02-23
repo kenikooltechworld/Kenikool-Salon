@@ -54,6 +54,7 @@ class PublicBookingService:
             ip_address: IP address of requester
             user_agent: User agent of requester
             idempotency_key: Idempotency key for preventing duplicate bookings
+            payment_option: Payment option ("now" or "later")
 
         Returns:
             Created PublicBooking document
@@ -61,8 +62,12 @@ class PublicBookingService:
         Raises:
             ValueError: If booking cannot be created
         """
-        from mongoengine import connect
         from pymongo import errors as pymongo_errors
+        import hashlib
+        
+        # Validate booking date is not in the past
+        if booking_date < date.today():
+            raise ValueError("Cannot book appointments in the past")
         
         # Convert time to string format if needed
         if isinstance(booking_time, time):
@@ -74,9 +79,34 @@ class PublicBookingService:
         booking_datetime = datetime.combine(booking_date, booking_time)
         end_datetime = booking_datetime + timedelta(minutes=duration_minutes)
 
+        # Validate service exists and allows public booking
+        service = Service.objects(tenant_id=tenant_id, id=service_id).first()
+        if not service:
+            raise ValueError("Service not found")
+        if not service.allow_public_booking:
+            raise ValueError("This service does not allow public bookings")
+        
+        # Validate duration matches service duration
+        if duration_minutes != service.duration_minutes:
+            raise ValueError(f"Duration must be {service.duration_minutes} minutes for this service")
+        
+        # Validate staff exists and provides this service
+        staff = Staff.objects(tenant_id=tenant_id, id=staff_id).first()
+        if not staff:
+            raise ValueError("Staff member not found")
+        if not staff.is_available_for_public_booking:
+            raise ValueError("This staff member is not available for public bookings")
+        
+        # Check if staff provides this service
+        if service_id not in staff.service_ids:
+            raise ValueError("This staff member does not provide this service")
+        
+        # Validate payment option is allowed for service
+        if payment_option == "now" and not service.allow_pay_now:
+            raise ValueError("This service does not allow immediate payment")
+
         # Generate idempotency key if not provided
         if not idempotency_key:
-            import hashlib
             key_data = f"{customer_email}:{booking_date}:{booking_time_str}:{service_id}:{staff_id}"
             idempotency_key = hashlib.sha256(key_data.encode()).hexdigest()
 
@@ -90,14 +120,14 @@ class PublicBookingService:
         if existing_booking:
             return existing_booking
 
-        # Get or create guest customer
+        # Get or reuse existing guest customer by email
         customer_id = PublicBookingService._get_or_create_guest_customer(
             tenant_id, customer_name, customer_email, customer_phone
         )
 
         # Use MongoDB transaction for atomic booking creation
         try:
-            # Check for overlapping appointments with pessimistic locking
+            # Check for overlapping appointments
             overlapping_appointment = Appointment.objects(
                 tenant_id=tenant_id,
                 staff_id=staff_id,
@@ -112,9 +142,6 @@ class PublicBookingService:
                 )
 
             # Check for overlapping public bookings
-            # Convert booking_time to string format for comparison
-            booking_time_str = booking_time.strftime("%H:%M") if isinstance(booking_time, time) else booking_time
-            
             overlapping_bookings = PublicBooking.objects(
                 Q(tenant_id=tenant_id)
                 & Q(staff_id=staff_id)
@@ -124,14 +151,11 @@ class PublicBookingService:
 
             for existing in overlapping_bookings:
                 existing_start = datetime.strptime(existing.booking_time, "%H:%M").time()
-                existing_end_minutes = existing_start.hour * 60 + existing_start.minute + existing.duration_minutes
-                existing_end = time(hour=existing_end_minutes // 60, minute=existing_end_minutes % 60)
+                existing_start_minutes = existing_start.hour * 60 + existing_start.minute
+                existing_end_minutes = existing_start_minutes + existing.duration_minutes
                 
                 booking_start_minutes = booking_time.hour * 60 + booking_time.minute
                 booking_end_minutes = booking_start_minutes + duration_minutes
-                
-                existing_start_minutes = existing_start.hour * 60 + existing_start.minute
-                existing_end_minutes = existing_start_minutes + existing.duration_minutes
                 
                 # Check for overlap
                 if booking_start_minutes < existing_end_minutes and booking_end_minutes > existing_start_minutes:
@@ -185,6 +209,7 @@ class PublicBookingService:
     ) -> ObjectId:
         """
         Get existing customer or create new guest customer.
+        Deduplicates by email to prevent multiple records for same customer.
 
         Args:
             tenant_id: Tenant ID
@@ -201,6 +226,10 @@ class PublicBookingService:
         ).first()
 
         if existing_customer:
+            # Update phone if provided and different
+            if phone and existing_customer.phone != phone:
+                existing_customer.phone = phone
+                existing_customer.save()
             return existing_customer.id
 
         # Create new guest customer

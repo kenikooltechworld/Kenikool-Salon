@@ -27,8 +27,16 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:8000",
-        changeOrigin: true,
+        changeOrigin: false,
         rewrite: (path) => path,
+        configure: (proxy, options) => {
+          proxy.on("proxyReq", (proxyReq, req, res) => {
+            // Ensure X-Forwarded-Host is set to preserve subdomain
+            const host = req.headers.host || "localhost:3000";
+            proxyReq.setHeader("X-Forwarded-Host", host);
+            proxyReq.setHeader("X-Forwarded-Proto", "http");
+          });
+        },
       },
       "/ws": {
         target: "http://localhost:8000",

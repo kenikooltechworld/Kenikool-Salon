@@ -37,7 +37,7 @@ def init_db():
         _db_connection = connect(
             db=settings.database_name,
             host=settings.database_url,
-            connect=False,  # Don't establish connection immediately - lazy connect
+            connect=True,  # Establish connection immediately - eager connect
             serverSelectionTimeoutMS=5000,  # 5 second timeout
             retryWrites=True,
             w="majority",

@@ -26,23 +26,36 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         
         # Get hostname from request
-        hostname = request.headers.get("host", "").lower()
+        # First try X-Forwarded-Host header (set by proxies), then fall back to Host header
+        hostname = (
+            request.headers.get("x-forwarded-host") or 
+            request.headers.get("host", "")
+        ).lower()
         
-        # Skip subdomain extraction for localhost and IP addresses
-        if hostname.startswith("localhost") or hostname.startswith("127.0.0.1"):
+        logger.info(f"[SubdomainContext] Hostname: {hostname}")
+        
+        # Remove port if present for hostname checks
+        hostname_without_port = hostname.split(":")[0]
+        
+        # Skip subdomain extraction for plain localhost and IP addresses
+        if hostname_without_port == "localhost" or hostname_without_port.startswith("127.0.0.1"):
             # Allow localhost for development
+            logger.info(f"[SubdomainContext] Localhost/IP detected, skipping subdomain extraction")
             return await call_next(request)
 
         # Check if it's an IP address (simple check)
-        if self._is_ip_address(hostname):
+        if self._is_ip_address(hostname_without_port):
+            logger.info(f"[SubdomainContext] IP address detected, skipping subdomain extraction")
             return await call_next(request)
 
         # Extract subdomain from hostname
-        subdomain = self._extract_subdomain(hostname)
+        subdomain = self._extract_subdomain(hostname_without_port)
+        logger.info(f"[SubdomainContext] Extracted subdomain: {subdomain}")
         
         if not subdomain:
             # No subdomain found, allow request to proceed
             # (might be root domain or API gateway)
+            logger.info(f"[SubdomainContext] No subdomain found, proceeding without tenant context")
             return await call_next(request)
 
         # Look up tenant by subdomain
@@ -53,13 +66,14 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
             # Skip tenant lookup if database is not available
             try:
                 tenant = Tenant.objects(subdomain=subdomain, status="active").first()
+                logger.info(f"[SubdomainContext] Tenant lookup for subdomain '{subdomain}': {tenant}")
             except Exception as db_error:
-                logger.warning(f"Database unavailable for tenant lookup: {db_error}")
+                logger.warning(f"[SubdomainContext] Database unavailable for tenant lookup: {db_error}")
                 # Allow request to proceed without tenant context
                 return await call_next(request)
             
             if not tenant:
-                logger.warning(f"Tenant not found for subdomain: {subdomain}")
+                logger.warning(f"[SubdomainContext] Tenant not found for subdomain: {subdomain}")
                 return JSONResponse(
                     status_code=404,
                     content={
@@ -72,14 +86,17 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
                 )
 
             # Set tenant context for this request
-            set_tenant_id(str(tenant.id))
-            request.state.tenant_id = str(tenant.id)
+            tenant_id_str = str(tenant.id)
+            set_tenant_id(tenant_id_str)
+            request.state.tenant_id = tenant_id_str
             request.state.tenant = tenant
+            # Also set in scope for middleware that reads from scope
+            request.scope["tenant_id"] = tenant_id_str
 
-            logger.debug(f"Tenant context set for subdomain: {subdomain}")
+            logger.info(f"[SubdomainContext] ✓ Tenant context set for subdomain '{subdomain}' -> tenant_id: {tenant_id_str}")
 
         except Exception as e:
-            logger.error(f"Error looking up tenant for subdomain {subdomain}: {e}")
+            logger.error(f"[SubdomainContext] Error looking up tenant for subdomain {subdomain}: {e}", exc_info=True)
             return JSONResponse(
                 status_code=500,
                 content={
@@ -104,10 +121,10 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
         - acme-salon.kenikool.com -> acme-salon
         - api.kenikool.com -> api
         - kenikool.com -> (empty)
-        - localhost:8000 -> (empty)
+        - localhost -> (empty)
+        - kenzola-salon.localhost -> kenzola-salon
         """
-        # Remove port if present
-        hostname = hostname.split(":")[0]
+        # hostname should already have port removed
         
         # Split by dots
         parts = hostname.split(".")
@@ -116,11 +133,16 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
         if len(parts) < 2:
             return ""
         
-        # If exactly 2 parts (e.g., kenikool.com), no subdomain
+        # If exactly 2 parts
         if len(parts) == 2:
+            # Check if it's localhost with subdomain (e.g., kenzola-salon.localhost)
+            if parts[1] == "localhost":
+                return parts[0]
+            # Otherwise no subdomain (e.g., kenikool.com)
             return ""
         
-        # Return first part as subdomain
+        # If more than 2 parts, return first part as subdomain
+        # (e.g., acme-salon.kenikool.com -> acme-salon)
         return parts[0]
 
     @staticmethod

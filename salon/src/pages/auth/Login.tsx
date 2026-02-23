@@ -83,7 +83,7 @@ export default function Login() {
             } else if (userRoleNames.includes("Manager")) {
               redirectPath = "/manager"; // Manager Dashboard
             } else if (userRoleNames.includes("Staff")) {
-              redirectPath = "/staff"; // Staff Dashboard
+              redirectPath = "/appointments"; // Staff Dashboard - view their appointments
             } else if (userRoleNames.includes("Customer")) {
               redirectPath = "/my-account"; // Customer Dashboard
             }

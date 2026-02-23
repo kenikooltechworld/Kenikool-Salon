@@ -47,7 +47,7 @@ class PublicBooking(Document):
     status = EnumField(PublicBookingStatus, default=PublicBookingStatus.PENDING)
 
     # Idempotency key for preventing duplicate bookings from retries
-    idempotency_key = StringField(required=False, null=True, unique_with=['tenant_id'])
+    idempotency_key = StringField(required=True, unique_with=['tenant_id'])
 
     # Additional information
     notes = StringField(required=False, null=True, max_length=1000)
@@ -61,6 +61,10 @@ class PublicBooking(Document):
     payment_status = StringField(
         required=False, null=True, choices=["pending", "completed", "failed"]
     )
+
+    # Reminder tracking
+    reminder_24h_sent = BooleanField(default=False)
+    reminder_1h_sent = BooleanField(default=False)
 
     # Timestamps
     created_at = DateTimeField(default=datetime.utcnow)
@@ -87,3 +91,34 @@ class PublicBooking(Document):
 
     def __str__(self):
         return f"PublicBooking({self.customer_name}, {self.booking_date} {self.booking_time})"
+
+
+
+class PublicBookingNotificationPreference(Document):
+    """Notification preferences for public bookings."""
+
+    tenant_id = ObjectIdField(required=True)
+    booking_id = ObjectIdField(required=True)
+    customer_email = StringField(required=True)
+    customer_phone = StringField(required=False, null=True)
+
+    # Notification toggles
+    send_confirmation_email = BooleanField(default=True)
+    send_24h_reminder_email = BooleanField(default=True)
+    send_1h_reminder_email = BooleanField(default=True)
+    send_sms_reminders = BooleanField(default=False)
+
+    # Timestamps
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        "collection": "public_booking_notification_preferences",
+        "indexes": [
+            ("tenant_id", "booking_id"),
+            ("tenant_id", "customer_email"),
+        ],
+    }
+
+    def __str__(self):
+        return f"NotificationPreference({self.booking_id}, {self.customer_email})"

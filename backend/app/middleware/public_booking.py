@@ -33,7 +33,8 @@ class PublicBookingMiddleware(BaseHTTPMiddleware):
         - Logs all public booking requests
         """
         # Only apply to public booking endpoints
-        if not request.url.path.startswith("/public"):
+        # Check if "/public" is anywhere in the path (e.g., /api/v1/public/...)
+        if "/public" not in request.url.path:
             return await call_next(request)
 
         # Get tenant ID from request context (set by subdomain middleware)
@@ -55,7 +56,7 @@ class PublicBookingMiddleware(BaseHTTPMiddleware):
             raise HTTPException(status_code=404, detail="Salon not found")
 
         # Apply rate limiting for booking creation
-        if request.method == "POST" and request.url.path == "/public/bookings":
+        if request.method == "POST" and "/public/bookings" in request.url.path and request.url.path.endswith("/bookings"):
             client_ip = request.client.host if request.client else "unknown"
             rate_limit_key = f"public_booking_rate_limit:{tenant_id}:{client_ip}"
 
@@ -110,7 +111,8 @@ class PublicBookingRateLimitMiddleware(BaseHTTPMiddleware):
         - 100 requests per minute per IP address
         """
         # Only apply to public endpoints
-        if not request.url.path.startswith("/public"):
+        # Check if "/public" is anywhere in the path (e.g., /api/v1/public/...)
+        if "/public" not in request.url.path:
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"

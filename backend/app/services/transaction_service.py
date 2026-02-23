@@ -114,13 +114,26 @@ class TransactionService:
             else:
                 raise ValueError(f"Invalid discount code: {message}")
 
-        # Calculate total
+        # Calculate total before fees
         discount_amount = Decimal(str(discount_amount))
         total = subtotal - discount_amount + total_tax
 
         # Ensure total is not negative
         if total < 0:
             total = Decimal("0")
+
+        # Apply transaction fee if tenant is on free tier with fees
+        transaction_fee = Decimal("0")
+        try:
+            from app.services.subscription_service import SubscriptionService
+            subscription = SubscriptionService.get_subscription(str(tenant_id))
+            if subscription and subscription.transaction_fee_percentage > 0:
+                # Calculate fee on the total (after tax and discount)
+                transaction_fee = (total * Decimal(str(subscription.transaction_fee_percentage))) / Decimal("100")
+                total += transaction_fee
+        except Exception as e:
+            # Log but don't fail transaction if fee calculation fails
+            print(f"Warning: Failed to calculate transaction fee: {str(e)}")
 
         # Link to invoice if appointment has one
         invoice_id = None
@@ -145,6 +158,7 @@ class TransactionService:
             subtotal=subtotal,
             tax_amount=total_tax,
             discount_amount=discount_amount,
+            transaction_fee=transaction_fee,
             total=total,
             payment_method=payment_method,
             payment_status="pending",
@@ -186,7 +200,6 @@ class TransactionService:
 
         return transaction
 
-    @staticmethod
     @staticmethod
     def get_transaction(
         tenant_id: ObjectId,

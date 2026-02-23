@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useInvoice, useUpdateInvoice } from "@/hooks/useInvoices";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrashIcon } from "@/components/icons";
@@ -16,6 +17,7 @@ interface LineItem {
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { data: invoice, isLoading } = useInvoice(id || "");
   const updateMutation = useUpdateInvoice();
 
@@ -83,13 +85,29 @@ export default function EditInvoice() {
     try {
       await updateMutation.mutateAsync({
         id,
-        line_items: formData.line_items,
+        line_items: formData.line_items.map((item) => ({
+          service_id: item.service_id,
+          service_name: item.service_name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.quantity * item.unit_price,
+        })),
         notes: formData.notes,
         due_date: formData.due_date,
       });
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Invoice updated successfully",
+      });
       navigate(`/invoices/${id}`);
     } catch (error) {
-      console.error("Failed to update invoice:", error);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to update invoice",
+      });
     }
   };
 

@@ -26,6 +26,7 @@ class SubscriptionResponse(BaseModel):
     plan_tier: int
     billing_cycle: str
     status: str
+    subscription_status: str
     current_period_start: str
     current_period_end: str
     next_billing_date: str
@@ -35,6 +36,8 @@ class SubscriptionResponse(BaseModel):
     last_payment_date: Optional[str]
     last_payment_amount: Optional[float]
     auto_renew: bool
+    trial_expiry_action_required: bool
+    transaction_fee_percentage: float
 
 
 class UpgradeRequest(BaseModel):
@@ -75,6 +78,7 @@ def serialize_subscription(sub: Subscription, plan: PricingPlan) -> Subscription
         plan_tier=plan.tier_level,
         billing_cycle=sub.billing_cycle,
         status=sub.status,
+        subscription_status=sub.subscription_status,
         current_period_start=sub.current_period_start.isoformat(),
         current_period_end=sub.current_period_end.isoformat(),
         next_billing_date=sub.next_billing_date.isoformat(),
@@ -84,6 +88,8 @@ def serialize_subscription(sub: Subscription, plan: PricingPlan) -> Subscription
         last_payment_date=sub.last_payment_date.isoformat() if sub.last_payment_date else None,
         last_payment_amount=sub.last_payment_amount,
         auto_renew=sub.auto_renew,
+        trial_expiry_action_required=sub.trial_expiry_action_required,
+        transaction_fee_percentage=sub.transaction_fee_percentage,
     )
 
 
@@ -268,4 +274,77 @@ async def cancel_subscription(tenant_id: str = Depends(get_tenant_id)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to cancel subscription",
+        )
+
+
+
+@router.post("/continue-free", response_model=SubscriptionResponse)
+async def continue_free_with_fee(tenant_id: str = Depends(get_tenant_id)):
+    """
+    Continue on Free tier with 10% transaction fee after trial expires.
+
+    Args:
+        tenant_id: Tenant ID from context
+
+    Returns:
+        Updated subscription
+    """
+    try:
+        subscription = SubscriptionService.continue_free_with_fee(tenant_id)
+        plan = PricingPlan.objects(id=subscription.pricing_plan_id).first()
+        if not plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Pricing plan not found",
+            )
+
+        return serialize_subscription(subscription, plan)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error continuing free with fee: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to continue free with fee",
+        )
+
+
+@router.post("/upgrade-from-trial", response_model=SubscriptionResponse)
+async def upgrade_from_expired_trial(
+    request: UpgradeRequest,
+    tenant_id: str = Depends(get_tenant_id),
+):
+    """
+    Upgrade from expired trial to a paid plan.
+
+    Args:
+        request: Upgrade request with plan_id and billing_cycle
+        tenant_id: Tenant ID from context
+
+    Returns:
+        Updated subscription
+    """
+    try:
+        # Validate plan exists
+        plan = PricingPlan.objects(id=ObjectId(request.plan_id)).first()
+        if not plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Pricing plan not found",
+            )
+
+        subscription = SubscriptionService.upgrade_from_expired_trial(
+            tenant_id=tenant_id,
+            new_plan_id=request.plan_id,
+            billing_cycle=request.billing_cycle,
+        )
+
+        return serialize_subscription(subscription, plan)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error upgrading from expired trial: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upgrade from expired trial",
         )

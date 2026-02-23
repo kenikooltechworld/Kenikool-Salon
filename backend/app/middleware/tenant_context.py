@@ -30,7 +30,12 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
             logger.info(f"[TenantContext] Initial state - tenant_id: {tenant_id}, user_id: {user_id}")
             logger.info(f"[TenantContext] Cookies: {list(request.cookies.keys())}")
 
-            # If not in request state, try to extract from JWT token in access_token cookie
+            # Check if tenant_id is already set in scope (from SubdomainContextMiddleware for public endpoints)
+            if not tenant_id:
+                tenant_id = request.scope.get("tenant_id")
+                logger.info(f"[TenantContext] tenant_id from scope: {tenant_id}")
+
+            # If not in request state or scope, try to extract from JWT token in access_token cookie
             if not tenant_id or not user_id:
                 access_token = request.cookies.get("access_token")
                 logger.info(f"[TenantContext] access_token present: {bool(access_token)}")
@@ -67,6 +72,8 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                         set_tenant_id(ObjectId(tenant_id))
                     else:
                         set_tenant_id(tenant_id)
+                    # Also set in scope for middleware that reads from scope
+                    request.scope["tenant_id"] = str(tenant_id) if isinstance(tenant_id, ObjectId) else tenant_id
                 except Exception as e:
                     logger.warning(f"[TenantContext] Failed to convert tenant_id to ObjectId: {e}")
 

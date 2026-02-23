@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useInvoice } from "@/hooks/useInvoices";
 import { useInitializePayment } from "@/hooks/usePayments";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
 import { useState } from "react";
@@ -11,6 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 export default function InitiatePayment() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -93,9 +95,21 @@ export default function InitiatePayment() {
           customerId: invoice.customerId,
         },
       });
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Redirecting to payment gateway...",
+      });
       // The hook will redirect to Paystack automatically
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to initialize payment");
+      const errorMessage =
+        err.response?.data?.detail || "Failed to initialize payment";
+      setError(errorMessage);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMessage,
+      });
     }
   };
 

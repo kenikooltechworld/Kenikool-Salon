@@ -58,6 +58,7 @@ class Transaction(BaseDocument):
     subtotal = DecimalField(required=True, min_value=0, default=Decimal("0"))
     tax_amount = DecimalField(required=True, min_value=0, default=Decimal("0"))
     discount_amount = DecimalField(required=True, min_value=0, default=Decimal("0"))
+    transaction_fee = DecimalField(required=True, min_value=0, default=Decimal("0"))  # Fee for free tier with transaction charges
     total = DecimalField(required=True, min_value=0, default=Decimal("0"))
 
     # Payment details

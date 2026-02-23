@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/toast";
 import {
   PlusIcon,
   SearchIcon,
@@ -19,6 +20,7 @@ import type { Staff } from "@/types/staff";
 
 export default function StaffPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { data: staffList = [], isLoading, error } = useStaff();
   const deleteStaffMutation = useDeleteStaff();
   const createStaffMutation = useCreateStaff();
@@ -49,8 +51,24 @@ export default function StaffPage() {
 
   const handleConfirmDelete = async () => {
     if (deleteConfirm.staffId) {
-      await deleteStaffMutation.mutateAsync(deleteConfirm.staffId);
-      setDeleteConfirm({ isOpen: false });
+      try {
+        await deleteStaffMutation.mutateAsync(deleteConfirm.staffId);
+        showToast({
+          variant: "success",
+          title: "Success",
+          description: `${deleteConfirm.staffName} has been deleted successfully`,
+        });
+        setDeleteConfirm({ isOpen: false });
+      } catch (error) {
+        showToast({
+          variant: "error",
+          title: "Error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete staff member",
+        });
+      }
     }
   };
 
@@ -460,9 +478,26 @@ export default function StaffPage() {
       <AddStaffModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSubmit={(data) =>
-          createStaffMutation.mutateAsync(data).then(() => {})
-        }
+        onSubmit={async (data) => {
+          try {
+            await createStaffMutation.mutateAsync(data);
+            showToast({
+              variant: "success",
+              title: "Success",
+              description: `${data.firstName} ${data.lastName} has been added successfully`,
+            });
+          } catch (error) {
+            showToast({
+              variant: "error",
+              title: "Error",
+              description:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to add staff member",
+            });
+            throw error;
+          }
+        }}
         isLoading={createStaffMutation.isPending}
       />
     </div>

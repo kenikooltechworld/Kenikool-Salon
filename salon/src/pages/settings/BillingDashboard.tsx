@@ -46,15 +46,40 @@ export function BillingDashboard() {
   );
   const isTrialExpiring =
     subscription.is_trial && subscription.days_until_expiry <= 7;
+  const isTrialExpired = subscription.trial_expiry_action_required;
 
   const handleUpgrade = async (planId: string) => {
     try {
-      await upgrade.mutateAsync({
-        plan_id: planId,
-        billing_cycle: billingCycle,
-      });
+      if (isTrialExpired) {
+        await upgrade.mutateAsync({
+          plan_id: planId,
+          billing_cycle: billingCycle,
+        });
+      } else {
+        await upgrade.mutateAsync({
+          plan_id: planId,
+          billing_cycle: billingCycle,
+        });
+      }
     } catch (error) {
       console.error("Upgrade failed:", error);
+    }
+  };
+
+  const handleContinueFree = async () => {
+    try {
+      // Call continue-free endpoint
+      const response = await fetch("/api/v1/billing/continue-free", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Continue free failed:", error);
     }
   };
 
@@ -95,7 +120,32 @@ export function BillingDashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold mb-4">Current Plan</h2>
 
-        {isTrialExpiring && (
+        {isTrialExpired && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 font-semibold mb-3">
+              ⚠️ Your trial has expired. Choose an option below:
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleContinueFree}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Continue Free (10% fee)
+              </button>
+              <button
+                onClick={() => {
+                  const paidPlan = plans.find((p: any) => p.tier_level > 0);
+                  if (paidPlan) handleUpgrade(paidPlan.id);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Upgrade to Paid Plan
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isTrialExpiring && !isTrialExpired && (
           <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-yellow-800">
               ⚠️ Your trial expires in {subscription.days_until_expiry} days.
@@ -118,6 +168,20 @@ export function BillingDashboard() {
                   {subscription.status}
                 </span>
               </p>
+              <p>
+                <span className="font-medium">Subscription Status:</span>{" "}
+                <span className="px-2 py-1 rounded bg-blue-100 text-blue-800">
+                  {subscription.subscription_status}
+                </span>
+              </p>
+              {subscription.transaction_fee_percentage > 0 && (
+                <p>
+                  <span className="font-medium">Transaction Fee:</span>{" "}
+                  <span className="text-orange-600 font-semibold">
+                    {subscription.transaction_fee_percentage}%
+                  </span>
+                </p>
+              )}
               <p>
                 <span className="font-medium">Billing Cycle:</span>{" "}
                 {subscription.billing_cycle}

@@ -32,6 +32,23 @@ class Subscription(Document):
     # canceled: User canceled subscription
     # expired: Subscription ended, grace period passed
 
+    # Subscription Status (post-trial state)
+    subscription_status = StringField(
+        choices=["trial", "expired_trial", "free_with_fee", "active", "canceled"],
+        default="trial"
+    )
+    # trial: In 30-day free trial
+    # expired_trial: Trial ended, awaiting user action (upgrade or continue free)
+    # free_with_fee: Continuing on Free tier with transaction fees
+    # active: Paid plan active
+    # canceled: Subscription canceled
+
+    # Transaction Fee
+    transaction_fee_percentage = FloatField(default=0.0)  # 0% for paid plans, 10% for free_with_fee
+
+    # Trial Expiry Action Required
+    trial_expiry_action_required = BooleanField(default=False)  # True when trial expires, awaiting user action
+
     # Grace Period (for failed payments)
     grace_period_end = DateTimeField(null=True)  # When grace period ends
     is_in_grace_period = BooleanField(default=False)

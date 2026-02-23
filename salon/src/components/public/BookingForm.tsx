@@ -12,6 +12,7 @@ interface BookingFormProps {
     customerEmail: string;
     customerPhone: string;
     notes?: string;
+    paymentOption: "now" | "later";
   }) => Promise<void>;
 }
 
@@ -21,6 +22,7 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
     customerEmail: "",
     customerPhone: "",
     notes: "",
+    paymentOption: "later" as "now" | "later",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -31,6 +33,8 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
 
     if (!formData.customerName.trim()) {
       newErrors.customerName = "Name is required";
+    } else if (formData.customerName.trim().length < 2) {
+      newErrors.customerName = "Name must be at least 2 characters";
     }
 
     if (!formData.customerEmail.trim()) {
@@ -79,6 +83,7 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
         customerEmail: formData.customerEmail.trim(),
         customerPhone: formData.customerPhone.trim(),
         notes: formData.notes.trim() || undefined,
+        paymentOption: formData.paymentOption,
       });
     } catch (error) {
       console.error("Form submission error:", error);
@@ -190,6 +195,59 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
         />
       </div>
 
+      <div>
+        <label className="block text-sm font-medium mb-4">
+          Payment Option *
+        </label>
+        <div className="space-y-3">
+          <label className="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-muted transition">
+            <input
+              type="radio"
+              name="paymentOption"
+              value="later"
+              checked={formData.paymentOption === "later"}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paymentOption: e.target.value as "now" | "later",
+                }))
+              }
+              disabled={isSubmitting}
+              className="w-4 h-4"
+            />
+            <div className="ml-3">
+              <p className="font-medium">Pay Later</p>
+              <p className="text-sm text-muted-foreground">
+                Pay when you arrive at the salon
+              </p>
+            </div>
+          </label>
+
+          <label className="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-muted transition">
+            <input
+              type="radio"
+              name="paymentOption"
+              value="now"
+              checked={formData.paymentOption === "now"}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paymentOption: e.target.value as "now" | "later",
+                }))
+              }
+              disabled={isSubmitting}
+              className="w-4 h-4"
+            />
+            <div className="ml-3">
+              <p className="font-medium">Pay Now</p>
+              <p className="text-sm text-muted-foreground">
+                Secure your booking with immediate payment
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <Alert>
         <p className="text-sm">
           <strong>Note:</strong> We'll send a confirmation email to the address
@@ -206,8 +264,12 @@ export default function BookingForm({ onSubmit }: BookingFormProps) {
         {isSubmitting ? (
           <>
             <Spinner className="w-4 h-4 mr-2" />
-            Confirming...
+            {formData.paymentOption === "now"
+              ? "Processing..."
+              : "Confirming..."}
           </>
+        ) : formData.paymentOption === "now" ? (
+          "Proceed to Payment"
         ) : (
           "Confirm Booking"
         )}

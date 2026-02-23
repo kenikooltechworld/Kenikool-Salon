@@ -1,0 +1,97 @@
+{
+  "specType": "feature",
+  "workflowType": "requirements-first",
+  "featureName": "public-booking-enhancement",
+  "displayName": "Public Booking Page Enhancement",
+  "description": "Enhance the public booking page from MVP to production-ready with visual branding, trust signals, payment integration, booking management, and automated notifications",
+  "status": "active",
+  "priority": "high",
+  "estimatedEffort": "5-6 days",
+  "expectedImpact": "+20-30% conversion rate, +15-20% revenue, -30-40% no-shows",
+  "phases": [
+    {
+      "name": "Phase 1: Visual Branding & Trust Signals",
+      "duration": "1 day",
+      "tasks": 5
+    },
+    {
+      "name": "Phase 2: Payment Integration",
+      "duration": "1-2 days",
+      "tasks": 4
+    },
+    {
+      "name": "Phase 3: Booking Management",
+      "duration": "2 days",
+      "tasks": 5
+    },
+    {
+      "name": "Phase 4: Notifications & Reminders",
+      "duration": "1 day",
+      "tasks": 4
+    },
+    {
+      "name": "Phase 5: Enhanced Service & Staff Information",
+      "duration": "1 day",
+      "tasks": 3
+    }
+  ],
+  "reusableComponents": {
+    "frontend": [
+      "HeroSection.tsx",
+      "TestimonialsSection.tsx",
+      "FAQSection.tsx",
+      "PaymentProcessor.tsx",
+      "NotificationCenter.tsx",
+      "35+ UI components"
+    ],
+    "backend": [
+      "PublicBookingService",
+      "PaymentService",
+      "NotificationService",
+      "AppointmentReminderService",
+      "Email templates"
+    ],
+    "hooks": [
+      "usePublicBooking",
+      "usePayment",
+      "useNotifications",
+      "useServices",
+      "useStaff"
+    ]
+  },
+  "newComponents": {
+    "frontend": [
+      "PublicHeroSection.tsx",
+      "PublicTestimonialsSection.tsx",
+      "PublicFAQSection.tsx",
+      "PublicBookingStatistics.tsx",
+      "BookingStatusPage.tsx",
+      "BookingCancellationPage.tsx",
+      "BookingReschedulePage.tsx",
+      "NotificationPreferencesPage.tsx"
+    ],
+    "backend": [
+      "public_booking_management.py (routes)",
+      "PublicBookingNotificationPreference (model)",
+      "send_booking_reminders (Celery task)"
+    ],
+    "hooks": [
+      "usePublicTestimonials.ts",
+      "usePublicBookingStatistics.ts"
+    ]
+  },
+  "newEndpoints": [
+    "POST /public/bookings/{id}/cancel",
+    "POST /public/bookings/{id}/reschedule",
+    "GET /public/bookings/testimonials",
+    "GET /public/bookings/statistics",
+    "POST /public/bookings/{id}/notification-preferences"
+  ],
+  "successMetrics": {
+    "conversion": "+20-30%",
+    "revenue": "+15-20%",
+    "noShowReduction": "-30-40%",
+    "pageLoadTime": "< 2 seconds",
+    "customerSatisfaction": "> 4.7 stars"
+  }
+}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import { PlusIcon, SearchIcon, TrashIcon, EditIcon } from "@/components/icons";
 import { useServices, useDeleteService } from "@/hooks/useServices";
 import { ServiceForm } from "@/components/services/ServiceForm";
@@ -10,6 +11,7 @@ import type { Service } from "@/types/service";
 
 export default function Services() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | undefined>();
@@ -34,8 +36,26 @@ export default function Services() {
 
   const handleConfirmDelete = () => {
     if (deleteConfirm.serviceId) {
-      deleteService(deleteConfirm.serviceId);
-      setDeleteConfirm({ isOpen: false });
+      deleteService(deleteConfirm.serviceId, {
+        onSuccess: (deletedService: any) => {
+          showToast({
+            variant: "success",
+            title: "Success",
+            description: `${deletedService.name || "Service"} has been deleted successfully`,
+          });
+          setDeleteConfirm({ isOpen: false });
+        },
+        onError: (error: any) => {
+          showToast({
+            variant: "error",
+            title: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to delete service",
+          });
+        },
+      });
     }
   };
 

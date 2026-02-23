@@ -216,3 +216,220 @@ def send_appointment_reminders(self):
     except Exception as e:
         logger.error(f"Error in send_appointment_reminders: {str(e)}")
         raise self.retry(exc=e, countdown=300)
+
+
+
+@shared_task(bind=True, max_retries=3)
+def send_booking_reminders(self):
+    """
+    Send booking reminders for public bookings.
+    
+    Sends:
+    - 24-hour reminder emails/SMS for bookings 24 hours away
+    - 1-hour reminder emails/SMS for bookings 1 hour away
+    """
+    try:
+        from datetime import datetime, timedelta
+        from app.models.public_booking import PublicBooking, PublicBookingStatus
+        from app.services.public_booking_service import PublicBookingService
+        
+        # Find bookings that need 24-hour reminders
+        now = datetime.utcnow()
+        tomorrow_start = now + timedelta(hours=23, minutes=30)
+        tomorrow_end = now + timedelta(hours=24, minutes=30)
+        
+        # Get all bookings 24 hours away that haven't been reminded yet
+        bookings_24h = PublicBooking.objects(
+            status=PublicBookingStatus.CONFIRMED,
+            reminder_24h_sent=False,
+        )
+        
+        for booking in bookings_24h:
+            try:
+                # Parse booking time
+                from datetime import datetime as dt
+                booking_time_obj = dt.strptime(booking.booking_time, "%H:%M").time()
+                booking_datetime = dt.combine(booking.booking_date, booking_time_obj)
+                
+                # Check if booking is 24 hours away
+                time_until_booking = booking_datetime - now
+                hours_until = time_until_booking.total_seconds() / 3600
+                
+                if 23.5 <= hours_until <= 24.5:
+                    # Send 24-hour reminder
+                    try:
+                        send_booking_reminder_email.delay(
+                            str(booking.id),
+                            str(booking.tenant_id),
+                            "24h"
+                        )
+                        
+                        # Mark as sent
+                        booking.reminder_24h_sent = True
+                        booking.save()
+                        
+                        logger.info(f"24-hour reminder queued for booking {booking.id}")
+                    except Exception as e:
+                        logger.error(f"Error sending 24-hour reminder for booking {booking.id}: {str(e)}")
+                        
+            except Exception as e:
+                logger.error(f"Error processing booking {booking.id} for 24-hour reminder: {str(e)}")
+        
+        # Find bookings that need 1-hour reminders
+        one_hour_start = now + timedelta(minutes=50)
+        one_hour_end = now + timedelta(minutes=70)
+        
+        bookings_1h = PublicBooking.objects(
+            status=PublicBookingStatus.CONFIRMED,
+            reminder_1h_sent=False,
+        )
+        
+        for booking in bookings_1h:
+            try:
+                # Parse booking time
+                from datetime import datetime as dt
+                booking_time_obj = dt.strptime(booking.booking_time, "%H:%M").time()
+                booking_datetime = dt.combine(booking.booking_date, booking_time_obj)
+                
+                # Check if booking is 1 hour away
+                time_until_booking = booking_datetime - now
+                minutes_until = time_until_booking.total_seconds() / 60
+                
+                if 50 <= minutes_until <= 70:
+                    # Send 1-hour reminder
+                    try:
+                        send_booking_reminder_email.delay(
+                            str(booking.id),
+                            str(booking.tenant_id),
+                            "1h"
+                        )
+                        
+                        # Mark as sent
+                        booking.reminder_1h_sent = True
+                        booking.save()
+                        
+                        logger.info(f"1-hour reminder queued for booking {booking.id}")
+                    except Exception as e:
+                        logger.error(f"Error sending 1-hour reminder for booking {booking.id}: {str(e)}")
+                        
+            except Exception as e:
+                logger.error(f"Error processing booking {booking.id} for 1-hour reminder: {str(e)}")
+        
+        logger.info("Booking reminders task completed")
+        
+    except Exception as e:
+        logger.error(f"Error in send_booking_reminders: {str(e)}")
+        raise self.retry(exc=e, countdown=300)
+
+
+@shared_task(bind=True, max_retries=3)
+def send_booking_reminder_email(self, booking_id: str, tenant_id: str, reminder_type: str):
+    """
+    Send a booking reminder email/SMS.
+    
+    Args:
+        booking_id: Public booking ID
+        tenant_id: Tenant ID
+        reminder_type: "24h" or "1h"
+    """
+    try:
+        from bson import ObjectId
+        from app.models.public_booking import PublicBooking
+        from app.models.tenant import Tenant
+        from app.models.service import Service
+        from app.models.staff import Staff
+        from app.tasks import send_email
+        from app.services.termii_service import TermiiService
+        
+        tenant_id_obj = ObjectId(tenant_id)
+        booking_id_obj = ObjectId(booking_id)
+        
+        # Get booking
+        booking = PublicBooking.objects(
+            tenant_id=tenant_id_obj,
+            id=booking_id_obj
+        ).first()
+        
+        if not booking:
+            logger.error(f"Booking {booking_id} not found")
+            return
+        
+        # Get tenant, service, and staff details
+        tenant = Tenant.objects(id=tenant_id_obj).first()
+        service = Service.objects(tenant_id=tenant_id_obj, id=booking.service_id).first()
+        staff = Staff.objects(tenant_id=tenant_id_obj, id=booking.staff_id).first()
+        
+        if not tenant or not service or not staff:
+            logger.error(f"Missing tenant, service, or staff for booking {booking_id}")
+            return
+        
+        # Format booking details
+        booking_date_str = booking.booking_date.strftime("%B %d, %Y")
+        booking_time_str = booking.booking_time
+        staff_name = f"{staff.user_id.first_name} {staff.user_id.last_name}".strip()
+        
+        # Send email reminder
+        try:
+            email_subject = f"Reminder: Your appointment is {reminder_type} away"
+            email_context = {
+                "customer_name": booking.customer_name,
+                "salon_name": tenant.name,
+                "service_name": service.name,
+                "staff_name": staff_name,
+                "booking_date": booking_date_str,
+                "booking_time": booking_time_str,
+                "reminder_type": reminder_type,
+                "booking_id": str(booking.id),
+                "salon_address": tenant.address or "Address not provided",
+                "salon_phone": tenant.phone or "Phone not provided",
+                "cancellation_link": f"https://{tenant.subdomain}.kenikool.com/cancel/{booking.id}",
+                "reschedule_link": f"https://{tenant.subdomain}.kenikool.com/reschedule/{booking.id}",
+                "current_year": datetime.utcnow().year,
+            }
+            
+            send_email.delay(
+                to=booking.customer_email,
+                subject=email_subject,
+                template="booking_reminder",
+                context=email_context,
+            )
+            
+            logger.info(f"{reminder_type} reminder email queued for booking {booking_id}")
+        except Exception as e:
+            logger.error(f"Error sending {reminder_type} reminder email for booking {booking_id}: {str(e)}")
+        
+        # Send SMS reminder if customer opted in
+        try:
+            # Check notification preferences
+            from app.models.notification import NotificationPreference
+            
+            sms_enabled = True  # Default to enabled
+            prefs = NotificationPreference.objects(
+                tenant_id=tenant_id_obj,
+                customer_id=str(booking.customer_id),
+                notification_type=f"appointment_reminder_{reminder_type}",
+                channel="sms"
+            ).first()
+            
+            if prefs:
+                sms_enabled = prefs.enabled
+            
+            if sms_enabled and booking.customer_phone:
+                sms_content = f"Reminder: Your appointment at {tenant.name} is {reminder_type} away on {booking_date_str} at {booking_time_str}. Reply STOP to cancel."
+                
+                termii_service = TermiiService()
+                result = termii_service.send_sms_sync(
+                    booking.customer_phone,
+                    sms_content,
+                )
+                
+                if result:
+                    logger.info(f"{reminder_type} reminder SMS sent for booking {booking_id}")
+                else:
+                    logger.error(f"Failed to send {reminder_type} reminder SMS for booking {booking_id}")
+        except Exception as e:
+            logger.error(f"Error sending {reminder_type} reminder SMS for booking {booking_id}: {str(e)}")
+        
+    except Exception as e:
+        logger.error(f"Error in send_booking_reminder_email: {str(e)}")
+        raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))

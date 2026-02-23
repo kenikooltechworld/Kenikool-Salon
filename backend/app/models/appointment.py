@@ -14,7 +14,7 @@ from app.models.base import BaseDocument
 class Appointment(BaseDocument):
     """Appointment document representing a booked appointment."""
 
-    customer_id = ObjectIdField(required=True)
+    customer_id = ObjectIdField(required=False, null=True)  # Optional for guest bookings
     staff_id = ObjectIdField(required=True)
     service_id = ObjectIdField(required=True)
     location_id = ObjectIdField(null=True)
@@ -50,6 +50,27 @@ class Appointment(BaseDocument):
     
     # Confirmation tracking
     confirmed_at = DateTimeField(null=True)
+    
+    # Public booking support (for guest bookings)
+    is_guest = BooleanField(default=False)
+    guest_name = StringField(null=True, max_length=255)
+    guest_email = StringField(null=True, max_length=255)
+    guest_phone = StringField(null=True, max_length=20)
+    
+    # Idempotency key (prevents duplicate bookings from retries)
+    idempotency_key = StringField(null=True, unique_with=['tenant_id'])
+    
+    # Payment options (for both internal and public)
+    payment_option = StringField(null=True, choices=["now", "later"])
+    payment_status = StringField(null=True, choices=["pending", "completed", "failed"])
+    
+    # Reminder tracking (for both internal and public)
+    reminder_24h_sent = BooleanField(default=False)
+    reminder_1h_sent = BooleanField(default=False)
+    
+    # Public booking metadata
+    ip_address = StringField(null=True)
+    user_agent = StringField(null=True)
     
     # Metadata
     created_at = DateTimeField(default=datetime.utcnow)

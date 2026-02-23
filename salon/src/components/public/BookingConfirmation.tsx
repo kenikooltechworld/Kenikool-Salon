@@ -17,7 +17,11 @@ interface BookingConfirmationProps {
     duration_minutes: number;
     status: string;
     created_at: string;
+    payment_option?: "now" | "later";
+    payment_status?: string;
+    payment_id?: string;
   };
+  onPaymentClick?: () => void;
 }
 
 export default function BookingConfirmation({
@@ -74,6 +78,39 @@ export default function BookingConfirmation({
             <span className="text-muted-foreground">Status:</span>
             <Badge variant="secondary">{booking.status}</Badge>
           </div>
+
+          {booking.payment_option && (
+            <div className="flex justify-between pt-3 border-t">
+              <span className="text-muted-foreground">Payment Option:</span>
+              <span className="font-semibold">
+                {booking.payment_option === "now" ? "Paid Now" : "Pay Later"}
+              </span>
+            </div>
+          )}
+
+          {booking.payment_status && booking.payment_option === "now" && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Payment Status:</span>
+              <Badge
+                variant={
+                  booking.payment_status === "success" ? "secondary" : "outline"
+                }
+              >
+                {booking.payment_status === "success"
+                  ? "Paid"
+                  : booking.payment_status}
+              </Badge>
+            </div>
+          )}
+
+          {booking.payment_id && booking.payment_option === "now" && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Transaction ID:</span>
+              <span className="font-mono font-semibold text-sm">
+                {booking.payment_id}
+              </span>
+            </div>
+          )}
         </div>
       </Card>
 

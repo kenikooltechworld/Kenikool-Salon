@@ -28,6 +28,25 @@ celery_app.conf.update(
     broker_connection_retry_on_startup=True,
     broker_connection_retry=True,
     broker_connection_max_retries=10,
+    # Celery Beat schedule for periodic tasks
+    beat_schedule={
+        "check-trial-expiry": {
+            "task": "app.tasks.subscriptions.check_trial_expiry",
+            "schedule": 86400.0,  # Run daily (86400 seconds)
+        },
+        "send-trial-expiry-reminders": {
+            "task": "app.tasks.subscriptions.send_trial_expiry_reminders",
+            "schedule": 86400.0,  # Run daily
+        },
+        "check-subscription-expiry": {
+            "task": "app.tasks.subscriptions.check_subscription_expiry",
+            "schedule": 86400.0,  # Run daily
+        },
+        "send-renewal-reminders": {
+            "task": "app.tasks.subscriptions.send_renewal_reminders",
+            "schedule": 86400.0,  # Run daily
+        },
+    },
 )
 
 logger.info("Celery app initialized (tasks will queue but may not execute without broker)")

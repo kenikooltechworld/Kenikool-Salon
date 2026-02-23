@@ -91,6 +91,29 @@ export default function StaffSelector({
                         {member.bio}
                       </p>
                     )}
+                    {member.specialties && member.specialties.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {member.specialties.map((specialty, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-block bg-primary/10 text-primary text-xs px-2 py-1 rounded"
+                          >
+                            {specialty}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {member.rating && (
+                      <div className="mt-2 text-sm">
+                        <span className="text-yellow-500">★</span>
+                        <span className="ml-1 font-semibold">
+                          {member.rating.toFixed(1)}
+                        </span>
+                        <span className="text-muted-foreground ml-1">
+                          ({member.review_count} reviews)
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {selectedStaffId === member.id && (
                     <CheckIcon

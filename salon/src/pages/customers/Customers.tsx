@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import {
   PlusIcon,
   SearchIcon,
@@ -27,6 +28,7 @@ import {
 
 export default function Customers() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,9 +62,19 @@ export default function Customers() {
   const handleDelete = async (customerId: string) => {
     try {
       await deleteMutation.mutateAsync(customerId);
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Customer has been deleted successfully",
+      });
       setDeleteConfirm(null);
     } catch (error) {
-      console.error("Failed to delete customer:", error);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to delete customer",
+      });
     }
   };
 
@@ -519,14 +531,28 @@ export default function Customers() {
       <CreateCustomerModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={handleRefresh}
+        onSuccess={() => {
+          handleRefresh();
+          showToast({
+            variant: "success",
+            title: "Success",
+            description: "Customer has been created successfully",
+          });
+        }}
       />
 
       <EditCustomerModal
         customerId={selectedCustomerId}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        onSuccess={handleRefresh}
+        onSuccess={() => {
+          handleRefresh();
+          showToast({
+            variant: "success",
+            title: "Success",
+            description: "Customer has been updated successfully",
+          });
+        }}
       />
     </div>
   );

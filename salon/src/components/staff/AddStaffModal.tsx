@@ -4,6 +4,7 @@ import {
   ModalTitle,
   ModalDescription,
 } from "@/components/ui/modal";
+import { useToast } from "@/components/ui/toast";
 import { StaffForm } from "./StaffForm";
 import type { Staff } from "@/types/staff";
 
@@ -25,12 +26,26 @@ export function AddStaffModal({
   initialData,
 }: AddStaffModalProps) {
   const isEditing = !!initialData?.id;
+  const { showToast } = useToast();
 
   const handleSubmit = async (
     data: Omit<Staff, "id" | "createdAt" | "updatedAt">,
   ) => {
-    await onSubmit(data);
-    onClose();
+    try {
+      await onSubmit(data);
+      onClose();
+    } catch (error) {
+      showToast({
+        variant: "error",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : isEditing
+              ? "Failed to update staff member"
+              : "Failed to add staff member",
+      });
+    }
   };
 
   return (

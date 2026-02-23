@@ -1,7 +1,7 @@
 """Staff model for staff management."""
 
 from datetime import datetime
-from mongoengine import StringField, DecimalField, ListField, DateField, DateTimeField, ObjectIdField, BooleanField
+from mongoengine import StringField, DecimalField, ListField, DateField, DateTimeField, ObjectIdField, BooleanField, IntField
 from app.models.base import BaseDocument
 
 
@@ -26,6 +26,11 @@ class Staff(BaseDocument):
     )
     # Public booking flag - uses profile_image_url and bio for public display
     is_available_for_public_booking = BooleanField(default=False)
+    service_ids = ListField(ObjectIdField(), default=[])  # Services this staff member provides
+    
+    # Rating and reviews
+    rating = DecimalField(null=True, min_value=1, max_value=5)  # Average rating (1-5)
+    review_count = IntField(default=0)  # Number of reviews
 
     meta = {
         "collection": "staff",

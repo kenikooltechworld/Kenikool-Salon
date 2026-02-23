@@ -115,11 +115,37 @@ class SubscriptionService:
             Subscription: Created subscription
         """
         try:
-            # Get Free plan
-            free_plan = PricingPlan.objects(tier_level=0, is_active=True).first()
+            # Check if subscription already exists
+            existing = Subscription.objects(tenant_id=ObjectId(tenant_id)).first()
+            if existing:
+                logger.info(f"Subscription already exists for tenant {tenant_id}")
+                return existing
+            
+            # Get Free plan (try both active and inactive)
+            free_plan = PricingPlan.objects(tier_level=0).first()
             if not free_plan:
-                logger.error("Free pricing plan not found")
-                raise ValueError("Free pricing plan not configured")
+                # Create a default free plan if it doesn't exist
+                logger.warning("Free pricing plan not found, creating default")
+                free_plan = PricingPlan(
+                    name="Free",
+                    tier_level=0,
+                    description="Free trial plan",
+                    monthly_price=0.0,
+                    yearly_price=0.0,
+                    trial_days=trial_days,
+                    is_trial_plan=True,
+                    is_featured=False,
+                    features={
+                        "max_staff_count": 1,
+                        "has_pos": False,
+                        "has_api_access": False,
+                        "has_advanced_reports": False,
+                        "has_multi_location": False,
+                        "has_white_label": False,
+                        "support_level": "email",
+                    },
+                )
+                free_plan.save()
 
             now = datetime.utcnow()
             trial_end = now + timedelta(days=trial_days)
@@ -532,7 +558,18 @@ class SubscriptionService:
             Subscription or None
         """
         try:
-            return Subscription.objects(tenant_id=ObjectId(tenant_id)).first()
+            # Handle both string and ObjectId formats
+            if isinstance(tenant_id, str):
+                tenant_id = ObjectId(tenant_id)
+            
+            sub = Subscription.objects(tenant_id=tenant_id).first()
+            
+            # If not found, create a trial subscription
+            if not sub:
+                logger.warning(f"No subscription found for tenant {tenant_id}, creating trial subscription")
+                sub = SubscriptionService.create_trial_subscription(str(tenant_id), trial_days=30)
+            
+            return sub
         except Exception as e:
             logger.error(f"Error getting subscription: {str(e)}")
             return None
@@ -561,3 +598,133 @@ class SubscriptionService:
         except Exception as e:
             logger.error(f"Error getting plan features: {str(e)}")
             return {}
+
+    @staticmethod
+    def handle_trial_expiry(tenant_id: str) -> Subscription:
+        """
+        Handle trial expiry - set subscription status to expired_trial and flag for action.
+        Called when trial period ends.
+
+        Args:
+            tenant_id: Tenant ID
+
+        Returns:
+            Subscription: Updated subscription
+        """
+        try:
+            subscription = Subscription.objects(tenant_id=ObjectId(tenant_id)).first()
+            if not subscription:
+                raise ValueError(f"Subscription not found for tenant {tenant_id}")
+
+            subscription.subscription_status = "expired_trial"
+            subscription.trial_expiry_action_required = True
+            subscription.status = "expired"
+            subscription.is_trial = False
+            subscription.save()
+
+            logger.info(f"Trial expired for tenant {tenant_id}, action required")
+            return subscription
+        except Exception as e:
+            logger.error(f"Error handling trial expiry: {str(e)}")
+            raise
+
+    @staticmethod
+    def continue_free_with_fee(tenant_id: str) -> Subscription:
+        """
+        Continue on Free tier with transaction fees (10%).
+        Called when user chooses to stay free after trial expires.
+
+        Args:
+            tenant_id: Tenant ID
+
+        Returns:
+            Subscription: Updated subscription
+        """
+        try:
+            subscription = Subscription.objects(tenant_id=ObjectId(tenant_id)).first()
+            if not subscription:
+                raise ValueError(f"Subscription not found for tenant {tenant_id}")
+
+            # Get Free plan
+            free_plan = PricingPlan.objects(tier_level=0).first()
+            if not free_plan:
+                raise ValueError("Free pricing plan not found")
+
+            now = datetime.utcnow()
+            # Set new period end to 30 days from now
+            new_period_end = now + timedelta(days=30)
+
+            subscription.subscription_status = "free_with_fee"
+            subscription.transaction_fee_percentage = 10.0
+            subscription.trial_expiry_action_required = False
+            subscription.status = "active"
+            subscription.pricing_plan_id = free_plan.id
+            subscription.current_period_start = now
+            subscription.current_period_end = new_period_end
+            subscription.next_billing_date = new_period_end
+            subscription.save()
+
+            logger.info(f"Tenant {tenant_id} continuing on free tier with 10% transaction fee")
+            return subscription
+        except Exception as e:
+            logger.error(f"Error continuing free with fee: {str(e)}")
+            raise
+
+    @staticmethod
+    def upgrade_from_expired_trial(
+        tenant_id: str,
+        new_plan_id: str,
+        billing_cycle: str = "monthly",
+        paystack_subscription_id: Optional[str] = None,
+    ) -> Subscription:
+        """
+        Upgrade from expired trial to a paid plan.
+        Called when user upgrades after trial expires.
+
+        Args:
+            tenant_id: Tenant ID
+            new_plan_id: New pricing plan ID
+            billing_cycle: "monthly" or "yearly"
+            paystack_subscription_id: Paystack subscription ID
+
+        Returns:
+            Subscription: Updated subscription
+        """
+        try:
+            subscription = Subscription.objects(tenant_id=ObjectId(tenant_id)).first()
+            if not subscription:
+                raise ValueError(f"Subscription not found for tenant {tenant_id}")
+
+            new_plan = PricingPlan.objects(id=ObjectId(new_plan_id)).first()
+            if not new_plan:
+                raise ValueError(f"Pricing plan {new_plan_id} not found")
+
+            # Validate it's a paid plan (tier > 0)
+            if new_plan.tier_level <= 0:
+                raise ValueError("Cannot upgrade to free plan")
+
+            now = datetime.utcnow()
+            period_end = SubscriptionService._calculate_period_end(now, billing_cycle)
+
+            subscription.subscription_status = "active"
+            subscription.trial_expiry_action_required = False
+            subscription.transaction_fee_percentage = 0.0
+            subscription.status = "active"
+            subscription.pricing_plan_id = new_plan.id
+            subscription.billing_cycle = billing_cycle
+            subscription.current_period_start = now
+            subscription.current_period_end = period_end
+            subscription.next_billing_date = period_end
+            subscription.is_trial = False
+            subscription.trial_end = None
+            subscription.paystack_subscription_id = paystack_subscription_id
+            subscription.last_payment_date = now
+            subscription.failed_payment_count = 0
+            subscription.renewal_reminders_sent = {}
+            subscription.save()
+
+            logger.info(f"Tenant {tenant_id} upgraded from expired trial to plan {new_plan.name}")
+            return subscription
+        except Exception as e:
+            logger.error(f"Error upgrading from expired trial: {str(e)}")
+            raise
