@@ -26,25 +26,29 @@ const alertVariants = cva(
           "bg-[var(--warning)]/10 border-[var(--warning)] text-[var(--warning)] [&>svg]:text-[var(--warning)]",
         error:
           "bg-[var(--error)]/10 border-[var(--error)] text-[var(--error)] [&>svg]:text-[var(--error)]",
+        destructive:
+          "bg-[var(--error)]/10 border-[var(--error)] text-[var(--error)] [&>svg]:text-[var(--error)]",
         info: "bg-[var(--info)]/10 border-[var(--info)] text-[var(--info)] [&>svg]:text-[var(--info)]",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 );
 
 const alertIcons = {
   success: CheckIcon,
   warning: AlertTriangleIcon,
   error: XIcon,
+  destructive: XIcon,
   info: InfoIcon,
   default: InfoIcon,
 };
 
 export interface AlertProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof alertVariants> {
   showIcon?: boolean;
   onClose?: () => void;
@@ -60,7 +64,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       children,
       ...props
     },
-    ref
+    ref,
   ) => {
     const Icon = alertIcons[variant || "default"];
 
@@ -84,7 +88,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         )}
       </div>
     );
-  }
+  },
 );
 Alert.displayName = "Alert";
 

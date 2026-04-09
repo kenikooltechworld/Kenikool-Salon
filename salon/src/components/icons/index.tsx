@@ -2766,3 +2766,13 @@ export const Search = SearchIcon;
 export const WifiOff = WifiOffIcon;
 export const Users = UsersIcon;
 export const Info = InfoIcon;
+
+// Additional aliases for shorter names
+export const Edit2 = Edit2Icon;
+export const Trash2 = Trash2Icon;
+export const Wrench = WrenchIcon;
+export const Loader2 = Loader2Icon;
+export const CheckCircle2 = CheckCircle2Icon;
+export const CheckCircle = CheckCircleIcon;
+export const AlertCircle = AlertCircleIcon;
+export const Clock = ClockIcon;

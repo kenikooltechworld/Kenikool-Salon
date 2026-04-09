@@ -1,16 +1,41 @@
 import React from "react";
 import { cn } from "@/lib/utils/cn";
 
-interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface CheckboxProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "onChange"
+> {
   label?: string;
   description?: string;
   error?: string;
+  onCheckedChange?: (checked: boolean) => void;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ label, description, error, className, id, ...props }, ref) => {
+  (
+    {
+      label,
+      description,
+      error,
+      className,
+      id,
+      onCheckedChange,
+      onChange,
+      ...props
+    },
+    ref,
+  ) => {
     const checkboxId =
       id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (onCheckedChange) {
+        onCheckedChange(e.target.checked);
+      }
+      if (onChange) {
+        onChange(e);
+      }
+    };
 
     return (
       <div className="flex flex-col gap-2">
@@ -24,6 +49,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
               error && "border-destructive",
               className,
             )}
+            onChange={handleChange}
             {...props}
           />
           {label && (
