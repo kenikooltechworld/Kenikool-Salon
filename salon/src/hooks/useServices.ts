@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { get, post, put, del } from "@/lib/utils/api";
 import type { Service, ServiceFilters } from "@/types/service";
 
 /**
@@ -9,16 +9,23 @@ export function useServices(filters?: ServiceFilters) {
   return useQuery({
     queryKey: ["services", filters],
     queryFn: async () => {
-      const response = await apiClient.get<{
-        services: Service[];
-        total: number;
-        page: number;
-        page_size: number;
-      }>("/services", {
-        params: filters,
-      });
-      return (response as any).data?.services || [];
+      try {
+        const response = await get<{
+          services: Service[];
+          total: number;
+          page: number;
+          page_size: number;
+        }>("/services", {
+          params: filters,
+        });
+        // get() helper returns response.data which contains { services: [...], total, page, page_size }
+        return response.services || [];
+      } catch (error) {
+        console.error("Error fetching services:", error);
+        return [];
+      }
     },
+    staleTime: 0, // Always refetch to ensure fresh data
   });
 }
 
@@ -29,8 +36,9 @@ export function useService(id: string) {
   return useQuery({
     queryKey: ["services", id],
     queryFn: async () => {
-      const response = await apiClient.get<Service>(`/services/${id}`);
-      return (response as any).data || null;
+      const response = await get<Service>(`/services/${id}`);
+      // get() helper returns response.data which is the service object
+      return response;
     },
     enabled: !!id,
   });
@@ -46,10 +54,12 @@ export function useCreateService() {
     mutationFn: async (
       service: Omit<Service, "id" | "createdAt" | "updatedAt">,
     ) => {
-      const response = await apiClient.post<Service>("/services", service);
-      return (response as any).data;
+      const response = await post<Service>("/services", service);
+      // post() helper returns response.data which is the service object
+      return response;
     },
     onSuccess: () => {
+      // Invalidate all services queries regardless of filters
       queryClient.invalidateQueries({ queryKey: ["services"] });
     },
   });
@@ -66,8 +76,9 @@ export function useUpdateService() {
       id,
       ...updates
     }: Partial<Service> & { id: string }) => {
-      const response = await apiClient.put<Service>(`/services/${id}`, updates);
-      return (response as any).data;
+      const response = await put<Service>(`/services/${id}`, updates);
+      // put() helper returns response.data which is the service object
+      return response;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
@@ -86,7 +97,7 @@ export function useDeleteService() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/services/${id}`);
+      await del(`/services/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] });

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { get, post, put, del } from "@/lib/utils/api";
 import type { Staff } from "@/types/staff";
 
 export interface StaffFilters {
@@ -16,7 +16,7 @@ export function useStaff(filters?: StaffFilters) {
   return useQuery({
     queryKey: ["staff", filters],
     queryFn: async () => {
-      const response = await apiClient.get<{
+      const response = await get<{
         staff: Staff[];
         total: number;
         page: number;
@@ -24,7 +24,8 @@ export function useStaff(filters?: StaffFilters) {
       }>("/staff", {
         params: filters,
       });
-      return (response as any).data?.staff || [];
+      // get() helper returns response.data which contains { staff: [...], total, page, page_size }
+      return response.staff || [];
     },
   });
 }
@@ -36,8 +37,9 @@ export function useStaffMember(id: string) {
   return useQuery({
     queryKey: ["staff", id],
     queryFn: async () => {
-      const response = await apiClient.get<Staff>(`/staff/${id}`);
-      return (response as any).data || null;
+      const response = await get<Staff>(`/staff/${id}`);
+      // get() helper returns response.data which is the staff object
+      return response || null;
     },
     enabled: !!id,
   });
@@ -53,8 +55,9 @@ export function useCreateStaff() {
     mutationFn: async (
       staff: Omit<Staff, "id" | "createdAt" | "updatedAt">,
     ) => {
-      const response = await apiClient.post<Staff>("/staff", staff);
-      return (response as any).data;
+      const response = await post<Staff>("/staff", staff);
+      // post() helper returns response.data which is the staff object
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
@@ -70,8 +73,9 @@ export function useUpdateStaff() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Staff> & { id: string }) => {
-      const response = await apiClient.put<Staff>(`/staff/${id}`, updates);
-      return (response as any).data;
+      const response = await put<Staff>(`/staff/${id}`, updates);
+      // put() helper returns response.data which is the staff object
+      return response;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
@@ -90,7 +94,7 @@ export function useDeleteStaff() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/staff/${id}`);
+      await del(`/staff/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });

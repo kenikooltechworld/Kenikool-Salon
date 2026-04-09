@@ -105,7 +105,7 @@ export default function CreateBooking() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Tenant-ID": localStorage.getItem("tenantId") || "",
+          // Tenant context comes from httpOnly cookie, no need for X-Tenant-ID header
         },
         credentials: "include",
         body: JSON.stringify({

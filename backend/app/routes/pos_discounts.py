@@ -22,6 +22,9 @@ async def create_discount(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Create a new discount."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         discount = DiscountService.create_discount(
             tenant_id=tenant_id,
@@ -66,6 +69,9 @@ async def list_discounts(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """List discounts."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         discounts, total = DiscountService.list_discounts(
             tenant_id=tenant_id,
@@ -108,6 +114,9 @@ async def validate_discount(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Validate a discount code."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         is_valid, discount_amount, message = DiscountService.validate_discount_code(
             tenant_id=tenant_id,
@@ -131,6 +140,9 @@ async def update_discount(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Update a discount."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         discount = DiscountService.update_discount(
             tenant_id=tenant_id,

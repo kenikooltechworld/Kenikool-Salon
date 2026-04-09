@@ -19,6 +19,9 @@ async def get_sales_report(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get sales report."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         transactions, total = TransactionService.list_transactions(
             tenant_id=tenant_id,
@@ -51,6 +54,9 @@ async def get_revenue_report(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get revenue report."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         transactions, total = TransactionService.list_transactions(
             tenant_id=tenant_id,
@@ -82,6 +88,9 @@ async def get_inventory_report(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get inventory report."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         from app.models.inventory import Inventory
 
@@ -113,6 +122,9 @@ async def get_payment_report(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get payment report."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         transactions, total = TransactionService.list_transactions(
             tenant_id=tenant_id,
@@ -271,6 +283,9 @@ async def export_report(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Export report as PDF or CSV."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         # Get the report data based on type
         if report_type == "sales":

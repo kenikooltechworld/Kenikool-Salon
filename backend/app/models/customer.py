@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from mongoengine import StringField, ListField, DateField, DateTimeField, ObjectIdField, EmailField, DecimalField, BooleanField
+from mongoengine import StringField, ListField, DateField, DateTimeField, ObjectIdField, EmailField, DecimalField, BooleanField, DictField
 from app.models.base import BaseDocument
 
 
@@ -30,6 +30,21 @@ class Customer(BaseDocument):
     
     # Guest customer flag (for public bookings)
     is_guest = BooleanField(default=False)
+    
+    # Customer authentication fields
+    password_hash = StringField(null=True)  # For customer login
+    email_verified = BooleanField(default=False)
+    phone_verified = BooleanField(default=False)
+    last_login = DateTimeField(null=True)
+    password_reset_token = StringField(null=True)  # For password setup/reset
+    password_reset_expires = DateTimeField(null=True)  # Token expiration
+    preferred_payment_method = StringField(null=True)
+    saved_payment_methods = ListField(default=[])  # Tokenized payment methods
+    notification_preferences = DictField(default={
+        "email_reminders": True,
+        "sms_reminders": True,
+        "marketing_emails": False
+    })
 
     meta = {
         "collection": "customers",
@@ -41,6 +56,7 @@ class Customer(BaseDocument):
             ("tenant_id", "first_name"),
             ("tenant_id", "last_name"),
             ("tenant_id", "is_guest"),
+            ("tenant_id", "email_verified"),
         ],
     }
 

@@ -233,7 +233,7 @@ export default function TransactionEntry() {
                       <img
                         src={member.profile_image_url}
                         alt={`${member.firstName} ${member.lastName}`}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        className="w-10 h-10 rounded-full object-cover shrink-0"
                       />
                     )}
                     <div className="flex-1 min-w-0">

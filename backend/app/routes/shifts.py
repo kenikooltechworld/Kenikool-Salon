@@ -55,6 +55,9 @@ async def list_shifts(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """List shifts with optional filtering."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     query = {"tenant_id": tenant_id}
     
     if staff_id:
@@ -84,6 +87,9 @@ async def list_shifts(
 @router.get("/{shift_id}", response_model=ShiftResponse)
 async def get_shift(shift_id: str, tenant_id: ObjectId = Depends(get_tenant_id)):
     """Get a specific shift by ID."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         shift = Shift.objects(id=ObjectId(shift_id), tenant_id=tenant_id).first()
     except Exception:
@@ -105,6 +111,9 @@ async def create_shift(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Create a new shift with conflict detection."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     # Verify staff exists
     try:
         staff = Staff.objects(id=ObjectId(shift_data.staff_id), tenant_id=tenant_id).first()
@@ -150,6 +159,9 @@ async def update_shift(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Update a shift."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         shift = Shift.objects(id=ObjectId(shift_id), tenant_id=tenant_id).first()
     except Exception:
@@ -194,6 +206,9 @@ async def update_shift(
 @router.delete("/{shift_id}")
 async def delete_shift(shift_id: str, tenant_id: ObjectId = Depends(get_tenant_id)):
     """Delete a shift."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         shift = Shift.objects(id=ObjectId(shift_id), tenant_id=tenant_id).first()
     except Exception:

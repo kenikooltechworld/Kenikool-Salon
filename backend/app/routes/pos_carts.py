@@ -24,6 +24,9 @@ async def create_cart(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Create a new cart."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart(
             tenant_id=tenant_id,
@@ -66,6 +69,9 @@ async def get_cart(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get cart details."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart.objects(
             tenant_id=tenant_id,
@@ -110,6 +116,9 @@ async def update_cart(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Update cart."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart.objects(
             tenant_id=tenant_id,
@@ -176,6 +185,9 @@ async def delete_cart(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Delete cart."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart.objects(
             tenant_id=tenant_id,
@@ -209,6 +221,9 @@ async def add_item_to_cart(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Add item to cart."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart.objects(
             tenant_id=tenant_id,
@@ -285,6 +300,9 @@ async def remove_item_from_cart(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Remove item from cart."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart.objects(
             tenant_id=tenant_id,
@@ -336,6 +354,9 @@ async def update_item_quantity(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Update item quantity in cart."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cart = Cart.objects(
             tenant_id=tenant_id,

@@ -6,7 +6,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils/cn";
-import { XIcon } from "@/components/icons";
+import { XIcon, AlertTriangleIcon } from "@/components/icons";
 
 const modalVariants = cva(
   "fixed inset-0 z-50 flex items-center justify-center p-4",
@@ -17,7 +17,7 @@ const modalVariants = cva(
         false: "animate-out fade-out-0 pointer-events-none",
       },
     },
-  }
+  },
 );
 
 const modalOverlayVariants = cva(
@@ -29,7 +29,7 @@ const modalOverlayVariants = cva(
         false: "opacity-0",
       },
     },
-  }
+  },
 );
 
 const modalContentVariants = cva(
@@ -52,7 +52,7 @@ const modalContentVariants = cva(
     defaultVariants: {
       size: "md",
     },
-  }
+  },
 );
 
 export interface ModalProps extends VariantProps<typeof modalContentVariants> {
@@ -94,7 +94,7 @@ const Modal = ({
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-[var(--radius-md)] hover:bg-[var(--muted)] transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-[var(--radius-md)] hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             aria-label="Close modal"
           >
             <XIcon size={20} />
@@ -120,16 +120,21 @@ ModalHeader.displayName = "ModalHeader";
 
 const ModalTitle = React.forwardRef<
   HTMLHeadingElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h2
-    ref={ref}
-    className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
+  React.HTMLAttributes<HTMLHeadingElement> & { showWarning?: boolean }
+>(({ className, showWarning, ...props }, ref) => (
+  <div className="flex items-center gap-3">
+    {showWarning && (
+      <AlertTriangleIcon size={24} className="text-warning shrink-0" />
     )}
-    {...props}
-  />
+    <h2
+      ref={ref}
+      className={cn(
+        "text-2xl font-semibold leading-none tracking-tight text-foreground",
+        className,
+      )}
+      {...props}
+    />
+  </div>
 ));
 ModalTitle.displayName = "ModalTitle";
 

@@ -528,6 +528,26 @@ export const LogOutIcon = ({ size = 24, className, ...props }: IconProps) => (
   </svg>
 );
 
+export const LogInIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+    <polyline points="10 17 15 12 10 7" />
+    <line x1="15" y1="12" x2="3" y2="12" />
+  </svg>
+);
+
 // ============================================================================
 // FINANCIAL ICONS
 // ============================================================================
@@ -2482,6 +2502,8 @@ export const History = HistoryIcon;
 // Aliases for commonly used names
 export const Loader2 = Loader2Icon;
 export const ShoppingBag = ShoppingBagIcon;
+export const RefreshCw = RefreshCwIcon;
+export const TrendingUp = TrendingUpIcon;
 // Missing icons for the booking page
 export const ServiceIcon = ({ size = 24, className, ...props }: IconProps) => (
   <svg
@@ -2541,3 +2563,206 @@ export const WrenchIcon = ({ size = 24, className, ...props }: IconProps) => (
     <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 1 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 );
+
+export const TargetIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);
+
+export const MegaphoneIcon = ({
+  size = 24,
+  className,
+  ...props
+}: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="m3 11 18-5v12L3 14v-3z" />
+    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+  </svg>
+);
+
+export const MailOpenIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z" />
+    <path d="m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10" />
+  </svg>
+);
+
+export const BoxIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+
+export const InstagramIcon = ({
+  size = 24,
+  className,
+  ...props
+}: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
+export const CrownIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M2 18h20" />
+    <path d="m4 13 4-7 4 7 4-7 4 7" />
+    <path d="M4 13v5h16v-5" />
+  </svg>
+);
+
+export const ZapIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+
+export const BanIcon = ({ size = 24, className, ...props }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+  </svg>
+);
+
+export const SmartphoneIcon = ({
+  size = 24,
+  className,
+  ...props
+}: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+    <line x1="12" y1="18" x2="12.01" y2="18" />
+  </svg>
+);
+
+// Aliases
+export const Crown = CrownIcon;
+export const Zap = ZapIcon;
+export const Ban = BanIcon;
+export const Smartphone = SmartphoneIcon;
+export const Check = CheckIcon;
+export const Minus = MinusIcon;
+export const Sparkles = SparklesIcon;
+export const Gift = GiftIcon;
+export const Mail = MailIcon;
+export const Phone = PhoneIcon;
+export const Eye = EyeIcon;
+export const Search = SearchIcon;
+export const WifiOff = WifiOffIcon;
+export const Users = UsersIcon;
+export const Info = InfoIcon;

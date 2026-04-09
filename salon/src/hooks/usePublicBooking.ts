@@ -11,6 +11,7 @@ interface PublicService {
   public_description?: string;
   public_image_url?: string;
   allow_public_booking: boolean;
+  benefits?: string[];
 }
 
 interface PublicStaff {
@@ -20,6 +21,9 @@ interface PublicStaff {
   is_available_for_public_booking: boolean;
   bio?: string;
   profile_image_url?: string;
+  specialties?: string[];
+  rating?: number;
+  review_count?: number;
 }
 
 interface TimeSlot {

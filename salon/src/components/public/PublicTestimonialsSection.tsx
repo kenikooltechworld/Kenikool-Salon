@@ -1,112 +1,102 @@
-import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { StarIcon } from "@/components/icons";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { Spinner } from "@/components/ui";
 import { usePublicTestimonials } from "@/hooks/usePublicTestimonials";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
+import { Card, Spinner, Alert } from "@/components/ui";
+import { useState } from "react";
 
 export default function PublicTestimonialsSection() {
-  const { data: testimonials, isLoading, error } = usePublicTestimonials(5);
+  const { testimonials, loading, error } = usePublicTestimonials(5);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <section className="py-20 sm:py-32 bg-gradient-to-br from-primary/5 to-secondary/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <Spinner />
-          </div>
-        </div>
-      </section>
+      <div className="w-full py-16 px-4 flex justify-center">
+        <Spinner />
+      </div>
     );
   }
 
-  if (error || !testimonials || testimonials.length === 0) {
+  if (error) {
+    return (
+      <div className="w-full py-16 px-4">
+        <Alert variant="error">
+          <p>{error}</p>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (testimonials.length === 0) {
     return null;
   }
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const itemsPerView = isMobile ? 1 : 3;
+  const visibleTestimonials = testimonials.slice(
+    currentIndex,
+    currentIndex + itemsPerView,
+  );
+
+  const handleNext = () => {
+    if (currentIndex + itemsPerView < testimonials.length) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
   return (
-    <section className="py-20 sm:py-32 bg-gradient-to-br from-primary/5 to-secondary/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Loved by Our Customers
-            </h2>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-          >
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See what our customers have to say about our services
-            </p>
-          </motion.div>
+    <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-muted/50">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-12">
+          What Our Customers Say
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {visibleTestimonials.map((testimonial) => (
+            <Card key={testimonial.id} className="p-6">
+              <div className="flex items-center mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={`star-${testimonial.id}-${i}`}
+                    className={`text-lg ${
+                      i < testimonial.rating
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+              <p className="text-muted-foreground mb-4">
+                {testimonial.reviewText}
+              </p>
+              <p className="font-semibold">{testimonial.customerName}</p>
+            </Card>
+          ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <Swiper
-            modules={[Navigation, Pagination, Autoplay]}
-            spaceBetween={24}
-            slidesPerView={1}
-            navigation
-            pagination={{ clickable: true }}
-            autoplay={{ delay: 5000, disableOnInteraction: false }}
-            breakpoints={{
-              640: { slidesPerView: 2, spaceBetween: 20 },
-              1024: { slidesPerView: 3, spaceBetween: 24 },
-            }}
-            className="pb-12"
-          >
-            {testimonials.map((testimonial, idx) => (
-              <SwiperSlide key={idx}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: idx * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <Card className="p-6 h-full">
-                    <div className="flex gap-1 mb-4">
-                      {Array.from({ length: testimonial.rating }).map(
-                        (_, i) => (
-                          <StarIcon
-                            key={i}
-                            size={18}
-                            className="text-yellow-400 fill-yellow-400"
-                          />
-                        ),
-                      )}
-                    </div>
-                    <p className="text-foreground mb-4 italic">
-                      "{testimonial.review}"
-                    </p>
-                    <div>
-                      <p className="font-semibold text-foreground">
-                        {testimonial.customer_name}
-                      </p>
-                    </div>
-                  </Card>
-                </motion.div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </motion.div>
+        {testimonials.length > itemsPerView && (
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              className="px-4 py-2 border rounded-lg disabled:opacity-50"
+            >
+              ← Previous
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={currentIndex + itemsPerView >= testimonials.length}
+              className="px-4 py-2 border rounded-lg disabled:opacity-50"
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

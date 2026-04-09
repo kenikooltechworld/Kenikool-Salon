@@ -28,7 +28,12 @@ export default function ResourceManagement() {
         Manage physical resources, equipment, and supplies
       </p>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        defaultValue="list"
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="list">Resources</TabsTrigger>
           <TabsTrigger value="create">Create Resource</TabsTrigger>

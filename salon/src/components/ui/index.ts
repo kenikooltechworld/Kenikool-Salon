@@ -24,3 +24,4 @@ export * from "./tooltip";
 export * from "./skeleton";
 export * from "./progress";
 export * from "./divider";
+export * from "./multi-select";

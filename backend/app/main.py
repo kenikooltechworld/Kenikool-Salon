@@ -13,12 +13,21 @@ from .middleware.validation import ValidationMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
 from .middleware.audit_logging import AuditLoggingMiddleware
 from .middleware.public_booking import PublicBookingMiddleware, PublicBookingRateLimitMiddleware
+from .middleware.feature_flags import FeatureFlagMiddleware
 from .middleware_setup import setup_middleware
 from .db import init_db, close_db
-from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, billing
+from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, billing, tenant_recovery, staff_settings, owner_dashboard, websocket_notifications, service_addons, customer_auth, customer_portal, public_waitlist, service_packages, public_service_packages, gift_cards, public_gift_cards, recommendations, availability_events, memberships, public_memberships, group_bookings, public_group_bookings, social_proof, email_templates
 from .routes import settings as settings_router
 # Import celery app to register all tasks
 from .tasks import celery_app  # noqa: F401
+
+# Try to import socketio, but make it optional
+try:
+    from .socketio_handler import setup_socketio
+    SOCKETIO_AVAILABLE = True
+except ImportError:
+    SOCKETIO_AVAILABLE = False
+    # Logger will be configured below, so we'll log this later
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -52,6 +61,10 @@ for handler in logging.root.handlers:
     handler.setFormatter(logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     ))
+
+# Log socketio availability after logger is configured
+if not SOCKETIO_AVAILABLE:
+    logger.warning("python-socketio not installed. WebSocket features will be disabled.")
 
 
 def _seed_pricing_plans():
@@ -209,6 +222,9 @@ def create_app() -> FastAPI:
     # Add rate limiting middleware
     app.add_middleware(RateLimitMiddleware)
 
+    # Add feature flags middleware to enforce subscription tier limits
+    app.add_middleware(FeatureFlagMiddleware)
+
     # Add public booking middleware (registered before subdomain so it executes after)
     app.add_middleware(PublicBookingMiddleware)
 
@@ -225,6 +241,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix=settings.api_prefix)
     app.include_router(registration.router, prefix=settings.api_prefix)
     app.include_router(tenants.router, prefix=settings.api_prefix)
+    app.include_router(tenant_recovery.router, prefix=settings.api_prefix)
     app.include_router(audit.router, prefix=settings.api_prefix)
     app.include_router(media.router, prefix=settings.api_prefix)
     app.include_router(roles.router, prefix=settings.api_prefix)
@@ -257,7 +274,44 @@ def create_app() -> FastAPI:
     app.include_router(pos_reports.router, prefix=settings.api_prefix)
     app.include_router(service_commissions.router, prefix=settings.api_prefix)
     app.include_router(billing.router, prefix=settings.api_prefix)
+    app.include_router(staff_settings.router, prefix=settings.api_prefix)
+    app.include_router(owner_dashboard.router, prefix=settings.api_prefix)
     app.include_router(settings_router.router, prefix=settings.api_prefix)
+    app.include_router(email_templates.router, prefix=settings.api_prefix)
+    app.include_router(websocket_notifications.router)
+    # Service packages routes (both public and admin)
+    app.include_router(service_packages.router, prefix=settings.api_prefix)
+    app.include_router(public_service_packages.router, prefix=settings.api_prefix)
+    # Service addons routes (both public and admin)
+    app.include_router(service_addons.public_router, prefix=settings.api_prefix)
+    app.include_router(service_addons.admin_router, prefix=settings.api_prefix)
+    # Gift cards routes (both public and admin)
+    app.include_router(gift_cards.router, prefix=settings.api_prefix)
+    app.include_router(public_gift_cards.router, prefix=settings.api_prefix)
+    
+    # Customer authentication and portal routes
+    app.include_router(customer_auth.router, prefix=settings.api_prefix)
+    app.include_router(customer_portal.router, prefix=settings.api_prefix)
+    
+    # Public waitlist routes
+    app.include_router(public_waitlist.router, prefix=settings.api_prefix)
+    
+    # Recommendations routes
+    app.include_router(recommendations.router, prefix=settings.api_prefix)
+    
+    # Availability events routes (real-time updates)
+    app.include_router(availability_events.router, prefix=settings.api_prefix)
+    
+    # Membership routes (both public and admin)
+    app.include_router(memberships.router, prefix=settings.api_prefix)
+    app.include_router(public_memberships.router, prefix=settings.api_prefix)
+    
+    # Group booking routes (both public and admin)
+    app.include_router(group_bookings.router, prefix=settings.api_prefix)
+    app.include_router(public_group_bookings.router, prefix=settings.api_prefix)
+    
+    # Social proof routes
+    app.include_router(social_proof.router, prefix=settings.api_prefix)
 
     # Initialize database on startup
     @app.on_event("startup")
@@ -332,7 +386,12 @@ def create_app() -> FastAPI:
 
     logger.info(f"FastAPI application created - Environment: {settings.environment}")
 
-    return app
+    # Wrap FastAPI app with Socket.IO ASGI app if available
+    if SOCKETIO_AVAILABLE:
+        asgi_app = setup_socketio(app)
+        return asgi_app
+    else:
+        return app
 
 
 # Create application instance

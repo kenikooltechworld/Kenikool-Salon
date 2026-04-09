@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     # Optional fields from .env
     app_name: str = "Kenikool Salon"
     secret_key: str = "dev-secret-key"
-    platform_domain: str = "localhost:3000"
+    platform_domain: str = "localhost"
     termii_api_key: str = ""
     termii_secret_key: str = ""
     termii_sender_id: str = ""

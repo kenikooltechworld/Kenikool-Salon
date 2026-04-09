@@ -26,15 +26,22 @@ class SystemConfigSchema(BaseModel):
 
 
 # Integration Settings Schema
+class TermiiConfigSchema(BaseModel):
+    apiKey: str = ""
+    senderId: str = ""
+    enabled: bool = False
+
+
+class PaystackConfigSchema(BaseModel):
+    publicKey: str = ""
+    secretKey: str = ""
+    webhookUrl: str = ""
+    enabled: bool = False
+
+
 class IntegrationConfigSchema(BaseModel):
-    termii_enabled: bool = False
-    termii_api_key: str = ""
-    paystack_enabled: bool = False
-    paystack_public_key: str = ""
-    paystack_webhook_url: str = ""
-    payment_retry_enabled: bool = True
-    payment_retry_attempts: int = 3
-    payment_retry_delay: int = 300
+    termii: TermiiConfigSchema = TermiiConfigSchema()
+    paystack: PaystackConfigSchema = PaystackConfigSchema()
 
 
 # Financial Settings Schema
@@ -69,10 +76,13 @@ class OperationalConfigSchema(BaseModel):
 @router.get("")
 async def get_settings(tenant_id: str = Depends(get_tenant_id)):
     """Get tenant settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     settings = TenantSettingsService.get_settings(tenant_id)
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found")
-
+    
     return {"data": settings}
 
 
@@ -82,6 +92,9 @@ async def update_settings(
     tenant_id: str = Depends(get_tenant_id),
 ):
     """Update tenant settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     settings = TenantSettingsService.update_settings(tenant_id, updates.model_dump())
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found")
@@ -93,6 +106,9 @@ async def update_settings(
 @router.post("/reset")
 async def reset_settings(tenant_id: str = Depends(get_tenant_id)):
     """Reset tenant settings to defaults."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     settings = TenantSettingsService.reset_settings(tenant_id)
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found")
@@ -105,13 +121,21 @@ async def reset_settings(tenant_id: str = Depends(get_tenant_id)):
 @router.get("/system")
 async def get_system_settings(tenant_id: str = Depends(get_tenant_id)):
     """Get system configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
             raise HTTPException(status_code=404, detail="Settings not found")
         
-        system_config = settings.get("system_config", {})
-        return {"data": system_config}
+        system_config = settings.get("system_config")
+        if not system_config:
+            raise HTTPException(status_code=404, detail="System configuration not found")
+        
+        return system_config
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching system settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch system settings")
@@ -123,6 +147,9 @@ async def update_system_settings(
     tenant_id: str = Depends(get_tenant_id),
 ):
     """Update system configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
@@ -130,8 +157,13 @@ async def update_system_settings(
         
         settings["system_config"] = config.model_dump()
         updated = TenantSettingsService.update_settings(tenant_id, settings)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update settings")
+        
         logger.info(f"System settings updated for tenant: {tenant_id}")
-        return {"data": updated.get("system_config", {})}
+        return updated.get("system_config")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating system settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update system settings")
@@ -141,13 +173,21 @@ async def update_system_settings(
 @router.get("/integrations")
 async def get_integration_settings(tenant_id: str = Depends(get_tenant_id)):
     """Get integration configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
             raise HTTPException(status_code=404, detail="Settings not found")
         
-        integration_config = settings.get("integration_config", {})
-        return {"data": integration_config}
+        integration_config = settings.get("integration_config")
+        if not integration_config:
+            raise HTTPException(status_code=404, detail="Integration configuration not found")
+        
+        return integration_config
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching integration settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch integration settings")
@@ -159,6 +199,9 @@ async def update_integration_settings(
     tenant_id: str = Depends(get_tenant_id),
 ):
     """Update integration configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
@@ -166,8 +209,13 @@ async def update_integration_settings(
         
         settings["integration_config"] = config.model_dump()
         updated = TenantSettingsService.update_settings(tenant_id, settings)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update settings")
+        
         logger.info(f"Integration settings updated for tenant: {tenant_id}")
-        return {"data": updated.get("integration_config", {})}
+        return updated.get("integration_config")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating integration settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update integration settings")
@@ -177,13 +225,21 @@ async def update_integration_settings(
 @router.get("/financial")
 async def get_financial_settings(tenant_id: str = Depends(get_tenant_id)):
     """Get financial configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
             raise HTTPException(status_code=404, detail="Settings not found")
         
-        financial_config = settings.get("financial_config", {})
-        return {"data": financial_config}
+        financial_config = settings.get("financial_config")
+        if not financial_config:
+            raise HTTPException(status_code=404, detail="Financial configuration not found")
+        
+        return financial_config
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching financial settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch financial settings")
@@ -195,6 +251,9 @@ async def update_financial_settings(
     tenant_id: str = Depends(get_tenant_id),
 ):
     """Update financial configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
@@ -202,8 +261,13 @@ async def update_financial_settings(
         
         settings["financial_config"] = config.model_dump()
         updated = TenantSettingsService.update_settings(tenant_id, settings)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update settings")
+        
         logger.info(f"Financial settings updated for tenant: {tenant_id}")
-        return {"data": updated.get("financial_config", {})}
+        return updated.get("financial_config")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating financial settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update financial settings")
@@ -213,13 +277,21 @@ async def update_financial_settings(
 @router.get("/operational")
 async def get_operational_settings(tenant_id: str = Depends(get_tenant_id)):
     """Get operational configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
             raise HTTPException(status_code=404, detail="Settings not found")
         
-        operational_config = settings.get("operational_config", {})
-        return {"data": operational_config}
+        operational_config = settings.get("operational_config")
+        if not operational_config:
+            raise HTTPException(status_code=404, detail="Operational configuration not found")
+        
+        return operational_config
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching operational settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch operational settings")
@@ -231,6 +303,9 @@ async def update_operational_settings(
     tenant_id: str = Depends(get_tenant_id),
 ):
     """Update operational configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         settings = TenantSettingsService.get_settings(tenant_id)
         if not settings:
@@ -238,8 +313,65 @@ async def update_operational_settings(
         
         settings["operational_config"] = config.model_dump()
         updated = TenantSettingsService.update_settings(tenant_id, settings)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update settings")
+        
         logger.info(f"Operational settings updated for tenant: {tenant_id}")
-        return {"data": updated.get("operational_config", {})}
+        return updated.get("operational_config")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating operational settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update operational settings")
+
+
+# Security Policies Endpoints
+@router.get("/security-policies")
+async def get_security_policies(tenant_id: str = Depends(get_tenant_id)):
+    """Get security policies settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
+    try:
+        settings = TenantSettingsService.get_settings(tenant_id)
+        if not settings:
+            raise HTTPException(status_code=404, detail="Settings not found for tenant")
+        
+        security_config = settings.get("security_config")
+        if not security_config:
+            raise HTTPException(status_code=404, detail="Security configuration not found")
+        
+        return security_config
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching security policies: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch security policies")
+
+
+@router.put("/security-policies")
+async def update_security_policies(
+    config: dict,
+    tenant_id: str = Depends(get_tenant_id),
+):
+    """Update security policies settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
+    try:
+        settings = TenantSettingsService.get_settings(tenant_id)
+        if not settings:
+            raise HTTPException(status_code=404, detail="Settings not found for tenant")
+        
+        settings["security_config"] = config
+        updated = TenantSettingsService.update_settings(tenant_id, settings)
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update settings")
+        
+        logger.info(f"Security policies updated for tenant: {tenant_id}")
+        return updated.get("security_config")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating security policies: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update security policies")

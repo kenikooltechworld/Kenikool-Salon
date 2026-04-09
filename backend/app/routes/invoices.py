@@ -33,6 +33,9 @@ async def create_invoice(
     - **appointment_id**: Appointment ID (optional)
     - **notes**: Invoice notes (optional)
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         customer_id = ObjectId(request.customer_id)
         appointment_id = ObjectId(request.appointment_id) if request.appointment_id else None
@@ -79,6 +82,9 @@ async def create_invoice_from_appointment(
     - **discount**: Discount amount (optional)
     - **tax**: Tax amount (optional)
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         appt_id = ObjectId(appointment_id)
         invoice = InvoiceService.create_invoice_from_appointment(
@@ -100,6 +106,9 @@ async def get_invoice(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get an invoice by ID."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         inv_id = ObjectId(invoice_id)
         invoice = InvoiceService.get_invoice(tenant_id, inv_id)
@@ -128,6 +137,9 @@ async def list_invoices(
     - **page**: Page number (default 1)
     - **page_size**: Items per page (default 20, max 100)
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         cust_id = ObjectId(customer_id) if customer_id else None
         invoices, total = InvoiceService.list_invoices(
@@ -163,6 +175,9 @@ async def update_invoice(
     - **tax**: New tax amount (optional)
     - **notes**: New notes (optional)
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         inv_id = ObjectId(invoice_id)
         invoice = InvoiceService.update_invoice(
@@ -196,6 +211,9 @@ async def mark_invoice_paid(
     - **invoice_id**: Invoice ID
     - **paid_at**: Payment date (optional, defaults to now)
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         inv_id = ObjectId(invoice_id)
         invoice = InvoiceService.mark_invoice_paid(
@@ -218,6 +236,9 @@ async def cancel_invoice(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Cancel an invoice."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         inv_id = ObjectId(invoice_id)
         invoice = InvoiceService.cancel_invoice(tenant_id, inv_id)
@@ -236,6 +257,9 @@ async def issue_invoice(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Issue an invoice (change status from draft to issued)."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         inv_id = ObjectId(invoice_id)
         invoice = InvoiceService.issue_invoice(tenant_id, inv_id)

@@ -46,6 +46,10 @@ celery_app.conf.update(
             "task": "app.tasks.subscriptions.send_renewal_reminders",
             "schedule": 86400.0,  # Run daily
         },
+        "cleanup-deleted-tenants": {
+            "task": "app.tasks.tenant_cleanup.cleanup_deleted_tenants",
+            "schedule": 86400.0,  # Run daily
+        },
     },
 )
 
@@ -119,6 +123,9 @@ def send_email(self, to: str, subject: str, template: str, context: dict):
             <p>If you have any questions or need assistance, please contact your manager at {salon_name}.</p>
             <p>Best regards,<br>{salon_name} Team</p>
             """
+        elif template == "custom":
+            # For custom HTML templates, use the html_content directly
+            html_body = context.get('html_content', '<p>No content provided</p>')
         else:
             html_body = f"<p>{context}</p>"
         

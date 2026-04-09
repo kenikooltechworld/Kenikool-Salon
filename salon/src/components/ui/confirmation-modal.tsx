@@ -6,7 +6,6 @@ import {
   ModalFooter,
 } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/alert";
 import { AlertTriangleIcon } from "@/components/icons";
 import { ReactNode } from "react";
 
@@ -35,17 +34,19 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
   return (
     <Modal open={isOpen} onClose={onClose} size="md">
-      <ModalHeader>
+      <ModalHeader className="text-center">
         {variant === "destructive" && (
-          <Alert variant="error" className="mb-4">
-            <AlertTriangleIcon size={20} />
-          </Alert>
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-[var(--error)]/10 flex items-center justify-center">
+              <AlertTriangleIcon size={24} className="text-[var(--error)]" />
+            </div>
+          </div>
         )}
         <ModalTitle>{title}</ModalTitle>
         <ModalDescription>{description}</ModalDescription>
       </ModalHeader>
       <ModalFooter>
-        <Button variant="outline" onClick={onClose} disabled={isLoading}>
+        <Button variant="ghost" onClick={onClose} disabled={isLoading}>
           {cancelText}
         </Button>
         <Button

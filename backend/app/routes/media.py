@@ -32,6 +32,10 @@ async def upload_media_endpoint(
 ):
     """
     Upload media to Cloudinary
+    
+    Validates file size based on media type:
+    - image: 5 MB max
+    - document: 10 MB max
     """
     try:
         url = upload_media(

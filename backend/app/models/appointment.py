@@ -64,6 +64,10 @@ class Appointment(BaseDocument):
     payment_option = StringField(null=True, choices=["now", "later"])
     payment_status = StringField(null=True, choices=["pending", "completed", "failed"])
     
+    # Service add-ons
+    selected_addons = StringField(null=True)  # JSON string of addon details
+    addons_total = DecimalField(default=0, min_value=0)
+    
     # Reminder tracking (for both internal and public)
     reminder_24h_sent = BooleanField(default=False)
     reminder_1h_sent = BooleanField(default=False)

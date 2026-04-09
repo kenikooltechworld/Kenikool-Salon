@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #000;
+            font-size: 24px;
+        }
+        .content {
+            margin: 30px 0;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box strong {
+            color: #856404;
+        }
+        .recovery-link {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .recovery-link:hover {
+            background-color: #0056b3;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin: 8px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+            color: #666;
+            font-size: 12px;
+        }
+        .token-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Recover Your Account</h1>
+        </div>
+
+        <div class="content">
+            <p>Hi {{ tenant_name }},</p>
+
+            <p>Your account was deactivated on <strong>{{ deleted_date }}</strong>. You have a 14-day grace period to recover your account.</p>
+
+            <div class="warning-box">
+                <strong>⏰ Time Remaining:</strong> {{ days_remaining }} days
+            </div>
+
+            <p>Click the button below to instantly recover your account:</p>
+
+            <div style="text-align: center;">
+                <a href="{{ recovery_link }}" class="recovery-link">Recover My Account</a>
+            </div>
+
+            <p style="text-align: center; color: #666; font-size: 12px;">
+                Or copy and paste this link in your browser:<br>
+                <span class="token-box">{{ recovery_link }}</span>
+            </p>
+
+            <div class="info-box">
+                <strong>What happens next?</strong>
+                <ul>
+                    <li><strong>Within 14 days:</strong> Click the recovery link to instantly reactivate your account</li>
+                    <li><strong>After 14 days:</strong> Your account will be permanently deleted</li>
+                    <li><strong>After permanent deletion:</strong> Recovery will require payment</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <strong>Important:</strong>
+                <ul>
+                    <li>This recovery link expires in {{ days_remaining }} days</li>
+                    <li>Only you can use this link</li>
+                    <li>Do not share this link with anyone</li>
+                </ul>
+            </div>
+
+            <p>If you did not request this recovery, please ignore this email. Your account will remain deactivated.</p>
+
+            <p>Questions? Contact our support team.</p>
+        </div>
+
+        <div class="footer">
+            <p>© {{ current_year }} Kenikool. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

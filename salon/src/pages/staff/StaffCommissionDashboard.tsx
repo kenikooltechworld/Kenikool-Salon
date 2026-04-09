@@ -7,10 +7,9 @@ import { Spinner } from "@/components/ui/spinner";
 
 export default function StaffCommissionDashboardPage() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
-  const { data: staffData, isLoading: staffLoading } = useStaff();
+  const { data: staff, isLoading: staffLoading } = useStaff();
 
-  const staff = staffData?.staff || [];
-  const selectedStaff = staff.find((s: any) => s.id === selectedStaffId);
+  const selectedStaff = staff?.find((s: any) => s.id === selectedStaffId);
 
   return (
     <div className="space-y-4 md:space-y-6">

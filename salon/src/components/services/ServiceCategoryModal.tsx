@@ -10,6 +10,7 @@ import {
 import { useCreateServiceCategory } from "@/hooks/useServiceCategories";
 import { ColorPicker } from "@/components/services/ColorPicker";
 import { IconPicker } from "@/components/services/IconPicker";
+import { useToast } from "@/components/ui/toast";
 
 interface ServiceCategoryModalProps {
   isOpen: boolean;
@@ -27,11 +28,19 @@ export function ServiceCategoryModal({
     icon: "",
   });
 
+  const { showToast } = useToast();
   const { mutate: createCategory, isPending } = useCreateServiceCategory();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      showToast({
+        title: "Validation Error",
+        description: "Category name is required",
+        variant: "error",
+      });
+      return;
+    }
 
     createCategory(
       {
@@ -43,6 +52,11 @@ export function ServiceCategoryModal({
       },
       {
         onSuccess: () => {
+          showToast({
+            title: "Success",
+            description: "Category created successfully",
+            variant: "success",
+          });
           setFormData({
             name: "",
             description: "",
@@ -50,6 +64,17 @@ export function ServiceCategoryModal({
             icon: "",
           });
           onClose();
+        },
+        onError: (error: any) => {
+          const errorMessage =
+            error?.response?.data?.detail ||
+            error?.message ||
+            "Failed to create category";
+          showToast({
+            title: "Error",
+            description: errorMessage,
+            variant: "error",
+          });
         },
       },
     );
@@ -64,7 +89,11 @@ export function ServiceCategoryModal({
         </ModalDescription>
       </ModalHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-4 p-6">
+      <form
+        onSubmit={handleSubmit}
+        id="category-form"
+        className="space-y-4 p-6"
+      >
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Category Name *
@@ -122,7 +151,8 @@ export function ServiceCategoryModal({
           Cancel
         </Button>
         <Button
-          onClick={handleSubmit}
+          type="submit"
+          form="category-form"
           disabled={isPending || !formData.name.trim()}
           className="cursor-pointer"
         >

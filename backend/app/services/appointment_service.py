@@ -37,6 +37,7 @@ class AppointmentService:
         guest_phone: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
+        selected_addons: Optional[List[dict]] = None,
     ) -> Appointment:
         """
         Create a new appointment - handles both internal and public bookings.
@@ -61,6 +62,7 @@ class AppointmentService:
             guest_phone: Optional guest phone (for public bookings)
             ip_address: Optional IP address (for public bookings)
             user_agent: Optional user agent (for public bookings)
+            selected_addons: Optional list of addon dicts [{"addon_id": "...", "quantity": 1}]
             
         Returns:
             Created Appointment document
@@ -97,6 +99,19 @@ class AppointmentService:
         service = Service.objects(tenant_id=tenant_id, id=service_id).first()
         price = service.price if service else None
         
+        # Calculate addons total
+        import json
+        from decimal import Decimal
+        addons_total = Decimal("0")
+        addon_details_json = None
+        
+        if selected_addons:
+            from app.services.service_addon_service import ServiceAddonService
+            addons_total, addon_details = ServiceAddonService.calculate_addons_total(
+                tenant_id, selected_addons
+            )
+            addon_details_json = json.dumps(addon_details)
+        
         # Create appointment
         appointment = Appointment(
             tenant_id=tenant_id,
@@ -117,9 +132,38 @@ class AppointmentService:
             guest_phone=guest_phone,
             ip_address=ip_address,
             user_agent=user_agent,
+            selected_addons=addon_details_json,
+            addons_total=addons_total,
             status="scheduled",
         )
         appointment.save()
+        
+        # Emit real-time availability update via WebSocket
+        try:
+            from app.socketio_handler import emit_availability_update
+            import asyncio
+            
+            # Create event loop if needed and emit update
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            # Emit slot taken event
+            loop.create_task(emit_availability_update(
+                tenant_id=str(tenant_id),
+                service_id=str(service_id),
+                date=start_time.strftime("%Y-%m-%d"),
+                event_data={
+                    "event_type": "slot_taken",
+                    "time_slot": start_time.strftime("%H:%M"),
+                    "staff_id": str(staff_id),
+                    "appointment_id": str(appointment.id),
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Error emitting availability update: {str(e)}")
         
         # Send confirmation notification
         try:
@@ -130,6 +174,21 @@ class AppointmentService:
                 )
         except Exception as e:
             logger.error(f"Error sending appointment confirmation: {str(e)}")
+        
+        # Create booking activity for social proof
+        try:
+            from app.services.booking_activity_service import BookingActivityService
+            customer = Customer.objects(tenant_id=tenant_id, id=customer_id).first()
+            if customer and service:
+                customer_name = guest_name if is_guest else f"{customer.first_name} {customer.last_name}"
+                BookingActivityService.create_activity(
+                    tenant_id=tenant_id,
+                    customer_name=customer_name,
+                    service_name=service.name,
+                    booking_time=start_time
+                )
+        except Exception as e:
+            logger.error(f"Error creating booking activity: {str(e)}")
         
         # Schedule appointment reminders
         try:

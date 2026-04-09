@@ -1,8 +1,9 @@
-import { useState } from "react";
-import React from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { XIcon } from "@/components/icons";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Progress } from "@/components/ui/progress";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { ImageLightbox } from "@/components/services/ImageLightbox";
 import type { Staff } from "@/types/staff";
@@ -22,12 +23,15 @@ export function StaffForm({
 }: StaffFormProps) {
   const isEditing = !!initialData?.id;
   const { showToast } = useToast();
-  const [formData, setFormData] = useState({
+
+  // Initialize state with a function to ensure fresh state on each mount
+  const [formData, setFormData] = useState(() => ({
     firstName: initialData?.firstName || "",
     lastName: initialData?.lastName || "",
     email: initialData?.email || "",
     phone: initialData?.phone || "",
     role_ids: initialData?.role_ids || ([] as string[]),
+    service_ids: (initialData as any)?.service_ids || ([] as string[]),
     specialties: initialData?.specialties || ([] as string[]),
     certifications: initialData?.certifications || ([] as string[]),
     certification_files: initialData?.certification_files || ([] as string[]),
@@ -46,19 +50,38 @@ export function StaffForm({
       | "inactive"
       | "on_leave"
       | "terminated",
-  });
+  }));
   const [specialtyInput, setSpecialtyInput] = useState("");
   const [certificationInput, setCertificationInput] = useState("");
   const [error, setError] = useState("");
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
+  const [services, setServices] = useState<Array<any>>([]);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Image upload hooks
   const profileImageUpload = useImageUpload({ folder: "staff-profiles" });
   const certificateUpload = useImageUpload({ folder: "staff-certificates" });
 
-  // Fetch roles on mount
-  React.useEffect(() => {
+  // Use ref to capture latest state for submission
+  const formDataRef = useRef(formData);
+  useEffect(() => {
+    console.log("=== UPDATING formDataRef ===");
+    console.log("New formData:", formData);
+    console.log("Specialties:", formData.specialties);
+    console.log("Certifications:", formData.certifications);
+    formDataRef.current = formData;
+  }, [formData]);
+
+  // Monitor formData changes for debugging
+  useEffect(() => {
+    console.log("=== FORMDATA STATE CHANGED ===");
+    console.log("specialties:", formData.specialties);
+    console.log("certifications:", formData.certifications);
+    console.log("Full formData:", formData);
+  }, [formData.specialties, formData.certifications]);
+
+  // Fetch roles and services on mount
+  useEffect(() => {
     const fetchRoles = async () => {
       try {
         const response = await fetch("/api/v1/roles");
@@ -70,7 +93,24 @@ export function StaffForm({
         console.error("Failed to fetch roles:", err);
       }
     };
+
+    const fetchServices = async () => {
+      try {
+        const response = await fetch("/api/v1/services?page_size=100");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched services:", data);
+          setServices(data.services || []);
+        } else {
+          console.error("Failed to fetch services:", response.status);
+        }
+      } catch (err) {
+        console.error("Failed to fetch services:", err);
+      }
+    };
+
     fetchRoles();
+    fetchServices();
   }, []);
 
   const handleChange = (
@@ -96,11 +136,36 @@ export function StaffForm({
       e.preventDefault();
       const specialty = specialtyInput.trim();
       if (specialty && !formData.specialties.includes(specialty)) {
-        setFormData((prev) => ({
-          ...prev,
-          specialties: [...prev.specialties, specialty],
-        }));
+        console.log("=== ADDING SPECIALTY ===");
+        console.log(
+          "Current specialties BEFORE setState:",
+          formData.specialties,
+        );
+        console.log("Adding:", specialty);
+
+        setFormData((prev) => {
+          const newSpecialties = [...prev.specialties, specialty];
+          console.log(
+            "Inside setState - Previous specialties:",
+            prev.specialties,
+          );
+          console.log(
+            "Inside setState - New specialties array:",
+            newSpecialties,
+          );
+          return {
+            ...prev,
+            specialties: newSpecialties,
+          };
+        });
         setSpecialtyInput("");
+
+        // Log AFTER setState (but state won't be updated yet due to React batching)
+        console.log(
+          "AFTER setState call - formData.specialties:",
+          formData.specialties,
+        );
+        console.log("NOTE: State won't be updated yet due to React batching!");
       }
     }
   };
@@ -117,11 +182,36 @@ export function StaffForm({
       e.preventDefault();
       const cert = certificationInput.trim();
       if (cert && !formData.certifications.includes(cert)) {
-        setFormData((prev) => ({
-          ...prev,
-          certifications: [...prev.certifications, cert],
-        }));
+        console.log("=== ADDING CERTIFICATION ===");
+        console.log(
+          "Current certifications BEFORE setState:",
+          formData.certifications,
+        );
+        console.log("Adding:", cert);
+
+        setFormData((prev) => {
+          const newCertifications = [...prev.certifications, cert];
+          console.log(
+            "Inside setState - Previous certifications:",
+            prev.certifications,
+          );
+          console.log(
+            "Inside setState - New certifications array:",
+            newCertifications,
+          );
+          return {
+            ...prev,
+            certifications: newCertifications,
+          };
+        });
         setCertificationInput("");
+
+        // Log AFTER setState (but state won't be updated yet due to React batching)
+        console.log(
+          "AFTER setState call - formData.certifications:",
+          formData.certifications,
+        );
+        console.log("NOTE: State won't be updated yet due to React batching!");
       }
     }
   };
@@ -130,15 +220,6 @@ export function StaffForm({
     setFormData((prev) => ({
       ...prev,
       certifications: prev.certifications.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleRoleToggle = (roleId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      role_ids: prev.role_ids.includes(roleId)
-        ? prev.role_ids.filter((id) => id !== roleId)
-        : [...prev.role_ids, roleId],
     }));
   };
 
@@ -224,7 +305,10 @@ export function StaffForm({
     e.preventDefault();
     setError("");
 
-    if (!formData.firstName.trim()) {
+    // Use ref to get the absolute latest state
+    const currentFormData = formDataRef.current;
+
+    if (!currentFormData.firstName.trim()) {
       const msg = "First name is required";
       setError(msg);
       showToast({
@@ -235,7 +319,7 @@ export function StaffForm({
       return;
     }
 
-    if (!formData.lastName.trim()) {
+    if (!currentFormData.lastName.trim()) {
       const msg = "Last name is required";
       setError(msg);
       showToast({
@@ -246,7 +330,7 @@ export function StaffForm({
       return;
     }
 
-    if (!formData.email.trim()) {
+    if (!currentFormData.email.trim()) {
       const msg = "Email is required";
       setError(msg);
       showToast({
@@ -258,50 +342,70 @@ export function StaffForm({
     }
 
     try {
-      await onSubmit({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        role_ids: formData.role_ids,
-        specialties: formData.specialties,
-        certifications: formData.certifications,
-        certification_files: formData.certification_files,
-        payment_type: formData.payment_type,
-        payment_rate: formData.payment_rate,
-        hire_date: formData.hire_date,
-        bio: formData.bio,
-        profile_image_url: formData.profile_image_url,
-        status: formData.status,
-      } as any);
+      // Log the current formData state to verify arrays are populated
+      console.log("=== FORM DATA STATE (from ref) ===");
+      console.log("formData.specialties:", currentFormData.specialties);
+      console.log("formData.certifications:", currentFormData.certifications);
+      console.log(
+        "formData.certification_files:",
+        currentFormData.certification_files,
+      );
 
-      showToast({
-        variant: "success",
-        title: "Success",
-        description: isEditing
-          ? "Staff member updated successfully"
-          : "Staff member added successfully",
-      });
+      const submitData = {
+        firstName: currentFormData.firstName,
+        lastName: currentFormData.lastName,
+        email: currentFormData.email,
+        phone: currentFormData.phone,
+        role_ids: currentFormData.role_ids,
+        service_ids: currentFormData.service_ids,
+        specialties: [...currentFormData.specialties], // Create new array to avoid reference issues
+        certifications: [...currentFormData.certifications], // Create new array to avoid reference issues
+        certification_files: [...currentFormData.certification_files],
+        payment_type: currentFormData.payment_type,
+        payment_rate: currentFormData.payment_rate,
+        hire_date: currentFormData.hire_date,
+        bio: currentFormData.bio,
+        profile_image_url: currentFormData.profile_image_url,
+        status: currentFormData.status,
+      };
 
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        role_ids: [],
-        specialties: [],
-        certifications: [],
-        certification_files: [],
-        payment_type: "hourly",
-        payment_rate: 0,
-        hire_date: "",
-        bio: "",
-        profile_image_url: "",
-        status: "active",
-      });
-      setSpecialtyInput("");
-      setCertificationInput("");
-      profileImageUpload.clearPreview();
+      console.log("=== SUBMIT DATA ===");
+      console.log("Full submitData:", JSON.stringify(submitData, null, 2));
+      console.log("submitData.specialties:", submitData.specialties);
+      console.log("submitData.certifications:", submitData.certifications);
+
+      await onSubmit(submitData as any);
+
+      // Only reset form and show success toast if not editing
+      // (editing is handled by the modal which closes after success)
+      if (!isEditing) {
+        showToast({
+          variant: "success",
+          title: "Success",
+          description: "Staff member added successfully",
+        });
+
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          role_ids: [],
+          service_ids: [],
+          specialties: [],
+          certifications: [],
+          certification_files: [],
+          payment_type: "hourly",
+          payment_rate: 0,
+          hire_date: "",
+          bio: "",
+          profile_image_url: "",
+          status: "active",
+        });
+        setSpecialtyInput("");
+        setCertificationInput("");
+        profileImageUpload.clearPreview();
+      }
     } catch (err) {
       const errorMsg =
         err instanceof Error
@@ -389,31 +493,40 @@ export function StaffForm({
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Roles
-          </label>
-          <div className="space-y-2">
-            {roles.length > 0 ? (
-              roles.map((role) => (
-                <label
-                  key={role.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.role_ids.includes(role.id)}
-                    onChange={() => handleRoleToggle(role.id)}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="text-sm text-foreground">{role.name}</span>
-                </label>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No roles available
-              </p>
-            )}
-          </div>
+          <MultiSelect
+            label="Roles"
+            options={roles.map((role) => ({
+              id: role.id,
+              label: role.name,
+            }))}
+            selectedIds={formData.role_ids}
+            onChange={(roleIds) =>
+              setFormData((prev) => ({
+                ...prev,
+                role_ids: roleIds,
+              }))
+            }
+            placeholder="Select roles..."
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <MultiSelect
+            label="Services"
+            options={services.map((service) => ({
+              id: service.id,
+              label: service.name,
+              description: `₦${parseFloat(service.price).toLocaleString()} (${service.duration_minutes}min)`,
+            }))}
+            selectedIds={formData.service_ids}
+            onChange={(serviceIds) =>
+              setFormData((prev) => ({
+                ...prev,
+                service_ids: serviceIds,
+              }))
+            }
+            placeholder="Select services..."
+          />
         </div>
 
         <div>
@@ -533,7 +646,12 @@ export function StaffForm({
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm disabled:opacity-50 cursor-pointer"
             />
             {profileImageUpload.isUploading && (
-              <p className="text-xs text-muted-foreground">Uploading...</p>
+              <Progress
+                value={profileImageUpload.uploadProgress}
+                size="md"
+                variant="default"
+                showPercentage={true}
+              />
             )}
             {profileImageUpload.preview && (
               <button
@@ -639,9 +757,12 @@ export function StaffForm({
               multiple
             />
             {certificateUpload.isUploading && (
-              <p className="text-xs text-muted-foreground">
-                Uploading certificate(s)...
-              </p>
+              <Progress
+                value={certificateUpload.uploadProgress}
+                size="md"
+                variant="default"
+                showPercentage={true}
+              />
             )}
             {formData.certification_files.length > 0 && (
               <div className="space-y-3">

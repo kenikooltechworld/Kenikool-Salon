@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PWA Icon Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #3B82F6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #2563EB;
+    }
+    .preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .icon-preview {
+      text-align: center;
+    }
+    .icon-preview canvas {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .icon-preview p {
+      margin-top: 5px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PWA Icon Generator</h1>
+    <p>Generate placeholder icons for your PWA. Replace these with your actual salon logo.</p>
+    
+    <div>
+      <label>Icon Text: <input type="text" id="iconText" value="S" maxlength="2" /></label>
+      <label>Background Color: <input type="color" id="bgColor" value="#3B82F6" /></label>
+      <label>Text Color: <input type="color" id="textColor" value="#FFFFFF" /></label>
+    </div>
+    
+    <button onclick="generateIcons()">Generate Icons</button>
+    <button onclick="downloadAll()">Download All</button>
+    
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    let canvases = {};
+
+    function generateIcons() {
+      const text = document.getElementById('iconText').value || 'S';
+      const bgColor = document.getElementById('bgColor').value;
+      const textColor = document.getElementById('textColor').value;
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+
+      sizes.forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, size, size);
+
+        // Text
+        ctx.fillStyle = textColor;
+        ctx.font = `bold ${size * 0.5}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, size / 2, size / 2);
+
+        // Store canvas
+        canvases[size] = canvas;
+
+        // Preview
+        const div = document.createElement('div');
+        div.className = 'icon-preview';
+        
+        const displayCanvas = document.createElement('canvas');
+        displayCanvas.width = 100;
+        displayCanvas.height = 100;
+        const displayCtx = displayCanvas.getContext('2d');
+        displayCtx.drawImage(canvas, 0, 0, 100, 100);
+        
+        const p = document.createElement('p');
+        p.textContent = `${size}x${size}`;
+        
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = 'Download';
+        downloadBtn.style.fontSize = '11px';
+        downloadBtn.style.padding = '4px 8px';
+        downloadBtn.onclick = () => downloadIcon(size);
+        
+        div.appendChild(displayCanvas);
+        div.appendChild(p);
+        div.appendChild(downloadBtn);
+        preview.appendChild(div);
+      });
+    }
+
+    function downloadIcon(size) {
+      const canvas = canvases[size];
+      if (!canvas) return;
+      
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `icon-${size}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    function downloadAll() {
+      sizes.forEach((size, index) => {
+        setTimeout(() => downloadIcon(size), index * 200);
+      });
+    }
+
+    // Generate on load
+    window.onload = generateIcons;
+  </script>
+</body>
+</html>

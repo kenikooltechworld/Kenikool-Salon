@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Kenikool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .message {
+            color: #4b5563;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+        .info-card {
+            background-color: #f9fafb;
+            border-left: 4px solid #6366f1;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #1f2937;
+            font-size: 16px;
+        }
+        .info-card p {
+            margin: 8px 0;
+            color: #6b7280;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+        .features {
+            margin: 30px 0;
+        }
+        .feature-item {
+            display: flex;
+            align-items: start;
+            margin: 15px 0;
+        }
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #6366f1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .feature-icon::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .feature-text {
+            color: #4b5563;
+        }
+        .trial-badge {
+            display: inline-block;
+            background-color: #10b981;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .footer a {
+            color: #6366f1;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>Welcome to Kenikool!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Hi {{ owner_name }},
+            </div>
+            
+            <div class="message">
+                <p>Congratulations! Your business account for <strong>{{ salon_name }}</strong> has been successfully created.</p>
+                
+                <p>You're now ready to start managing your appointments, staff, customers, and grow your business with our comprehensive platform.</p>
+                
+                <div style="text-align: center;">
+                    <span class="trial-badge">{{ subscription_tier }}</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>Your Account Details</h3>
+                <p><strong>Business Name:</strong> {{ salon_name }}</p>
+                <p><strong>Email:</strong> {{ email }}</p>
+                <p><strong>Your Dashboard:</strong> <a href="https://{{ full_url }}">{{ full_url }}</a></p>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="https://{{ full_url }}" class="cta-button">Access Your Dashboard</a>
+            </div>
+
+            <div class="features">
+                <h3 style="color: #1f2937; margin-bottom: 20px;">What You Can Do Now:</h3>
+                
+                <div class="feature-item">
+                    <div class="feature-icon"></div>
+                    <div class="feature-text">
+                        <strong>Set Up Your Business Profile</strong><br>
+                        Add your logo, business hours, services, and branding
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon"></div>
+                    <div class="feature-text">
+                        <strong>Add Your Team</strong><br>
+                        Invite staff members and set up their schedules and permissions
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon"></div>
+                    <div class="feature-text">
+                        <strong>Create Services</strong><br>
+                        Define your service menu with pricing and duration
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon"></div>
+                    <div class="feature-text">
+                        <strong>Start Taking Bookings</strong><br>
+                        Enable online booking and start accepting appointments
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon"></div>
+                    <div class="feature-text">
+                        <strong>Track Your Business</strong><br>
+                        Monitor revenue, staff performance, and customer insights
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>Getting Started Guide</h3>
+                <p>1. Complete your business profile in Settings</p>
+                <p>2. Add your services and pricing</p>
+                <p>3. Invite your staff members</p>
+                <p>4. Set up staff schedules and availability</p>
+                <p>5. Share your booking page with customers</p>
+            </div>
+
+            <div class="message">
+                <p>Need help getting started? Check out our documentation or reach out to our support team. We're here to help you succeed!</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Kenikool</strong></p>
+            <p>Your all-in-one business management platform</p>
+            <p>Email: <a href="mailto:support@kenikool.com">support@kenikool.com</a></p>
+            
+            <p style="margin-top: 20px; font-size: 12px; color: #9ca3af;">
+                You're receiving this email because you registered for a Kenikool account.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -31,6 +31,7 @@ EXCLUDED_ENDPOINTS = {
     "/docs",
     "/openapi.json",
     "/redoc",
+    "/api/v1/billing/plans",  # Public pricing endpoint
 }
 
 

@@ -177,17 +177,11 @@ class TenantProvisioningService:
     def delete_tenant(self, tenant_id: str) -> bool:
         """Delete a tenant (soft delete)."""
         try:
-            tenant = Tenant.objects(id=tenant_id).first()
-            if not tenant:
-                logger.warning(f"Tenant not found: {tenant_id}")
-                return False
-
-            tenant.status = "deleted"
-            tenant.deleted_at = datetime.utcnow()
-            tenant.updated_at = datetime.utcnow()
-            tenant.save()
-            logger.info(f"Tenant deleted: {tenant_id}")
-            return True
+            from app.services.tenant_deletion_service import TenantDeletionService
+            
+            deletion_service = TenantDeletionService(self.settings)
+            result = deletion_service.soft_delete_tenant(tenant_id)
+            return result is not None
         except Exception as e:
             logger.error(f"Error deleting tenant: {e}")
             return False

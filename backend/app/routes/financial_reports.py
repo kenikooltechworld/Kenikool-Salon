@@ -1,10 +1,9 @@
 """Financial reporting routes."""
 
 import logging
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
 from app.services.financial_report_service import FinancialReportService
-from app.middleware.auth import require_auth
-from app.context import get_tenant_id
+from app.routes.auth import get_current_user_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +12,11 @@ report_service = FinancialReportService()
 
 
 @router.get("/revenue")
-@require_auth
 def get_revenue_report(
     start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
     end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
     use_cache: bool = Query(True, description="Use cached results"),
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Get revenue report for date range.
@@ -30,7 +29,7 @@ def get_revenue_report(
         - refund_count: Number of successful refunds
     """
     try:
-        tenant_id = get_tenant_id()
+        tenant_id = current_user.get("tenant_id")
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
@@ -49,11 +48,11 @@ def get_revenue_report(
 
 
 @router.get("/payments")
-@require_auth
 def get_payment_report(
     start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
     end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
     use_cache: bool = Query(True, description="Use cached results"),
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Get payment report for date range.
@@ -68,7 +67,7 @@ def get_payment_report(
         - status_breakdown: Detailed breakdown by status
     """
     try:
-        tenant_id = get_tenant_id()
+        tenant_id = current_user.get("tenant_id")
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
@@ -87,11 +86,11 @@ def get_payment_report(
 
 
 @router.get("/refunds")
-@require_auth
 def get_refund_report(
     start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
     end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
     use_cache: bool = Query(True, description="Use cached results"),
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Get refund report for date range.
@@ -106,7 +105,7 @@ def get_refund_report(
         - status_breakdown: Detailed breakdown by status
     """
     try:
-        tenant_id = get_tenant_id()
+        tenant_id = current_user.get("tenant_id")
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
@@ -125,9 +124,9 @@ def get_refund_report(
 
 
 @router.get("/outstanding-balance")
-@require_auth
 def get_outstanding_balance_report(
     use_cache: bool = Query(True, description="Use cached results"),
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Get outstanding balance report for all customers.
@@ -138,7 +137,7 @@ def get_outstanding_balance_report(
         - customers: List of customers with outstanding balance details
     """
     try:
-        tenant_id = get_tenant_id()
+        tenant_id = current_user.get("tenant_id")
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
@@ -154,11 +153,11 @@ def get_outstanding_balance_report(
 
 
 @router.get("/comprehensive")
-@require_auth
 def get_comprehensive_report(
     start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
     end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
     use_cache: bool = Query(True, description="Use cached results"),
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Get comprehensive financial report combining all metrics.
@@ -170,7 +169,7 @@ def get_comprehensive_report(
         - outstanding_balance: Outstanding balance report
     """
     try:
-        tenant_id = get_tenant_id()
+        tenant_id = current_user.get("tenant_id")
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 

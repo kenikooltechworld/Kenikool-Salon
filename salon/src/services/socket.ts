@@ -6,6 +6,7 @@ let socket: Socket | null = null;
 
 /**
  * Initialize Socket.io connection
+ * Note: Socket connects to /socket.io path on the backend
  */
 export function initializeSocket(token: string): Socket {
   if (socket?.connected) {
@@ -13,14 +14,16 @@ export function initializeSocket(token: string): Socket {
   }
 
   socket = io(SOCKET_URL, {
+    path: "/socket.io", // Explicitly set the Socket.IO path
     auth: {
       token,
     },
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    reconnectionAttempts: 10,
-    transports: ["websocket", "polling"],
+    reconnectionAttempts: 5, // Reduced from 10
+    timeout: 10000, // Add 10 second connection timeout
+    transports: ["websocket"], // Use only websocket, not polling
   });
 
   // Connection event handlers

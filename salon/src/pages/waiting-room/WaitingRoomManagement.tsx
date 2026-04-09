@@ -15,7 +15,12 @@ export default function WaitingRoomManagement() {
         Manage customer queue and check-ins
       </p>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        defaultValue="queue"
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="queue">Queue Management</TabsTrigger>
           <TabsTrigger value="checkin">Customer Check-In</TabsTrigger>

@@ -269,20 +269,31 @@ class NotificationService:
 
     @staticmethod
     def set_preference(
-        customer_id: str,
-        notification_type: str,
-        channel: str,
-        enabled: bool,
+        customer_id: str = None,
+        user_id: str = None,
+        recipient_type: str = "customer",
+        notification_type: str = None,
+        channel: str = None,
+        enabled: bool = True,
     ) -> NotificationPreference:
-        """Set notification preference for a customer."""
+        """Set notification preference for a customer or staff member."""
         tenant_id = get_tenant_id()
 
-        preference = NotificationPreference.objects(
-            tenant_id=tenant_id,
-            customer_id=customer_id,
-            notification_type=notification_type,
-            channel=channel,
-        ).first()
+        if not customer_id and not user_id:
+            raise ValueError("Either customer_id or user_id must be provided")
+
+        query_params = {
+            "tenant_id": tenant_id,
+            "notification_type": notification_type,
+            "channel": channel,
+        }
+        
+        if customer_id:
+            query_params["customer_id"] = customer_id
+        if user_id:
+            query_params["user_id"] = user_id
+
+        preference = NotificationPreference.objects(**query_params).first()
 
         if preference:
             preference.enabled = enabled
@@ -291,6 +302,8 @@ class NotificationService:
             preference = NotificationPreference(
                 tenant_id=tenant_id,
                 customer_id=customer_id,
+                user_id=user_id,
+                recipient_type=recipient_type,
                 notification_type=notification_type,
                 channel=channel,
                 enabled=enabled,
@@ -301,32 +314,53 @@ class NotificationService:
 
     @staticmethod
     def get_preference(
-        customer_id: str, notification_type: str, channel: str
+        customer_id: str = None,
+        user_id: str = None,
+        notification_type: str = None,
+        channel: str = None,
     ) -> Optional[NotificationPreference]:
-        """Get notification preference for a customer."""
+        """Get notification preference for a customer or staff member."""
         tenant_id = get_tenant_id()
-        return NotificationPreference.objects(
-            tenant_id=tenant_id,
-            customer_id=customer_id,
-            notification_type=notification_type,
-            channel=channel,
-        ).first()
+        
+        query_params = {
+            "tenant_id": tenant_id,
+            "notification_type": notification_type,
+            "channel": channel,
+        }
+        
+        if customer_id:
+            query_params["customer_id"] = customer_id
+        if user_id:
+            query_params["user_id"] = user_id
+            
+        return NotificationPreference.objects(**query_params).first()
 
     @staticmethod
-    def get_preferences(customer_id: str) -> List[NotificationPreference]:
-        """Get all notification preferences for a customer."""
+    def get_preferences(customer_id: str = None, user_id: str = None) -> List[NotificationPreference]:
+        """Get all notification preferences for a customer or staff member."""
         tenant_id = get_tenant_id()
-        return NotificationPreference.objects(
-            tenant_id=tenant_id, customer_id=customer_id
-        )
+        
+        query_params = {"tenant_id": tenant_id}
+        if customer_id:
+            query_params["customer_id"] = customer_id
+        if user_id:
+            query_params["user_id"] = user_id
+            
+        return NotificationPreference.objects(**query_params)
 
     @staticmethod
     def is_notification_enabled(
-        customer_id: str, notification_type: str, channel: str
+        customer_id: str = None,
+        user_id: str = None,
+        notification_type: str = None,
+        channel: str = None,
     ) -> bool:
-        """Check if a notification is enabled for a customer."""
+        """Check if a notification is enabled for a customer or staff member."""
         preference = NotificationService.get_preference(
-            customer_id, notification_type, channel
+            customer_id=customer_id,
+            user_id=user_id,
+            notification_type=notification_type,
+            channel=channel,
         )
         return preference.enabled if preference else True  # Default to enabled
 
@@ -382,6 +416,163 @@ class NotificationService:
         }
 
     @staticmethod
+    def create_staff_appointment_reminder(
+        staff_id: str,
+        appointment_id: str,
+        appointment_time: datetime,
+        customer_name: str,
+        service_name: str,
+        staff_email: str = None,
+        staff_phone: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create appointment reminder notifications for staff."""
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app", "email"]
+        notifications = []
+
+        content = f"Reminder: You have an appointment with {customer_name} for {service_name} at {appointment_time.strftime('%I:%M %p')}."
+        subject = f"Appointment Reminder - {customer_name}"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=staff_id,
+                recipient_type="staff",
+                notification_type="appointment_reminder_24h",
+                channel=channel,
+                content=content,
+                subject=subject,
+                appointment_id=appointment_id,
+                recipient_email=staff_email if channel == "email" else None,
+                recipient_phone=staff_phone if channel == "sms" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_staff_shift_reminder(
+        staff_id: str,
+        shift_id: str,
+        shift_start: datetime,
+        shift_end: datetime,
+        staff_email: str = None,
+        staff_phone: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create shift reminder notifications for staff."""
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app", "email"]
+        notifications = []
+
+        content = f"Reminder: Your shift starts at {shift_start.strftime('%I:%M %p')} and ends at {shift_end.strftime('%I:%M %p')}."
+        subject = "Shift Reminder"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=staff_id,
+                recipient_type="staff",
+                notification_type="shift_assigned",
+                channel=channel,
+                content=content,
+                subject=subject,
+                shift_id=shift_id,
+                recipient_email=staff_email if channel == "email" else None,
+                recipient_phone=staff_phone if channel == "sms" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_staff_time_off_notification(
+        staff_id: str,
+        time_off_request_id: str,
+        status: str,
+        start_date: datetime,
+        end_date: datetime,
+        denial_reason: str = None,
+        staff_email: str = None,
+        staff_phone: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create time off approval/denial notifications for staff."""
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app", "email"]
+        notifications = []
+
+        if status == "approved":
+            content = f"Your time off request from {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')} has been approved."
+            subject = "Time Off Request Approved"
+            notification_type = "time_off_approved"
+        else:
+            content = f"Your time off request from {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')} has been denied."
+            if denial_reason:
+                content += f" Reason: {denial_reason}"
+            subject = "Time Off Request Denied"
+            notification_type = "time_off_rejected"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=staff_id,
+                recipient_type="staff",
+                notification_type=notification_type,
+                channel=channel,
+                content=content,
+                subject=subject,
+                time_off_request_id=time_off_request_id,
+                recipient_email=staff_email if channel == "email" else None,
+                recipient_phone=staff_phone if channel == "sms" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_staff_commission_notification(
+        staff_id: str,
+        commission_amount: float,
+        payment_period: str,
+        staff_email: str = None,
+        staff_phone: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create commission payment notifications for staff."""
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app", "email"]
+        notifications = []
+
+        content = f"Your commission payment of ${commission_amount:.2f} for {payment_period} has been processed."
+        subject = "Commission Payment Notification"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=staff_id,
+                recipient_type="staff",
+                notification_type="custom",
+                channel=channel,
+                content=content,
+                subject=subject,
+                recipient_email=staff_email if channel == "email" else None,
+                recipient_phone=staff_phone if channel == "sms" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
     async def send_sms_notification(
         notification_id: str, phone_number: str, message: str
     ) -> bool:
@@ -433,3 +624,194 @@ class NotificationService:
                 error_message=str(e),
             )
             return False
+
+    @staticmethod
+    def create_owner_new_booking_notification(
+        owner_id: str,
+        customer_name: str,
+        service_name: str,
+        booking_date: datetime,
+        appointment_id: str = None,
+        owner_email: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create notification for owner when new booking is made."""
+        from bson import ObjectId
+        
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app"]
+        notifications = []
+
+        content = f"New booking from {customer_name} for {service_name} on {booking_date.strftime('%B %d, %Y at %I:%M %p')}"
+        subject = "New Booking Received"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=ObjectId(owner_id) if isinstance(owner_id, str) else owner_id,
+                recipient_type="owner",
+                notification_type="new_appointment",
+                channel=channel,
+                content=content,
+                subject=subject,
+                appointment_id=ObjectId(appointment_id) if appointment_id and isinstance(appointment_id, str) else appointment_id,
+                recipient_email=owner_email if channel == "email" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_owner_payment_received_notification(
+        owner_id: str,
+        customer_name: str,
+        amount: float,
+        payment_id: str = None,
+        owner_email: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create notification for owner when payment is received."""
+        from bson import ObjectId
+        
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app"]
+        notifications = []
+
+        content = f"Payment of ${amount:.2f} received from {customer_name}"
+        subject = "Payment Received"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=ObjectId(owner_id) if isinstance(owner_id, str) else owner_id,
+                recipient_type="owner",
+                notification_type="payment_received",
+                channel=channel,
+                content=content,
+                subject=subject,
+                payment_id=ObjectId(payment_id) if payment_id and isinstance(payment_id, str) else payment_id,
+                recipient_email=owner_email if channel == "email" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_owner_payment_failed_notification(
+        owner_id: str,
+        customer_name: str,
+        amount: float,
+        reason: str = None,
+        payment_id: str = None,
+        owner_email: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create notification for owner when payment fails."""
+        from bson import ObjectId
+        
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app"]
+        notifications = []
+
+        content = f"Payment of ${amount:.2f} from {customer_name} failed"
+        if reason:
+            content += f". Reason: {reason}"
+        subject = "Payment Failed"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=ObjectId(owner_id) if isinstance(owner_id, str) else owner_id,
+                recipient_type="owner",
+                notification_type="payment_failed",
+                channel=channel,
+                content=content,
+                subject=subject,
+                payment_id=ObjectId(payment_id) if payment_id and isinstance(payment_id, str) else payment_id,
+                recipient_email=owner_email if channel == "email" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_owner_staff_alert_notification(
+        owner_id: str,
+        alert_type: str,
+        staff_name: str,
+        details: str = None,
+        owner_email: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create notification for owner for staff-related alerts."""
+        from bson import ObjectId
+        
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app"]
+        notifications = []
+
+        content = f"Staff Alert: {staff_name} - {alert_type}"
+        if details:
+            content += f". {details}"
+        subject = f"Staff Alert: {alert_type}"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=ObjectId(owner_id) if isinstance(owner_id, str) else owner_id,
+                recipient_type="owner",
+                notification_type="staff_alert",
+                channel=channel,
+                content=content,
+                subject=subject,
+                recipient_email=owner_email if channel == "email" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications
+
+    @staticmethod
+    def create_owner_inventory_alert_notification(
+        owner_id: str,
+        alert_type: str,
+        item_name: str,
+        details: str = None,
+        owner_email: str = None,
+        channels: List[str] = None,
+    ) -> List[Notification]:
+        """Create notification for owner for inventory-related alerts."""
+        from bson import ObjectId
+        
+        tenant_id = get_tenant_id()
+        channels = channels or ["in_app"]
+        notifications = []
+
+        content = f"Inventory Alert: {item_name} - {alert_type}"
+        if details:
+            content += f". {details}"
+        subject = f"Inventory Alert: {alert_type}"
+
+        for channel in channels:
+            notification = Notification(
+                tenant_id=tenant_id,
+                recipient_id=ObjectId(owner_id) if isinstance(owner_id, str) else owner_id,
+                recipient_type="owner",
+                notification_type="inventory_alert",
+                channel=channel,
+                content=content,
+                subject=subject,
+                recipient_email=owner_email if channel == "email" else None,
+                status="pending",
+            )
+            notification.save()
+            notifications.append(notification)
+
+        return notifications

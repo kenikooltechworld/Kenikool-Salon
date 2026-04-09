@@ -115,7 +115,7 @@ export function CustomerForm({
         <div className="flex items-start gap-2 xs:gap-3 p-2 xs:p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircleIcon
             size={16}
-            className="text-green-600 flex-shrink-0 mt-0.5"
+            className="text-green-600 shrink-0 mt-0.5"
           />
           <p className="text-xs xs:text-sm sm:text-base text-green-800 font-medium">
             {initialData
@@ -128,10 +128,7 @@ export function CustomerForm({
       {/* Error Message */}
       {submitError && (
         <div className="flex items-start gap-2 xs:gap-3 p-2 xs:p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircleIcon
-            size={16}
-            className="text-red-600 flex-shrink-0 mt-0.5"
-          />
+          <AlertCircleIcon size={16} className="text-red-600 shrink-0 mt-0.5" />
           <p className="text-xs xs:text-sm sm:text-base text-red-800 font-medium">
             {submitError}
           </p>

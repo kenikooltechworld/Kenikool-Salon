@@ -1,0 +1,110 @@
+services:
+  # Backend API Service
+  - type: web
+    name: salon-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: PORT
+        value: 8000
+      - key: DATABASE_URL
+        sync: false  # You'll set this manually
+      - key: DATABASE_NAME
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: salon-redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://your-frontend-url.onrender.com
+      - key: PLATFORM_DOMAIN
+        value: your-frontend-url.onrender.com
+      - key: CORS_ORIGINS
+        value: https://your-frontend-url.onrender.com
+      - key: PAYSTACK_LIVE_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_LIVE_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: TERMII_API_KEY
+        sync: false
+      - key: TERMII_SENDER_ID
+        sync: false
+
+  # Redis Cache
+  - type: redis
+    name: salon-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  # Celery Worker (Background Jobs)
+  - type: worker
+    name: salon-celery-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    startCommand: celery -A app.tasks worker --loglevel=info
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_NAME
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: salon-redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+
+  # Frontend (Static Site)
+  - type: web
+    name: salon-frontend
+    runtime: static
+    buildCommand: cd salon && npm install && npm run build
+    staticPublishPath: ./salon/dist
+    plan: free
+    region: oregon
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://salon-backend.onrender.com/api/v1

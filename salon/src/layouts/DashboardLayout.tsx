@@ -16,6 +16,7 @@ import {
   LogOutIcon,
   UserIcon,
   ShoppingCartIcon,
+  ClockIcon,
 } from "@/components/icons";
 
 const menuItems = [
@@ -26,10 +27,58 @@ const menuItems = [
   { icon: UsersIcon, label: "Staff", path: "/staff" },
   { icon: FileTextIcon, label: "Invoices", path: "/invoices" },
   { icon: ShoppingCartIcon, label: "POS", path: "/pos" },
+  { icon: UsersIcon, label: "Group Bookings", path: "/owner/group-bookings" },
+  { icon: ScissorsIcon, label: "Social Proof", path: "/owner/social-proof" },
   { icon: SettingsIcon, label: "Settings", path: "/settings" },
   { icon: UsersIcon, label: "Waiting Room", path: "/waiting-room" },
   { icon: ScissorsIcon, label: "Resources", path: "/resources" },
 ];
+
+// Role-based menu filtering
+function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
+  // Owner: Full access to all menu items
+  if (roleNames.includes("Owner")) {
+    return menuItems;
+  }
+
+  // Manager: Access to bookings, customers, services, staff, invoices, reports, settings
+  if (roleNames.includes("Manager")) {
+    return menuItems.filter((item) =>
+      [
+        "/dashboard",
+        "/bookings",
+        "/customers",
+        "/services",
+        "/staff",
+        "/invoices",
+        "/settings",
+      ].includes(item.path),
+    );
+  }
+
+  // Staff: Access to staff dashboard
+  if (roleNames.includes("Staff")) {
+    return [
+      { icon: HomeIcon, label: "Dashboard", path: "/staff/dashboard" },
+      {
+        icon: CalendarIcon,
+        label: "Appointments",
+        path: "/staff/appointments",
+      },
+      { icon: ClockIcon, label: "Shifts", path: "/staff/shifts" },
+      { icon: CalendarIcon, label: "Time Off", path: "/staff/time-off" },
+      { icon: SettingsIcon, label: "Settings", path: "/staff/settings" },
+    ];
+  }
+
+  // Customer: Only access to their account
+  if (roleNames.includes("Customer")) {
+    return [{ icon: UserIcon, label: "My Account", path: "/my-account" }];
+  }
+
+  // Default: minimal access
+  return [{ icon: HomeIcon, label: "Dashboard", path: "/dashboard" }];
+}
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -40,6 +89,11 @@ export function DashboardLayout() {
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Get filtered menu items based on user role
+  const filteredMenuItems = user?.roleNames
+    ? getMenuItemsForRole(user.roleNames)
+    : getMenuItemsForRole([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,9 +108,9 @@ export function DashboardLayout() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    localStorage.removeItem("tenantId");
+  const handleLogout = async () => {
+    await logout();
+    // Clear session-related items (tenant context comes from httpOnly cookie)
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/");
@@ -115,7 +169,7 @@ export function DashboardLayout() {
 
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-2">
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPath === item.path;
             return (
@@ -166,8 +220,8 @@ export function DashboardLayout() {
             </button>
 
             <h1 className="text-lg font-semibold text-foreground truncate">
-              {menuItems.find((item) => item.path === currentPath)?.label ||
-                "Dashboard"}
+              {filteredMenuItems.find((item) => item.path === currentPath)
+                ?.label || "Dashboard"}
             </h1>
           </div>
 

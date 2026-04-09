@@ -30,7 +30,7 @@ interface ToastContextType {
 }
 
 const ToastContext = React.createContext<ToastContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const useToast = () => {
@@ -60,7 +60,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
         }, toast.duration || 5000);
       }
     },
-    [removeToast]
+    [removeToast],
   );
 
   return (
@@ -89,8 +89,8 @@ const toastStyles = {
   warning:
     "bg-[var(--warning)] border-[var(--warning)] text-[var(--warning-foreground)]",
   error:
-    "bg-[var(--error)] border-[var(--error)] text-[var(--error-foreground)]",
-  info: "bg-[var(--info)] border-[var(--info)] text-[var(--info-foreground)]",
+    "bg-[var(--destructive)] border-[var(--destructive)] text-[var(--destructive-foreground)]",
+  info: "bg-[var(--card)] border-[var(--border)] text-[var(--card-foreground)]",
 };
 
 const ToastContainer = ({
@@ -108,8 +108,8 @@ const ToastContainer = ({
           <div
             key={toast.id}
             className={cn(
-              "flex items-start gap-3 p-4 rounded-[var(--radius-lg)] border-2 shadow-[var(--shadow-lg)] animate-in slide-in-from-right",
-              toastStyles[toast.variant || "default"]
+              "flex items-start gap-3 p-4 rounded-lg border-2 shadow-lg animate-in slide-in-from-right",
+              toastStyles[toast.variant || "default"],
             )}
           >
             <Icon size={20} className="shrink-0 mt-0.5" />
@@ -123,7 +123,7 @@ const ToastContainer = ({
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="shrink-0 rounded-[var(--radius-sm)] p-1 hover:bg-black/10 transition-colors"
+              className="shrink-0 rounded-sm p-1 hover:bg-black/10 transition-colors"
               aria-label="Close toast"
             >
               <XIcon size={16} />

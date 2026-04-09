@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -12,6 +13,8 @@ import {
   ModalFooter,
 } from "@/components/ui/modal";
 import { VerificationCodeInput } from "@/components/VerificationCodeInput";
+import { AuthHeader } from "@/components/auth/AuthHeader";
+import { TrustIndicators } from "@/components/auth/TrustIndicators";
 import {
   useVerifyRegistrationCode,
   useResendVerificationCode,
@@ -93,6 +96,7 @@ export function Verify() {
           lastName: "",
           phone: "",
           role: "owner",
+          roleNames: ["Owner"],
           tenantId: response.data.tenant_id,
         });
 
@@ -157,88 +161,154 @@ export function Verify() {
     }
   };
 
+  const handleCopyUrl = async () => {
+    if (successData?.full_url) {
+      try {
+        await navigator.clipboard.writeText(successData.full_url);
+        showToast({
+          title: "Copied!",
+          description: "Subdomain URL copied to clipboard",
+          variant: "success",
+          duration: 3000,
+        });
+      } catch (err) {
+        showToast({
+          title: "Failed to Copy",
+          description: "Could not copy to clipboard",
+          variant: "error",
+          duration: 3000,
+        });
+      }
+    }
+  };
+
   if (!email) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Verify Your Email
-            </h1>
-            <p className="text-muted-foreground">
-              We sent a 6-digit code to{" "}
-              <span className="font-medium">{email}</span>
-            </p>
-          </div>
-
-          {error && (
-            <Alert variant="error" className="mb-6">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-6">
-            <VerificationCodeInput
-              value={code}
-              onChange={setCode}
-              disabled={verifyMutation.isPending}
-              error={error}
+      <div className="w-full max-w-2xl">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="p-12 shadow-lg">
+            <AuthHeader
+              title="Verify Your Email"
+              subtitle="Enter the code we sent to your email"
+              showLogo={true}
             />
 
-            <Button
-              onClick={handleVerify}
-              disabled={code.length !== 6 || verifyMutation.isPending}
-              className="w-full"
-            >
-              {verifyMutation.isPending ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  Verifying...
-                </>
-              ) : (
-                "Verify Code"
-              )}
-            </Button>
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                Didn't receive the code?
-              </p>
-              <Button
-                variant="outline"
-                onClick={handleResend}
-                disabled={resendCountdown > 0 || resendMutation.isPending}
-                className="w-full"
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                {resendMutation.isPending ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Sending...
-                  </>
-                ) : resendCountdown > 0 ? (
-                  `Resend in ${resendCountdown}s`
-                ) : (
-                  "Resend Code"
-                )}
-              </Button>
-            </div>
-          </div>
+                <Alert variant="error" className="mb-6">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
 
-          <div className="mt-6 pt-6 border-t border-border text-center">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/auth/register")}
-              className="text-sm"
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
             >
-              Back to Registration
-            </Button>
-          </div>
-        </Card>
+              <div className="space-y-6">
+                <div className="text-center">
+                  <p className="text-muted-foreground">
+                    We sent a 6-digit code to{" "}
+                    <span className="font-medium text-foreground">{email}</span>
+                  </p>
+                </div>
+
+                <VerificationCodeInput
+                  value={code}
+                  onChange={setCode}
+                  disabled={verifyMutation.isPending}
+                  error={error}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  whileHover={{ scale: code.length === 6 ? 1.02 : 1 }}
+                  whileTap={{ scale: code.length === 6 ? 0.98 : 1 }}
+                >
+                  <Button
+                    onClick={handleVerify}
+                    disabled={code.length !== 6 || verifyMutation.isPending}
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                  >
+                    {verifyMutation.isPending ? (
+                      <>
+                        <Spinner className="mr-2 h-4 w-4" />
+                        Verifying...
+                      </>
+                    ) : (
+                      "Verify Code"
+                    )}
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Didn't receive the code?
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={handleResend}
+                      disabled={resendCountdown > 0 || resendMutation.isPending}
+                      className="w-full"
+                    >
+                      {resendMutation.isPending ? (
+                        <>
+                          <Spinner className="mr-2 h-4 w-4" />
+                          Sending...
+                        </>
+                      ) : resendCountdown > 0 ? (
+                        `Resend in ${resendCountdown}s`
+                      ) : (
+                        "Resend Code"
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              <div className="mt-6 pt-6 border-t border-border text-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/auth/register")}
+                  className="text-sm"
+                >
+                  Back to Registration
+                </Button>
+              </div>
+            </motion.div>
+
+            <TrustIndicators />
+          </Card>
+        </motion.div>
       </div>
 
       {/* Success Modal */}
@@ -289,9 +359,17 @@ export function Verify() {
               <p className="text-sm text-muted-foreground mb-1">
                 Your Subdomain:
               </p>
-              <p className="font-mono font-semibold text-foreground">
+              <p className="font-mono font-semibold text-foreground break-all">
                 {successData?.full_url}
               </p>
+              <Button
+                onClick={handleCopyUrl}
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+              >
+                Copy Subdomain URL
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               This modal will close automatically in 30 seconds, or you can

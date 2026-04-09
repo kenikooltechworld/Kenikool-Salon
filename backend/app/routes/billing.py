@@ -117,6 +117,9 @@ async def get_subscription(tenant_id: str = Depends(get_tenant_id)):
     Returns:
         SubscriptionResponse: Current subscription details
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         subscription = SubscriptionService.get_subscription(tenant_id)
         if not subscription:
@@ -257,6 +260,9 @@ async def cancel_subscription(tenant_id: str = Depends(get_tenant_id)):
     Returns:
         Canceled subscription
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         subscription = SubscriptionService.cancel_subscription(tenant_id)
         plan = PricingPlan.objects(id=subscription.pricing_plan_id).first()
@@ -289,6 +295,9 @@ async def continue_free_with_fee(tenant_id: str = Depends(get_tenant_id)):
     Returns:
         Updated subscription
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         subscription = SubscriptionService.continue_free_with_fee(tenant_id)
         plan = PricingPlan.objects(id=subscription.pricing_plan_id).first()

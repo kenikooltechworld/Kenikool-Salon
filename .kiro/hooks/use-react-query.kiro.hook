@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Use React Query for Data Fetching",
+  "description": "Detects useEffect with fetch/axios calls and reminds to use React Query instead",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "salon/src/components/**/*.tsx",
+      "salon/src/pages/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check if this file contains useEffect hooks that make API calls (fetch, axios, apiClient). If found, remind me to refactor to use React Query (useQuery or useMutation) instead."
+  }
+}

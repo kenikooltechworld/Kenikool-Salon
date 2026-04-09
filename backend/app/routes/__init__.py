@@ -3,6 +3,7 @@
 from app.routes import (
     auth,
     tenants,
+    tenant_recovery,
     registration,
     audit,
     media,
@@ -36,12 +37,17 @@ from app.routes import (
     pos_reports,
     service_commissions,
     billing,
+    staff_settings,
     settings,
+    availability_events,
+    memberships,
+    public_memberships,
 )
 
 __all__ = [
     "auth",
     "tenants",
+    "tenant_recovery",
     "registration",
     "audit",
     "media",
@@ -75,5 +81,9 @@ __all__ = [
     "pos_reports",
     "service_commissions",
     "billing",
+    "staff_settings",
     "settings",
+    "availability_events",
+    "memberships",
+    "public_memberships",
 ]

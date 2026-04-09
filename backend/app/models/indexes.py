@@ -38,6 +38,7 @@ def create_indexes():
         
         # Permission collection indexes
         db.permissions.create_index([("tenant_id", 1), ("resource", 1), ("action", 1)])
+        db.permissions.create_index([("tenant_id", 1), ("_id", 1)])  # For batch lookups
         logger.info("Created indexes for permissions collection")
         
         # Temp registration collection indexes

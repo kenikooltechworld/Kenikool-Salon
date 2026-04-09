@@ -28,6 +28,12 @@ class Tenant(Document):
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     deleted_at = DateTimeField(null=True)
+    deletion_status = StringField(
+        choices=["active", "soft_deleted", "permanently_deleted"],
+        default="active",
+    )
+    recovery_token = StringField(null=True, max_length=255)
+    recovery_token_expires_at = DateTimeField(null=True)
     settings = DictField(default={})
 
     meta = {
@@ -36,6 +42,9 @@ class Tenant(Document):
             "created_at",
             "status",
             ("status", "created_at"),
+            "deletion_status",
+            ("deletion_status", "deleted_at"),
+            "recovery_token",
         ],
     }
 

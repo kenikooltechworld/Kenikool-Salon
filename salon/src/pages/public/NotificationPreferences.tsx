@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle } from "@/components/icons";
 
 interface NotificationPreferences {
   send_confirmation_email: boolean;

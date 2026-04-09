@@ -6,6 +6,7 @@ export interface Staff {
   email: string;
   phone: string;
   role_ids?: string[];
+  service_ids?: string[];
   specialties: string[];
   certifications: string[];
   certification_files: string[];

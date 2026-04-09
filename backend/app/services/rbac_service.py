@@ -82,24 +82,33 @@ class RBACService:
             return False
 
     def get_user_permissions(self, user_id: str, tenant_id: str) -> List[str]:
-        """Get all permissions for a user from all their roles."""
+        """Get all permissions for a user from all their roles (optimized with batch queries)."""
         try:
-            user = User.objects(id=user_id, tenant_id=tenant_id).first()
-            if not user:
-                logger.warning(f"User not found: {user_id}")
+            user = User.objects(id=user_id, tenant_id=tenant_id).only('role_ids').first()
+            if not user or not user.role_ids:
                 return []
 
-            all_permissions = set()
-            for role_id in user.role_ids:
-                role = Role.objects(id=role_id, tenant_id=tenant_id).first()
-                if role:
-                    permissions = Permission.objects(
-                        id__in=role.permissions, tenant_id=tenant_id
-                    )
-                    for p in permissions:
-                        all_permissions.add(f"{p.resource}:{p.action}")
+            # Batch fetch all roles in one query
+            roles = Role.objects(id__in=user.role_ids, tenant_id=tenant_id).only('permissions')
             
-            return list(all_permissions)
+            # Collect all permission IDs from all roles
+            all_permission_ids = set()
+            for role in roles:
+                if role.permissions:
+                    all_permission_ids.update(role.permissions)
+            
+            if not all_permission_ids:
+                return []
+            
+            # Batch fetch all permissions in one query
+            permissions = Permission.objects(
+                id__in=list(all_permission_ids), 
+                tenant_id=tenant_id
+            ).only('resource', 'action')
+            
+            # Build permission strings
+            return [f"{p.resource}:{p.action}" for p in permissions]
+            
         except Exception as e:
             logger.error(f"Error getting user permissions: {e}")
             return []

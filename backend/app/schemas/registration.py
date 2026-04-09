@@ -11,7 +11,7 @@ class RegisterRequest(BaseModel):
     owner_name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     phone: str = Field(..., min_length=10, max_length=20)
-    password: str = Field(..., min_length=12)
+    password: str = Field(..., min_length=8)
     address: str = Field(..., min_length=5, max_length=500)
     bank_account: Optional[str] = Field(None, min_length=10, max_length=50)
     referral_code: Optional[str] = Field(None, pattern="^[a-zA-Z0-9]+$")

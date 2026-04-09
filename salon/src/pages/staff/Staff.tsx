@@ -59,14 +59,30 @@ export default function StaffPage() {
           description: `${deleteConfirm.staffName} has been deleted successfully`,
         });
         setDeleteConfirm({ isOpen: false });
-      } catch (error) {
+      } catch (error: any) {
+        let errorMessage =
+          "Unable to delete this staff member. Please try again.";
+
+        if (error?.response?.data?.detail) {
+          const detail = error.response.data.detail;
+          if (detail.includes("has active appointments")) {
+            errorMessage =
+              "Cannot delete staff member with active appointments";
+          } else if (detail.includes("not found")) {
+            errorMessage = "Staff member not found";
+          } else if (detail.includes("not authorized")) {
+            errorMessage = "You are not authorized to delete this staff member";
+          } else {
+            errorMessage = detail;
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
         showToast({
           variant: "error",
-          title: "Error",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Failed to delete staff member",
+          title: "Unable to Delete",
+          description: errorMessage,
         });
       }
     }
@@ -486,14 +502,31 @@ export default function StaffPage() {
               title: "Success",
               description: `${data.firstName} ${data.lastName} has been added successfully`,
             });
-          } catch (error) {
+          } catch (error: any) {
+            let errorMessage =
+              "Unable to add this staff member. Please try again.";
+
+            if (error?.response?.data?.detail) {
+              const detail = error.response.data.detail;
+              if (detail.includes("already exists")) {
+                errorMessage = "A staff member with this email already exists";
+              } else if (detail.includes("invalid email")) {
+                errorMessage = "Please provide a valid email address";
+              } else if (detail.includes("required")) {
+                errorMessage = "Please fill in all required fields";
+              } else if (detail.includes("not authorized")) {
+                errorMessage = "You are not authorized to add staff members";
+              } else {
+                errorMessage = detail;
+              }
+            } else if (error instanceof Error) {
+              errorMessage = error.message;
+            }
+
             showToast({
               variant: "error",
-              title: "Error",
-              description:
-                error instanceof Error
-                  ? error.message
-                  : "Failed to add staff member",
+              title: "Unable to Add Staff",
+              description: errorMessage,
             });
             throw error;
           }

@@ -27,7 +27,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:8000",
-        changeOrigin: false,
+        changeOrigin: true,
         rewrite: (path) => path,
         configure: (proxy, options) => {
           proxy.on("proxyReq", (proxyReq, req, res) => {
@@ -35,6 +35,19 @@ export default defineConfig({
             const host = req.headers.host || "localhost:3000";
             proxyReq.setHeader("X-Forwarded-Host", host);
             proxyReq.setHeader("X-Forwarded-Proto", "http");
+
+            // Forward cookies from the original request
+            if (req.headers.cookie) {
+              proxyReq.setHeader("Cookie", req.headers.cookie);
+            }
+          });
+
+          proxy.on("proxyRes", (proxyRes, req, res) => {
+            // Forward Set-Cookie headers from backend to client
+            const setCookieHeaders = proxyRes.headers["set-cookie"];
+            if (setCookieHeaders) {
+              res.setHeader("Set-Cookie", setCookieHeaders);
+            }
           });
         },
       },

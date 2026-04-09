@@ -20,6 +20,9 @@ async def get_receipt_by_transaction(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get receipt for a transaction."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         receipt = ReceiptService.get_receipt_by_transaction(
             tenant_id=tenant_id,
@@ -74,6 +77,9 @@ async def list_receipts(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """List receipts."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         receipts, total = ReceiptService.list_receipts(
             tenant_id=tenant_id,
@@ -134,6 +140,9 @@ async def print_receipt(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Print receipt."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         receipt = ReceiptService.mark_receipt_printed(
             tenant_id=tenant_id,
@@ -155,6 +164,9 @@ async def email_receipt(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Email receipt."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         receipt = ReceiptService.mark_receipt_emailed(
             tenant_id=tenant_id,

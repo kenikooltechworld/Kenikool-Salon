@@ -4,13 +4,32 @@
 
 ### 1.1 Create PublicHeroSection Component
 - [ ] Create `salon/src/components/public/PublicHeroSection.tsx`
-- [ ] Adapt `HeroSection.tsx` from landing page to accept salon info
-- [ ] Display salon logo, name, description
-- [ ] Apply salon primary/secondary colors
-- [ ] Add "Book Now" CTA button with smooth scroll
-- [ ] Support light/dark modes
+- [ ] Adapt `HeroSection.tsx` from `salon/src/components/landing/hero-section.tsx` to accept salon info
+- [ ] Display salon logo, name, description from `/public/salon-info` endpoint
+- [ ] Apply salon primary/secondary colors to background and CTA button
+- [ ] Add "Book Now" CTA button with smooth scroll to booking form section
+- [ ] Support light/dark modes using existing theme provider
 - [ ] Test on mobile and desktop
 - [ ] Add TypeScript types and prop validation
+
+**Implementation Details:**
+- **Reuse:** Copy `salon/src/components/landing/hero-section.tsx` as base
+- **Fetch Data:** Use existing `usePublicBooking.ts` hook or create new hook to fetch salon info
+- **Styling:** Use Tailwind CSS classes, apply salon colors via inline styles or CSS variables
+- **Scroll:** Use `scrollIntoView({ behavior: 'smooth' })` or `window.scrollTo()`
+- **Props Interface:**
+```typescript
+interface PublicHeroSectionProps {
+  salonInfo: {
+    name: string;
+    description?: string;
+    logo_url?: string;
+    primary_color?: string;
+    secondary_color?: string;
+  };
+  onBookNowClick: () => void;
+}
+```
 
 **Acceptance Criteria:**
 - Hero section displays at top of page
@@ -19,8 +38,9 @@
 - Mobile responsive with proper spacing
 - Smooth fade-in animation on load
 
-**Reusable Component:** `HeroSection.tsx` from landing page  
-**Files to Modify:** `salon/src/pages/public/PublicBookingApp.tsx`
+**Files to Create:** `salon/src/components/public/PublicHeroSection.tsx`  
+**Files to Modify:** `salon/src/pages/public/PublicBookingApp.tsx`  
+**Backend Endpoint:** Already exists - `GET /public/salon-info`
 
 ---
 

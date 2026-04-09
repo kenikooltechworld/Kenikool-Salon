@@ -151,3 +151,16 @@ class PublicBookingRateLimitMiddleware(BaseHTTPMiddleware):
         )
 
         return response
+
+
+
+def get_public_tenant_id(request: Request) -> str:
+    """
+    Dependency to get tenant_id for public endpoints.
+    Extracts tenant_id from request scope (set by SubdomainContextMiddleware).
+    """
+    tenant_id = request.scope.get("tenant_id")
+    if not tenant_id:
+        logger.warning("Public request without tenant_id in scope")
+        raise HTTPException(status_code=403, detail="Tenant not found")
+    return tenant_id

@@ -21,10 +21,10 @@ export function useAvailability(filters?: AvailabilityFilters) {
       if (filters?.page) params.append("page", filters.page.toString());
       if (filters?.limit) params.append("limit", filters.limit.toString());
 
-      const { data } = await apiClient.get<{ data: Availability[] }>(
+      const { data } = await apiClient.get<Availability[]>(
         `/availability?${params}`,
       );
-      return data.data || [];
+      return Array.isArray(data) ? data : [];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -34,10 +34,8 @@ export function useAvailabilityById(id: string) {
   return useQuery({
     queryKey: [AVAILABILITY_QUERY_KEY, id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Availability }>(
-        `/availability/${id}`,
-      );
-      return data.data || null;
+      const { data } = await apiClient.get<Availability>(`/availability/${id}`);
+      return data || null;
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -49,11 +47,11 @@ export function useCreateAvailability() {
 
   return useMutation({
     mutationFn: async (input: CreateAvailabilityInput) => {
-      const { data } = await apiClient.post<{ data: Availability }>(
+      const { data } = await apiClient.post<Availability>(
         "/availability",
         input,
       );
-      return data.data;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [AVAILABILITY_QUERY_KEY] });
@@ -72,11 +70,11 @@ export function useUpdateAvailability() {
       id: string;
       [key: string]: any;
     }) => {
-      const { data } = await apiClient.put<{ data: Availability }>(
+      const { data } = await apiClient.put<Availability>(
         `/availability/${id}`,
         input,
       );
-      return data.data;
+      return data;
     },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [AVAILABILITY_QUERY_KEY] });

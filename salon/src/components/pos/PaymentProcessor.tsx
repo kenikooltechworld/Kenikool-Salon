@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePOSStore } from "@/stores/pos";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useInitializePOSPayment } from "@/hooks/usePayment";
+import { useGenerateReceipt } from "@/hooks/useReceipt";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,6 +38,7 @@ export default function PaymentProcessor({
   const [tipAmount, setTipAmount] = useState(0);
   const { mutate: checkout } = useCheckout();
   const { mutate: initializePOSPayment } = useInitializePOSPayment();
+  const { mutate: generateReceipt } = useGenerateReceipt();
   const { showToast } = useToast();
   const { cartItems, cartTotal, cartSubtotal, setPaymentStatus, clearCart } =
     usePOSStore();
@@ -79,11 +81,9 @@ export default function PaymentProcessor({
           },
           {
             onSuccess: (transaction: any) => {
-              // Generate receipt after cash payment
-              fetch(`/api/v1/transactions/${transaction.id}/generate-receipt`, {
-                method: "POST",
-              })
-                .then(() => {
+              // Generate receipt after cash payment using React Query
+              generateReceipt(transaction.id, {
+                onSuccess: () => {
                   setPaymentStatus("completed");
                   setSuccess(true);
                   showToast({
@@ -95,8 +95,8 @@ export default function PaymentProcessor({
                     clearCart();
                     onClose();
                   }, 2000);
-                })
-                .catch((err) => {
+                },
+                onError: (err: any) => {
                   // Receipt generation failed but transaction was created
                   console.error("Receipt generation failed:", err);
                   setPaymentStatus("completed");
@@ -110,7 +110,8 @@ export default function PaymentProcessor({
                     clearCart();
                     onClose();
                   }, 2000);
-                });
+                },
+              });
             },
             onError: (error: any) => {
               const errorMsg =
@@ -237,11 +238,9 @@ export default function PaymentProcessor({
           },
           {
             onSuccess: (transaction: any) => {
-              // Generate receipt after check payment
-              fetch(`/api/v1/transactions/${transaction.id}/generate-receipt`, {
-                method: "POST",
-              })
-                .then(() => {
+              // Generate receipt after check payment using React Query
+              generateReceipt(transaction.id, {
+                onSuccess: () => {
                   setPaymentStatus("pending");
                   setSuccess(true);
                   showToast({
@@ -253,8 +252,8 @@ export default function PaymentProcessor({
                     clearCart();
                     onClose();
                   }, 2000);
-                })
-                .catch((err) => {
+                },
+                onError: (err: any) => {
                   // Receipt generation failed but transaction was created
                   console.error("Receipt generation failed:", err);
                   setPaymentStatus("pending");
@@ -268,7 +267,8 @@ export default function PaymentProcessor({
                     clearCart();
                     onClose();
                   }, 2000);
-                });
+                },
+              });
             },
             onError: (error: any) => {
               const errorMsg =

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { RegistrationForm } from "@/components/RegistrationForm";
 import {
@@ -7,34 +8,34 @@ import {
   type RegistrationData,
 } from "@/hooks/useRegistration";
 import { useToast } from "@/components/ui/toast";
+import { AuthHeader } from "@/components/auth/AuthHeader";
+import { TrustIndicators } from "@/components/auth/TrustIndicators";
 
 export function Register() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [error, setError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const registerMutation = useRegisterSalon();
 
   const handleSubmit = async (data: RegistrationData) => {
     setError("");
+    setIsSubmitting(true);
     try {
       const response = await registerMutation.mutateAsync(data);
       if (response.success) {
-        // Show success toast
         showToast({
           title: "Registration Submitted!",
           description: "Check your email for the verification code.",
           variant: "success",
           duration: 5000,
         });
-        // Navigate to verification page with email as query param
         navigate(`/auth/verify?email=${encodeURIComponent(data.email)}`);
       }
     } catch (err: any) {
-      // Handle Pydantic validation errors (422)
       if (err.response?.status === 422 && err.response?.data?.detail) {
         const details = err.response.data.detail;
         if (Array.isArray(details)) {
-          // Pydantic validation error format: array of error objects
           const errorMessages = details
             .map((e: any) => {
               const fieldName =
@@ -66,7 +67,21 @@ export function Register() {
             duration: 5000,
           });
         }
+      } else if (err.response?.status === 500) {
+        // Handle 500 errors specifically with user-friendly messages
+        const errorMessage =
+          err.response?.data?.detail ||
+          err.message ||
+          "A server error occurred. Please try again later.";
+        setError(errorMessage);
+        showToast({
+          title: "Server Error",
+          description: errorMessage,
+          variant: "error",
+          duration: 5000,
+        });
       } else {
+        // Handle all other errors
         const errorMessage =
           err.response?.data?.detail ||
           err.message ||
@@ -79,58 +94,102 @@ export function Register() {
           duration: 5000,
         });
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Create Your Salon Account
-            </h1>
-            <p className="text-muted-foreground">
-              Join thousands of salon owners managing their business with
-              Kenikool
-            </p>
-          </div>
+      <div className="w-full max-w-2xl">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="p-12 shadow-lg">
+            <AuthHeader
+              title="Create Your Salon Account"
+              subtitle="Join thousands of salon owners managing their business with Kenikool"
+              showLogo={true}
+            />
 
-          <RegistrationForm
-            onSubmit={handleSubmit}
-            isLoading={registerMutation.isPending}
-            error={error}
-          />
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                to="/auth/login"
-                className="text-primary hover:underline font-medium"
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                Sign in
-              </Link>
-            </p>
-          </div>
+                <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive font-medium">
+                    {error}
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
-          <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center">
-              By creating an account, you agree to our{" "}
-              <a href="#" className="text-primary hover:underline">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="#" className="text-primary hover:underline">
-                Privacy Policy
-              </a>
-            </p>
-          </div>
-        </Card>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <RegistrationForm
+                onSubmit={handleSubmit}
+                isLoading={registerMutation.isPending || isSubmitting}
+                error={error}
+              />
+            </motion.div>
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Get 30 days free trial with all Enterprise features included</p>
-        </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Already have an account?{" "}
+                  <Link
+                    to="/auth/login"
+                    className="text-primary hover:underline font-medium transition-colors"
+                  >
+                    Sign in
+                  </Link>
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-xs text-muted-foreground text-center">
+                  By creating an account, you agree to our{" "}
+                  <a href="#" className="text-primary hover:underline">
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a href="#" className="text-primary hover:underline">
+                    Privacy Policy
+                  </a>
+                </p>
+              </div>
+            </motion.div>
+
+            <TrustIndicators />
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+        >
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Get 30 days free trial with all Enterprise features included</p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

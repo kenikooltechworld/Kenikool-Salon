@@ -135,3 +135,25 @@ export function useDownloadReceiptPDF() {
     },
   });
 }
+
+/**
+ * Generate receipt for a transaction
+ */
+export function useGenerateReceipt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (transactionId: string) => {
+      const response = await apiClient.post<Receipt>(
+        `/transactions/${transactionId}/generate-receipt`,
+      );
+      return response.data;
+    },
+    onSuccess: (receipt) => {
+      // Invalidate receipts queries
+      queryClient.invalidateQueries({ queryKey: ["receipts"], exact: false });
+      // Set the specific receipt in cache
+      queryClient.setQueryData(["receipts", receipt.transactionId], receipt);
+    },
+  });
+}

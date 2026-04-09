@@ -14,6 +14,7 @@ class StaffCreate(BaseModel):
     email: str = Field(..., description="Email of the staff member")
     phone: Optional[str] = Field(None, description="Phone number of the staff member")
     role_ids: Optional[List[str]] = Field(None, description="List of role IDs to assign to the staff member")
+    service_ids: Optional[List[str]] = Field(None, description="List of service IDs this staff member provides")
     specialties: List[str] = Field(default=[], description="List of specialties")
     certifications: List[str] = Field(default=[], description="List of certifications")
     certification_files: List[str] = Field(default=[], description="List of certification file URLs")
@@ -28,6 +29,7 @@ class StaffCreate(BaseModel):
 class StaffUpdate(BaseModel):
     """Schema for updating a staff member."""
 
+    service_ids: Optional[List[str]] = Field(None, description="List of service IDs this staff member provides")
     specialties: Optional[List[str]] = Field(None, description="List of specialties")
     certifications: Optional[List[str]] = Field(None, description="List of certifications")
     certification_files: Optional[List[str]] = Field(None, description="List of certification file URLs")

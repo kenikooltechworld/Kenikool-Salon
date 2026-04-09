@@ -40,10 +40,10 @@ export function useInvoices(filters?: InvoiceFilters) {
   return useQuery({
     queryKey: ["invoices", filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Invoice[] }>("/invoices", {
+      const { data } = await apiClient.get<Invoice[]>("/invoices", {
         params: filters,
       });
-      return data.data || [];
+      return Array.isArray(data) ? data : [];
     },
   });
 }
@@ -55,10 +55,8 @@ export function useInvoice(id: string) {
   return useQuery({
     queryKey: ["invoices", id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Invoice }>(
-        `/invoices/${id}`,
-      );
-      return data.data;
+      const { data } = await apiClient.get<Invoice>(`/invoices/${id}`);
+      return data;
     },
     enabled: !!id,
   });
@@ -84,11 +82,8 @@ export function useCreateInvoice() {
       notes?: string;
       due_date?: string;
     }) => {
-      const { data } = await apiClient.post<{ data: Invoice }>(
-        "/invoices",
-        invoice,
-      );
-      return data.data;
+      const { data } = await apiClient.post<Invoice>("/invoices", invoice);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
@@ -107,11 +102,8 @@ export function useUpdateInvoice() {
       id,
       ...updates
     }: Partial<Invoice> & { id: string }) => {
-      const { data } = await apiClient.put<{ data: Invoice }>(
-        `/invoices/${id}`,
-        updates,
-      );
-      return data.data;
+      const { data } = await apiClient.put<Invoice>(`/invoices/${id}`, updates);
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });

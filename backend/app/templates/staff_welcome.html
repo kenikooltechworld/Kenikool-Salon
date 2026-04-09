@@ -27,6 +27,12 @@
             padding: 40px 20px;
             text-align: center;
         }
+        .logo {
+            max-width: 180px;
+            max-height: 80px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
         .header h1 {
             margin: 0;
             font-size: 28px;
@@ -164,6 +170,9 @@
 <body>
     <div class="container">
         <div class="header">
+            {% if salon_logo_url %}
+            <img src="{{ salon_logo_url }}" alt="{{ salon_name }} Logo" class="logo">
+            {% endif %}
             <h1>Welcome to {{ salon_name }}</h1>
             <p>Your staff account has been created</p>
         </div>
@@ -198,7 +207,7 @@
             <div class="credentials">
                 <h3>⚠️ Temporary Login Credentials</h3>
                 <p style="margin: 0 0 15px 0; font-size: 13px; color: #666;">
-                    Use these credentials to log in for the first time. You'll be prompted to change your password immediately after logging in.
+                    Use these credentials to log in for the first time. You will be required to change your password immediately after logging in for security purposes.
                 </p>
                 <div class="credential-item">
                     <label>Email Address:</label>
@@ -207,6 +216,10 @@
                 <div class="credential-item">
                     <label>Temporary Password:</label>
                     <div class="credential-value">{{ temp_password }}</div>
+                </div>
+                <div class="credential-item">
+                    <label>Login URL:</label>
+                    <div class="credential-value" style="word-break: break-all;">{{ login_url }}</div>
                 </div>
             </div>
 
@@ -217,9 +230,9 @@
             <div class="instructions">
                 <h3>Getting Started</h3>
                 <ol>
-                    <li>Visit the login page using the button above or navigate to {{ login_url }}</li>
+                    <li>Click the "Log In to Your Account" button above or copy the login URL provided</li>
                     <li>Enter your email address and the temporary password provided above</li>
-                    <li>You'll be prompted to create a new, secure password</li>
+                    <li>You will be required to create a new, secure password before accessing the platform</li>
                     <li>Complete your profile setup with any additional information</li>
                     <li>Start managing your schedule and appointments</li>
                 </ol>

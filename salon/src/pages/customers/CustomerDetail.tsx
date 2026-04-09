@@ -3,11 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeftIcon, EditIcon, TrashIcon } from "@/components/icons";
+import {
+  ArrowLeftIcon,
+  EditIcon,
+  TrashIcon,
+  MailIcon,
+} from "@/components/icons";
 import { useCustomerProfile } from "@/hooks/useCustomerWithDetails";
 import { useDeleteCustomer } from "@/hooks/useCustomers";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { EditCustomerModal } from "@/components/customers/EditCustomerModal";
+import { useToast } from "@/components/ui/toast";
+import { apiClient } from "@/lib/utils/api";
 import { useState } from "react";
 
 const APPOINTMENTS_PREVIEW_LIMIT = 5;
@@ -15,11 +22,39 @@ const APPOINTMENTS_PREVIEW_LIMIT = 5;
 export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   const { data: customer, isLoading } = useCustomerProfile(id || "");
   const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer();
+
+  const handleSendPortalInvitation = async () => {
+    if (!id) return;
+
+    setIsSendingInvite(true);
+    try {
+      await apiClient.post(
+        `/public/customer-auth/resend-setup-invitation/${id}`,
+      );
+      showToast({
+        title: "Invitation Sent",
+        description:
+          "Portal setup invitation has been sent to the customer's email.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      showToast({
+        title: "Failed to Send",
+        description:
+          error.response?.data?.detail || "Failed to send portal invitation.",
+        variant: "error",
+      });
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -33,7 +68,7 @@ export default function CustomerDetail() {
               <Skeleton className="h-4 w-32 mt-2" />
             </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 shrink-0">
             <Skeleton className="h-10 w-20" />
             <Skeleton className="h-10 w-20" />
           </div>
@@ -118,7 +153,21 @@ export default function CustomerDetail() {
     if (id) {
       deleteCustomer(id, {
         onSuccess: () => {
+          showToast({
+            title: "Customer Deleted",
+            description:
+              "Customer and all related data have been deleted successfully.",
+            variant: "success",
+          });
           navigate("/customers");
+        },
+        onError: (error: any) => {
+          showToast({
+            title: "Delete Failed",
+            description:
+              error.response?.data?.detail || "Failed to delete customer.",
+            variant: "error",
+          });
         },
       });
     }
@@ -136,13 +185,13 @@ export default function CustomerDetail() {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/customers")}
-            className="gap-2 cursor-pointer flex-shrink-0"
+            className="gap-2 cursor-pointer shrink-0"
           >
             <ArrowLeftIcon size={18} />
             <span className="hidden sm:inline">Back</span>
           </Button>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground break-words">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground wrap-break-word">
               {customer!.firstName} {customer!.lastName}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -150,7 +199,20 @@ export default function CustomerDetail() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSendPortalInvitation}
+            disabled={isSendingInvite}
+            className="gap-2 cursor-pointer text-xs sm:text-sm"
+            title="Send portal access invitation"
+          >
+            <MailIcon size={16} />
+            <span className="hidden sm:inline">
+              {isSendingInvite ? "Sending..." : "Send Portal Invite"}
+            </span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -198,6 +260,26 @@ export default function CustomerDetail() {
                   {customer!.phone}
                 </p>
               </div>
+              {customer!.address && (
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                    Address
+                  </p>
+                  <p className="text-sm sm:text-base text-foreground mt-1">
+                    {customer!.address}
+                  </p>
+                </div>
+              )}
+              {customer!.dateOfBirth && (
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                    Date of Birth
+                  </p>
+                  <p className="text-sm sm:text-base text-foreground mt-1">
+                    {new Date(customer!.dateOfBirth).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground font-medium">
                   Member Since
@@ -299,7 +381,7 @@ export default function CustomerDetail() {
                             with {appointment.staff_name}
                           </p>
                         </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 whitespace-nowrap">
+                        <p className="text-xs sm:text-sm text-muted-foreground shrink-0 whitespace-nowrap">
                           {new Date(
                             appointment.appointment_date,
                           ).toLocaleDateString()}
@@ -380,7 +462,7 @@ export default function CustomerDetail() {
         onClose={() => setDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Delete Customer"
-        description="Are you sure you want to delete this customer? This action cannot be undone."
+        description="Are you sure you want to delete this customer? This will permanently delete the customer and ALL their related data including appointments, invoices, payments, and history. This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"

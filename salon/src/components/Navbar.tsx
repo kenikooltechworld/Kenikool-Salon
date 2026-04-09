@@ -4,16 +4,19 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth";
 import { MenuIcon, XIcon } from "@/components/icons";
 import { ThemeSelector } from "@/components/ui/theme-selector";
+import NotificationBadge from "@/components/notifications/NotificationBadge";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 export function Navbar() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    localStorage.removeItem("tenantId");
+  const handleLogout = async () => {
+    await logout();
+    // Clear session-related items (tenant context comes from httpOnly cookie)
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/");
@@ -29,8 +32,8 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 bg-linear-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">K</span>
             </div>
             <span className="font-bold text-lg text-foreground hidden sm:inline">
@@ -65,6 +68,14 @@ export function Navbar() {
           {/* Right Side - Desktop */}
           <div className="hidden md:flex items-center gap-4">
             <ThemeSelector variant="icon" />
+            {user && (
+              <div
+                className="cursor-pointer"
+                onClick={() => setNotificationCenterOpen(true)}
+              >
+                <NotificationBadge />
+              </div>
+            )}
             {user ? (
               <>
                 <Link to="/dashboard">
@@ -107,6 +118,14 @@ export function Navbar() {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-2">
             <ThemeSelector variant="icon" />
+            {user && (
+              <div
+                className="cursor-pointer"
+                onClick={() => setNotificationCenterOpen(true)}
+              >
+                <NotificationBadge />
+              </div>
+            )}
             <button
               onClick={toggleMenu}
               className="p-2 rounded-md text-foreground hover:bg-muted transition cursor-pointer"
@@ -203,6 +222,14 @@ export function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Notification Center */}
+      {notificationCenterOpen && (
+        <NotificationCenter
+          isOpen={notificationCenterOpen}
+          onClose={() => setNotificationCenterOpen(false)}
+        />
+      )}
     </nav>
   );
 }

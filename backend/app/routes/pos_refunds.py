@@ -24,6 +24,9 @@ async def create_refund(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Create a refund request."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         refund_data = refund_service.create_refund(
             payment_id=request.payment_id,
@@ -66,6 +69,9 @@ async def list_refunds(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """List refunds with pagination."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         skip = (page - 1) * page_size
         refunds_data = refund_service.list_refunds(
@@ -103,6 +109,9 @@ async def get_refund(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get refund details."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         refund = refund_service.get_refund(refund_id)
 
@@ -130,6 +139,9 @@ async def approve_refund(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Approve a refund request."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         refund_data = refund_service.update_refund_status(
             refund_id=refund_id,
@@ -168,6 +180,9 @@ async def process_refund(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Process a refund (mark as success)."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         refund_data = refund_service.update_refund_status(
             refund_id=refund_id,
@@ -206,6 +221,9 @@ async def reverse_refund(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Reverse a refund (mark as failed)."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         refund_data = refund_service.update_refund_status(
             refund_id=refund_id,

@@ -151,6 +151,18 @@ async def create_time_off_request(
         if not start_date or not end_date or not reason:
             raise HTTPException(status_code=400, detail="start_date, end_date, and reason are required")
 
+        # Parse dates if they're strings
+        from datetime import date as date_type
+        if isinstance(start_date, str):
+            start_date = date_type.fromisoformat(start_date)
+        if isinstance(end_date, str):
+            end_date = date_type.fromisoformat(end_date)
+
+        # Validate start date is today or in the future
+        today = date_type.today()
+        if start_date < today:
+            raise HTTPException(status_code=400, detail="start_date must be today or in the future")
+
         if start_date > end_date:
             raise HTTPException(status_code=400, detail="start_date must be before end_date")
 

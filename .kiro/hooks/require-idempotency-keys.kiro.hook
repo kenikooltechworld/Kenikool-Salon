@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Require Idempotency Keys",
+  "description": "Checks that POST requests include Idempotency-Key headers",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "salon/src/hooks/**/*.ts",
+      "salon/src/hooks/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check if this file contains apiClient.post() calls. Verify each POST request includes an Idempotency-Key header. If any are missing, show which mutations need the header added."
+  }
+}

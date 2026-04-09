@@ -1,51 +1,78 @@
-import * as React from "react";
+/**
+ * Progress Component
+ * Professional progress bar with percentage display and animations
+ * Theme-aware with CSS variables
+ */
+
+// the staff email is not showing them the ur they should click  to login or to take them to login page
+
 import { cn } from "@/lib/utils/cn";
 
-interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   value?: number;
   max?: number;
-  variant?:
-    | "primary"
-    | "secondary"
-    | "accent"
-    | "success"
-    | "warning"
-    | "error";
+  showPercentage?: boolean;
+  size?: "sm" | "md" | "lg";
+  variant?: "default" | "success" | "warning" | "error";
 }
 
-const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
-  ({ className, value = 0, max = 100, variant = "primary", ...props }, ref) => {
-    const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+function Progress({
+  className,
+  value = 0,
+  max = 100,
+  showPercentage = true,
+  size = "md",
+  variant = "default",
+  ...props
+}: ProgressProps) {
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
-    const variantClasses = {
-      primary: "bg-[var(--primary)]",
-      secondary: "bg-[var(--secondary)]",
-      accent: "bg-[var(--accent)]",
-      success: "bg-[var(--success)]",
-      warning: "bg-[var(--warning)]",
-      error: "bg-[var(--error)]",
-    };
+  const sizeClasses = {
+    sm: "h-1.5",
+    md: "h-2.5",
+    lg: "h-3.5",
+  };
 
-    return (
+  const variantClasses = {
+    default: "bg-primary",
+    success: "bg-success",
+    warning: "bg-warning",
+    error: "bg-destructive",
+  };
+
+  return (
+    <div className="w-full space-y-1.5">
       <div
-        ref={ref}
         className={cn(
-          "relative h-4 w-full overflow-hidden rounded-[var(--radius-full)] bg-[var(--muted)]",
-          className
+          "relative w-full overflow-hidden rounded-full bg-muted",
+          sizeClasses[size],
+          className,
         )}
         {...props}
       >
         <div
           className={cn(
-            "h-full transition-all duration-300 ease-in-out",
-            variantClasses[variant]
+            "h-full transition-all duration-300 ease-in-out rounded-full",
+            variantClasses[variant],
           )}
-          style={{ width: `${percentage}%` }}
+          style={{
+            width: `${percentage}%`,
+            animation:
+              percentage > 0 && percentage < 100
+                ? "pulse-subtle 2s ease-in-out infinite"
+                : "none",
+          }}
         />
       </div>
-    );
-  }
-);
+      {showPercentage && (
+        <div className="flex justify-between items-center text-xs text-muted-foreground">
+          <span className="font-medium">{Math.round(percentage)}%</span>
+          <span>Uploading...</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 Progress.displayName = "Progress";
 

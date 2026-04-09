@@ -24,6 +24,7 @@ class User(BaseDocument):
     last_failed_login = DateTimeField(null=True)
     account_locked_until = DateTimeField(null=True)
     specialty = StringField(max_length=100, null=True)
+    password_change_required = BooleanField(default=False)  # Force password change on first login
 
     meta = {
         "collection": "users",

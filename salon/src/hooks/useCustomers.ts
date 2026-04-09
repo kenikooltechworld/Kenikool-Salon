@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { get, post, put, del } from "@/lib/utils/api";
 
 export interface Customer {
   id: string;
@@ -29,7 +29,7 @@ export function useCustomers(filters?: CustomerFilters) {
   return useQuery({
     queryKey: ["customers", filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<any>("/customers", {
+      const data = await get<any>("/customers", {
         params: filters,
       });
       // Transform backend response to match frontend interface
@@ -64,8 +64,7 @@ export function useCustomer(id: string) {
   return useQuery({
     queryKey: ["customers", id],
     queryFn: async () => {
-      const { data } = await apiClient.get<any>(`/customers/${id}`);
-      const customer = data.data || data;
+      const customer = await get<any>(`/customers/${id}`);
       if (!customer) return null;
       // Transform backend response to match frontend interface
       return {
@@ -98,20 +97,32 @@ export function useCreateCustomer() {
     mutationFn: async (
       customer: Omit<Customer, "id" | "createdAt" | "updatedAt">,
     ) => {
-      const payload = {
+      // Build payload with only non-empty values
+      const payload: any = {
         first_name: customer.firstName,
         last_name: customer.lastName,
         email: customer.email,
         phone: customer.phone,
-        address: customer.address,
-        date_of_birth: customer.dateOfBirth,
-        preferred_staff_id: customer.preferredStaffId,
-        preferred_services: customer.preferredServices,
-        communication_preference: customer.communicationPreference,
-        status: customer.status,
+        communication_preference: customer.communicationPreference || "email",
+        status: customer.status || "active",
       };
-      const { data } = await apiClient.post<any>("/customers", payload);
-      return data.data || data;
+
+      // Only include optional fields if they have values
+      if (customer.address && customer.address.trim()) {
+        payload.address = customer.address;
+      }
+      if (customer.dateOfBirth && customer.dateOfBirth.trim()) {
+        payload.date_of_birth = customer.dateOfBirth;
+      }
+      if (customer.preferredStaffId) {
+        payload.preferred_staff_id = customer.preferredStaffId;
+      }
+      if (customer.preferredServices && customer.preferredServices.length > 0) {
+        payload.preferred_services = customer.preferredServices;
+      }
+
+      const data = await post<any>("/customers", payload);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -131,10 +142,11 @@ export function useUpdateCustomer() {
       ...updates
     }: Partial<Customer> & { id: string }) => {
       const payload: any = {};
-      if (updates.firstName) payload.first_name = updates.firstName;
-      if (updates.lastName) payload.last_name = updates.lastName;
-      if (updates.email) payload.email = updates.email;
-      if (updates.phone) payload.phone = updates.phone;
+      if (updates.firstName !== undefined)
+        payload.first_name = updates.firstName;
+      if (updates.lastName !== undefined) payload.last_name = updates.lastName;
+      if (updates.email !== undefined) payload.email = updates.email;
+      if (updates.phone !== undefined) payload.phone = updates.phone;
       if (updates.address !== undefined) payload.address = updates.address;
       if (updates.dateOfBirth !== undefined)
         payload.date_of_birth = updates.dateOfBirth;
@@ -142,12 +154,12 @@ export function useUpdateCustomer() {
         payload.preferred_staff_id = updates.preferredStaffId;
       if (updates.preferredServices !== undefined)
         payload.preferred_services = updates.preferredServices;
-      if (updates.communicationPreference)
+      if (updates.communicationPreference !== undefined)
         payload.communication_preference = updates.communicationPreference;
-      if (updates.status) payload.status = updates.status;
+      if (updates.status !== undefined) payload.status = updates.status;
 
-      const { data } = await apiClient.put<any>(`/customers/${id}`, payload);
-      return data.data || data;
+      const data = await put<any>(`/customers/${id}`, payload);
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -164,7 +176,7 @@ export function useDeleteCustomer() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/customers/${id}`);
+      await del(`/customers/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });

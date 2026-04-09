@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "No Silent Exception Handlers",
+  "description": "Detects except blocks that don't log errors before swallowing them",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "backend/app/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check if this file contains except blocks that don't log the exception (no logger.error, logger.warning, or logger.info calls). If found, remind me to add proper logging before handling or swallowing exceptions."
+  }
+}

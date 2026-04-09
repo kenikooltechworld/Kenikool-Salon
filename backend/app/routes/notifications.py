@@ -82,17 +82,37 @@ async def get_unread_notifications(recipient_id: str):
 # Notification Preferences - specific routes
 @router.post("/preferences", response_model=NotificationPreferenceResponse)
 @tenant_isolated
-async def set_notification_preference(preference: NotificationPreferenceUpdate):
-    """Set notification preference for a customer."""
+async def set_notification_preference(
+    preference: NotificationPreferenceUpdate,
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """Set notification preference for current user (customer or staff)."""
     try:
-        created = NotificationService.set_preference(
-            customer_id=preference.customer_id,
-            notification_type=preference.notification_type,
-            channel=preference.channel,
-            enabled=preference.enabled,
-        )
+        user_id = current_user.get("id") or current_user.get("user_id")
+        user_role = current_user.get("role", "customer")
+        
+        # Determine recipient type and ID
+        if user_role == "staff":
+            created = NotificationService.set_preference(
+                user_id=user_id,
+                recipient_type="staff",
+                notification_type=preference.notification_type,
+                channel=preference.channel,
+                enabled=preference.enabled,
+            )
+        else:
+            # For customers, use customer_id if provided, otherwise use user_id
+            customer_id = preference.customer_id if hasattr(preference, 'customer_id') and preference.customer_id else user_id
+            created = NotificationService.set_preference(
+                customer_id=customer_id,
+                recipient_type="customer",
+                notification_type=preference.notification_type,
+                channel=preference.channel,
+                enabled=preference.enabled,
+            )
         return NotificationPreferenceResponse.from_orm(created)
     except Exception as e:
+        logger.error(f"Error setting preference: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -102,9 +122,17 @@ async def get_all_preferences(current_user: dict = Depends(get_current_user_depe
     """Get all notification preferences for current user."""
     try:
         user_id = current_user.get("id") or current_user.get("user_id")
+        user_role = current_user.get("role", "customer")
+        
         if not user_id:
             raise HTTPException(status_code=401, detail="User not authenticated")
-        preferences = NotificationService.get_preferences(user_id)
+        
+        # Get preferences based on user role
+        if user_role == "staff":
+            preferences = NotificationService.get_preferences(user_id=user_id)
+        else:
+            preferences = NotificationService.get_preferences(customer_id=user_id)
+            
         return {"data": [NotificationPreferenceResponse.from_orm(p) for p in preferences]}
     except Exception as e:
         logger.error(f"Error getting preferences: {str(e)}", exc_info=True)

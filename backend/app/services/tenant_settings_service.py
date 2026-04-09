@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from app.models.tenant import Tenant
 from app.schemas.tenant_settings import TenantSettingsSchema
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,75 @@ class TenantSettingsService:
 
             # Return settings with defaults
             settings = tenant.settings or {}
+            
+            # Get platform domain and environment from config
+            config = get_settings()
+            platform_domain = config.platform_domain
+            environment = config.environment.lower()
+            
+            # Generate subdomain URL based on environment
+            # For development, use http with port 3000
+            # For production, use https without port
+            if tenant.subdomain:
+                if environment == "development":
+                    # Development: http://subdomain.localhost:3000
+                    subdomain_url = f"http://{tenant.subdomain}.{platform_domain}:3000"
+                else:
+                    # Production/Staging: https://subdomain.domain.com
+                    subdomain_url = f"https://{tenant.subdomain}.{platform_domain}"
+            else:
+                subdomain_url = ""
+            
+            # Default configs
+            default_system_config = {
+                "rate_limit_enabled": True,
+                "rate_limit_requests": 100,
+                "rate_limit_window": 60,
+                "ddos_protection_enabled": True,
+                "ddos_threshold": 1000,
+                "waf_enabled": True,
+                "intrusion_detection_enabled": True,
+                "audit_logging_enabled": True,
+                "feature_flags": {},
+            }
+            
+            default_integration_config = {
+                "termii": {"apiKey": "", "senderId": "", "enabled": False},
+                "paystack": {"publicKey": "", "secretKey": "", "webhookUrl": "", "enabled": False},
+            }
+            
+            default_financial_config = {
+                "balance_enforcement_enabled": True,
+                "minimum_balance_threshold": 0,
+                "refund_policy_enabled": True,
+                "refund_window_days": 30,
+                "commission_tracking_enabled": True,
+                "staff_commission_percentage": 10,
+                "service_commission_percentage": 5,
+                "invoice_numbering_prefix": "INV",
+                "invoice_numbering_start": 1000,
+            }
+            
+            default_operational_config = {
+                "inventory_tracking_enabled": True,
+                "low_stock_threshold": 10,
+                "waiting_room_enabled": True,
+                "waiting_room_max_capacity": 50,
+                "resource_management_enabled": True,
+                "notification_preferences_enabled": True,
+                "sms_provider": "termii",
+                "email_provider": "smtp",
+                "backup_enabled": True,
+                "backup_frequency": "daily",
+                "cache_optimization_enabled": True,
+                "cache_ttl_minutes": 60,
+            }
+            
             return {
                 "tenant_id": str(tenant.id),
+                "tenant_name": tenant.name,
                 "subdomain": tenant.subdomain,
+                "subdomain_url": subdomain_url,
                 "region": tenant.region,
                 "subscription_tier": tenant.subscription_tier,
                 "status": tenant.status,
@@ -59,6 +126,11 @@ class TenantSettingsService:
                 "allow_online_booking": settings.get("allow_online_booking", True),
                 "require_customer_approval": settings.get("require_customer_approval", False),
                 "auto_confirm_bookings": settings.get("auto_confirm_bookings", True),
+                "customer_welcome_email_template": settings.get("customer_welcome_email_template", ""),
+                "system_config": settings.get("system_config", default_system_config),
+                "integration_config": settings.get("integration_config", default_integration_config),
+                "financial_config": settings.get("financial_config", default_financial_config),
+                "operational_config": settings.get("operational_config", default_operational_config),
             }
         except Exception as e:
             logger.error(f"Error getting tenant settings: {str(e)}")
@@ -90,6 +162,7 @@ class TenantSettingsService:
             for day, hours in settings_data.business_hours.items():
                 business_hours_dict[day] = hours.model_dump() if hasattr(hours, 'model_dump') else hours
 
+            # Preserve existing config sections if not provided in updates
             tenant.settings.update({
                 "email": settings_data.email,
                 "phone": settings_data.phone,
@@ -109,6 +182,20 @@ class TenantSettingsService:
                 "require_customer_approval": settings_data.require_customer_approval,
                 "auto_confirm_bookings": settings_data.auto_confirm_bookings,
             })
+            
+            # Handle customer_welcome_email_template if provided
+            if "customer_welcome_email_template" in updates:
+                tenant.settings["customer_welcome_email_template"] = updates["customer_welcome_email_template"]
+            
+            # Handle config sections if provided in updates
+            if "system_config" in updates:
+                tenant.settings["system_config"] = updates["system_config"]
+            if "integration_config" in updates:
+                tenant.settings["integration_config"] = updates["integration_config"]
+            if "financial_config" in updates:
+                tenant.settings["financial_config"] = updates["financial_config"]
+            if "operational_config" in updates:
+                tenant.settings["operational_config"] = updates["operational_config"]
 
             tenant.save()
             logger.info(f"Tenant settings updated: {tenant_id}")

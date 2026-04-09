@@ -1,6 +1,22 @@
-version: '3.8'
-
 services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: salon_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: kenikool-salon
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salon_network
+
   # Redis Cache
   redis:
     image: redis:7-alpine
@@ -53,6 +69,8 @@ services:
     volumes:
       - ./backend:/app
     depends_on:
+      mongodb:
+        condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
@@ -97,6 +115,7 @@ services:
       - salon_network
 
 volumes:
+  mongodb_data:
   redis_data:
   rabbitmq_data:
 

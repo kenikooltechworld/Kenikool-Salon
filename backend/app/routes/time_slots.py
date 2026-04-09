@@ -31,6 +31,9 @@ async def reserve_time_slot(
     - **end_time**: Slot end time (UTC)
     - **customer_id**: Optional customer ID
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         staff_id = ObjectId(request.staff_id)
         service_id = ObjectId(request.service_id)
@@ -72,6 +75,9 @@ async def confirm_time_slot(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Confirm a time slot reservation by linking to appointment."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         slot_id = ObjectId(time_slot_id)
         appointment_id = ObjectId(request.appointment_id)
@@ -109,6 +115,9 @@ async def release_time_slot(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Release a time slot reservation."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         slot_id = ObjectId(time_slot_id)
         
@@ -143,6 +152,9 @@ async def list_active_reservations(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """List active time slot reservations."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         staff_id_obj = ObjectId(staff_id) if staff_id else None
         

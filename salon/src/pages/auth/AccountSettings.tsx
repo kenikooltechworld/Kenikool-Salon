@@ -26,6 +26,8 @@ export default function AccountSettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmationChecked, setDeleteConfirmationChecked] =
+    useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -139,7 +141,7 @@ export default function AccountSettings() {
 
     try {
       await apiClient.post("/auth/delete-account", {});
-      logout();
+      await logout();
       navigate("/auth/login");
     } catch (err: any) {
       setError(
@@ -151,9 +153,9 @@ export default function AccountSettings() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    localStorage.removeItem("tenantId");
+  const handleLogout = async () => {
+    await logout();
+    // Clear session-related items (tenant context comes from httpOnly cookie)
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/auth/login");
@@ -335,13 +337,47 @@ export default function AccountSettings() {
               </Button>
             ) : (
               <div className="space-y-4 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                <p className="text-sm text-foreground">
-                  Are you sure you want to delete your account? This action
-                  cannot be undone. All your data will be permanently deleted.
-                </p>
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-foreground">
+                    ⚠️ Account Deletion Warning
+                  </p>
+                  <ul className="text-sm text-foreground space-y-2 list-disc list-inside">
+                    <li>Your account will be deactivated for 14 days</li>
+                    <li>
+                      You can recover your account anytime within 14 days via
+                      email
+                    </li>
+                    <li>After 14 days, recovery requires payment</li>
+                    <li>
+                      All your data will be permanently deleted after 14 days
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex items-center space-x-2 p-3 bg-background rounded border border-border">
+                  <input
+                    type="checkbox"
+                    id="deleteConfirm"
+                    checked={deleteConfirmationChecked}
+                    onChange={(e) =>
+                      setDeleteConfirmationChecked(e.target.checked)
+                    }
+                    className="w-4 h-4"
+                  />
+                  <label
+                    htmlFor="deleteConfirm"
+                    className="text-sm text-foreground cursor-pointer"
+                  >
+                    I understand and want to delete my account
+                  </label>
+                </div>
+
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteConfirmationChecked(false);
+                    }}
                     variant="outline"
                     className="flex-1"
                     disabled={isLoading}
@@ -352,7 +388,7 @@ export default function AccountSettings() {
                     onClick={handleDeleteAccount}
                     variant="destructive"
                     className="flex-1"
-                    disabled={isLoading}
+                    disabled={isLoading || !deleteConfirmationChecked}
                   >
                     {isLoading ? (
                       <>

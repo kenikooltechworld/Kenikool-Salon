@@ -17,6 +17,8 @@ export interface Appointment {
     | "cancelled"
     | "no_show";
   notes?: string;
+  cancellation_reason?: string;
+  cancelled_at?: string;
   createdAt: string;
   updatedAt: string;
 }

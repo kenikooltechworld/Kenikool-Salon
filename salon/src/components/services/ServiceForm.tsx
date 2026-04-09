@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/toast";
 import { PlusIcon } from "@/components/icons";
 import { useCreateService, useUpdateService } from "@/hooks/useServices";
@@ -14,12 +15,14 @@ import type { Service } from "@/types/service";
 
 interface ServiceFormProps {
   service?: Service;
+  existingServices?: Service[];
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function ServiceForm({
   service,
+  existingServices = [],
   onSuccess,
   onCancel,
 }: ServiceFormProps) {
@@ -69,6 +72,22 @@ export function ServiceForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadError(null);
+
+    // Check for duplicate service name (only when creating new service)
+    if (!service) {
+      const isDuplicate = existingServices.some(
+        (s: Service) => s.name.toLowerCase() === formData.name.toLowerCase(),
+      );
+
+      if (isDuplicate) {
+        showToast({
+          variant: "error",
+          title: "Duplicate Service",
+          description: `A service named "${formData.name}" already exists. Please use a different name.`,
+        });
+        return;
+      }
+    }
 
     try {
       let imageUrl = formData.public_image_url;
@@ -322,38 +341,20 @@ export function ServiceForm({
         </div>
 
         <div className="space-y-3 border-t border-border pt-4">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="is_active"
-              name="is_active"
-              checked={formData.is_active}
-              onChange={handleChange}
-              className="w-4 h-4 rounded border-border cursor-pointer"
-            />
-            <label
-              htmlFor="is_active"
-              className="text-sm font-medium text-foreground cursor-pointer"
-            >
-              Active
-            </label>
-          </div>
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="is_published"
-              name="is_published"
-              checked={formData.is_published}
-              onChange={handleChange}
-              className="w-4 h-4 rounded border-border cursor-pointer"
-            />
-            <label
-              htmlFor="is_published"
-              className="text-sm font-medium text-foreground cursor-pointer"
-            >
-              Published
-            </label>
-          </div>
+          <Checkbox
+            id="is_active"
+            name="is_active"
+            checked={formData.is_active}
+            onChange={handleChange}
+            label="Active"
+          />
+          <Checkbox
+            id="is_published"
+            name="is_published"
+            checked={formData.is_published}
+            onChange={handleChange}
+            label="Published"
+          />
         </div>
 
         <div className="flex gap-3 pt-4">

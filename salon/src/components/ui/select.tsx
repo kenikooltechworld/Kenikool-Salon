@@ -14,8 +14,8 @@ const selectVariants = cva(
     variants: {
       variant: {
         default:
-          "border-[var(--input)] bg-[var(--background)] text-[var(--foreground)] hover:border-[var(--primary)]", ed:
-          "border-transparent bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--muted)]",
+          "border-[var(--input)] bg-[var(--background)] text-[var(--foreground)] hover:border-[var(--primary)]",
+        ed: "border-transparent bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--muted)]",
       },
       selectSize: {
         sm: "h-9 text-sm",
@@ -27,11 +27,12 @@ const selectVariants = cva(
       variant: "default",
       selectSize: "md",
     },
-  }
+  },
 );
 
 export interface SelectProps
-  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">,
+  extends
+    Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">,
     VariantProps<typeof selectVariants> {
   error?: boolean;
   success?: boolean;
@@ -51,7 +52,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       onChange,
       ...props
     },
-    ref
+    ref,
   ) => {
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       onChange?.(e);
@@ -64,10 +65,9 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           className={cn(
             selectVariants({ variant, selectSize }),
             "appearance-none pr-10",
-            error && "border-[var(--error)] focus-visible:ring-[var(--error)]",
-            success &&
-              "border-[var(--success)] focus-visible:ring-[var(--success)]",
-            className
+            error && "border-(--error) focus-visible:ring-(--error)",
+            success && "border-(--success) focus-visible:ring-(--success)",
+            className,
           )}
           ref={ref}
           onChange={handleChange}
@@ -75,27 +75,95 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         >
           {children}
         </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-          <ChevronDownIcon
-            size={16}
-            className="text-[var(--muted-foreground)]"
-          />
-        </div>
+        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <ChevronDownIcon size={16} className="text-(--muted-foreground)" />
+        </span>
       </div>
     );
-  }
+  },
 );
 
 Select.displayName = "Select";
 
-// Compatibility exports for compound component pattern
-export const SelectTrigger = Select;
+// Compound component pattern for compatibility with shadcn-style usage
+interface SelectTriggerProps extends Omit<SelectProps, "children"> {
+  children?: React.ReactNode;
+}
+
+// Context to pass select props to children
+const SelectContext = React.createContext<{
+  value?: string | number | readonly string[];
+  onValueChange?: (value: string) => void;
+  disabled?: boolean;
+} | null>(null);
+
+export const SelectTrigger = React.forwardRef<
+  HTMLSelectElement,
+  SelectTriggerProps
+>(({ className, children, ...props }, ref) => {
+  // Extract SelectItems from SelectContent
+  const selectItems = React.Children.toArray(children)
+    .filter((child) => {
+      if (React.isValidElement(child)) {
+        return child.type === SelectContent;
+      }
+      return false;
+    })
+    .flatMap((selectContent) => {
+      if (React.isValidElement(selectContent) && selectContent.props.children) {
+        return React.Children.toArray(selectContent.props.children);
+      }
+      return [];
+    });
+
+  return (
+    <SelectContext.Provider
+      value={{
+        value: props.value,
+        onValueChange: props.onValueChange,
+        disabled: props.disabled,
+      }}
+    >
+      <div className="relative w-full">
+        <select
+          ref={ref}
+          className={cn(
+            selectVariants({
+              variant: props.variant,
+              selectSize: props.selectSize,
+            }),
+            "appearance-none pr-10 w-full",
+            props.error && "border-(--error) focus-visible:ring-(--error)",
+            props.success &&
+              "border-(--success) focus-visible:ring-(--success)",
+            className,
+          )}
+          onChange={(e) => {
+            props.onChange?.(e);
+            props.onValueChange?.(e.target.value);
+          }}
+          value={props.value}
+          disabled={props.disabled}
+        >
+          {selectItems}
+        </select>
+        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <ChevronDownIcon size={16} className="text-(--muted-foreground)" />
+        </span>
+      </div>
+    </SelectContext.Provider>
+  );
+});
+SelectTrigger.displayName = "SelectTrigger";
+
 export const SelectValue = ({ children }: { children?: React.ReactNode }) => (
   <>{children}</>
 );
+
 export const SelectContent = ({ children }: { children: React.ReactNode }) => (
   <>{children}</>
 );
+
 export const SelectItem = React.forwardRef<
   HTMLOptionElement,
   React.OptionHTMLAttributes<HTMLOptionElement>

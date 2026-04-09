@@ -78,20 +78,20 @@ export default function PaymentStats() {
             <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground">Successful</p>
               <p className="text-3xl font-bold text-green-600 mt-2">
-                {report.successfulPayments || 0}
+                {report.successful_payments || 0}
               </p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground">Failed</p>
               <p className="text-3xl font-bold text-destructive mt-2">
-                {report.failedPayments || 0}
+                {report.failed_payments || 0}
               </p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground">Success Rate</p>
               <p className="text-3xl font-bold text-blue-600 mt-2">
-                {report.successRate
-                  ? `${report.successRate.toFixed(1)}%`
+                {report.success_rate
+                  ? `${report.success_rate.toFixed(1)}%`
                   : "0%"}
               </p>
             </div>
@@ -102,31 +102,31 @@ export default function PaymentStats() {
             <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground">Total Amount</p>
               <p className="text-2xl font-bold mt-2">
-                {formatCurrency(report.totalAmount || 0)}
+                {formatCurrency(report.total_amount || 0)}
               </p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground">Average Payment</p>
               <p className="text-2xl font-bold mt-2">
                 {formatCurrency(
-                  (report.totalAmount || 0) / (report.totalPayments || 1),
+                  (report.total_amount || 0) / (report.total_payments || 1),
                 )}
               </p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground">Highest Payment</p>
               <p className="text-2xl font-bold mt-2">
-                {formatCurrency(report.highestPayment || 0)}
+                {formatCurrency(report.highest_payment || 0)}
               </p>
             </div>
           </div>
 
           {/* Payment Methods Breakdown */}
-          {report.byMethod && report.byMethod.length > 0 && (
+          {report.by_method && report.by_method.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="font-semibold mb-4">Payment Methods</h3>
               <div className="space-y-3">
-                {report.byMethod.map((method: any, index: number) => (
+                {report.by_method.map((method: any, index: number) => (
                   <div
                     key={index}
                     className="flex items-center justify-between"
@@ -138,7 +138,8 @@ export default function PaymentStats() {
                           className="bg-primary h-2 rounded-full"
                           style={{
                             width: `${
-                              (method.count / (report.totalPayments || 1)) * 100
+                              (method.count / (report.total_payments || 1)) *
+                              100
                             }%`,
                           }}
                         />
@@ -154,11 +155,11 @@ export default function PaymentStats() {
           )}
 
           {/* Status Distribution */}
-          {report.byStatus && report.byStatus.length > 0 && (
+          {report.by_status && report.by_status.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="font-semibold mb-4">Status Distribution</h3>
               <div className="space-y-3">
-                {report.byStatus.map((status: any, index: number) => {
+                {report.by_status.map((status: any, index: number) => {
                   const statusColors: Record<string, string> = {
                     completed: "bg-green-600",
                     pending: "bg-yellow-600",
@@ -181,7 +182,7 @@ export default function PaymentStats() {
                             }`}
                             style={{
                               width: `${
-                                (status.count / (report.totalPayments || 1)) *
+                                (status.count / (report.total_payments || 1)) *
                                 100
                               }%`,
                             }}
@@ -199,7 +200,7 @@ export default function PaymentStats() {
           )}
 
           {/* Top Customers */}
-          {report.topCustomers && report.topCustomers.length > 0 && (
+          {report.top_customers && report.top_customers.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="font-semibold mb-4">
                 Top Customers by Payment Amount
@@ -220,17 +221,19 @@ export default function PaymentStats() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {report.topCustomers.map((customer: any, index: number) => (
-                      <tr key={index} className="hover:bg-muted/50">
-                        <td className="px-4 py-3 text-sm">{customer.name}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {customer.paymentCount}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium">
-                          {formatCurrency(customer.totalAmount)}
-                        </td>
-                      </tr>
-                    ))}
+                    {report.top_customers.map(
+                      (customer: any, index: number) => (
+                        <tr key={index} className="hover:bg-muted/50">
+                          <td className="px-4 py-3 text-sm">{customer.name}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {customer.paymentCount}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium">
+                            {formatCurrency(customer.totalAmount)}
+                          </td>
+                        </tr>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>

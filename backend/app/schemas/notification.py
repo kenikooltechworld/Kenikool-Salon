@@ -56,7 +56,9 @@ class NotificationResponse(BaseModel):
 class NotificationPreferenceUpdate(BaseModel):
     """Schema for updating notification preference."""
 
-    customer_id: str
+    customer_id: Optional[str] = None
+    user_id: Optional[str] = None
+    recipient_type: str = "customer"  # customer or staff
     notification_type: str
     channel: str
     enabled: bool
@@ -66,7 +68,9 @@ class NotificationPreferenceResponse(BaseModel):
     """Schema for notification preference response."""
 
     id: str = Field(alias="_id")
-    customer_id: str
+    customer_id: Optional[str] = None
+    user_id: Optional[str] = None
+    recipient_type: str = "customer"
     notification_type: str
     channel: str
     enabled: bool

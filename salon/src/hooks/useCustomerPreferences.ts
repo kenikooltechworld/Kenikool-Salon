@@ -30,10 +30,10 @@ export function useCustomerPreferences(customerId: string) {
   return useQuery({
     queryKey: ["customer-preferences", customerId],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: CustomerPreference }>(
+      const { data } = await apiClient.get<CustomerPreference>(
         `/customers/${customerId}/preferences`,
       );
-      return data.data || null;
+      return data || null;
     },
     enabled: !!customerId,
   });
@@ -50,11 +50,11 @@ export function useUpdateCustomerPreferences() {
       customerId,
       ...updates
     }: UpdatePreferenceData & { customerId: string }) => {
-      const { data } = await apiClient.put<{ data: CustomerPreference }>(
+      const { data } = await apiClient.put<CustomerPreference>(
         `/customers/${customerId}/preferences`,
         updates,
       );
-      return data.data;
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({

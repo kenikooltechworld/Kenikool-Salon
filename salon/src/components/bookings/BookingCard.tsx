@@ -87,11 +87,11 @@ export function BookingCard({
         )}
         {booking.status === "confirmed" && onComplete && (
           <Button
-            variant="success"
+            variant="primary"
             size="sm"
             onClick={() => onComplete(booking.id)}
             disabled={isLoading}
-            className="gap-1 shrink-0"
+            className="gap-1 shrink-0 bg-green-600 hover:bg-green-700"
           >
             <CheckIcon size={14} />
             <span>Complete</span>

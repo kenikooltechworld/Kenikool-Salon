@@ -20,12 +20,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const tenantId = localStorage.getItem("tenantId");
-      if (!tenantId) {
-        setError("Unable to determine tenant. Please contact support.");
-        return;
-      }
-
+      // Tenant context comes from httpOnly cookie, no need to check localStorage
       await apiClient.post("/auth/forgot-password", {
         email,
       });

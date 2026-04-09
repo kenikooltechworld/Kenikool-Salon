@@ -139,6 +139,7 @@ async def list_public_staff(request: Request, service_id: str = None):
         List of available staff members
     """
     tenant_id = request.scope.get("tenant_id")
+    logger.info(f"[PublicBooking] staff - tenant_id from scope: {tenant_id}, service_id: {service_id}")
     if not tenant_id:
         raise HTTPException(status_code=403, detail="Tenant not found")
 
@@ -152,12 +153,26 @@ async def list_public_staff(request: Request, service_id: str = None):
     if not tenant or not tenant.is_published:
         raise HTTPException(status_code=404, detail="Salon not found")
 
+    # Build query
+    query = {
+        "tenant_id": tenant_id_obj,
+        "is_available_for_public_booking": True,
+        "status": "active",
+    }
+
+    # Filter by service if provided
+    if service_id:
+        try:
+            service_id_obj = ObjectId(service_id)
+            query["service_ids"] = service_id_obj
+            logger.info(f"[PublicBooking] staff - Filtering by service_id: {service_id_obj}")
+        except Exception as e:
+            logger.warning(f"[PublicBooking] staff - Invalid service_id format: {service_id} - {e}")
+            raise HTTPException(status_code=400, detail="Invalid service ID")
+
     # Get available staff
-    staff_members = Staff.objects(
-        tenant_id=tenant_id_obj,
-        is_available_for_public_booking=True,
-        status="active",
-    ).order_by("user_id")
+    staff_members = Staff.objects(**query).order_by("user_id")
+    logger.info(f"[PublicBooking] staff - Found {staff_members.count()} staff members")
 
     return [
         PublicStaffResponse(

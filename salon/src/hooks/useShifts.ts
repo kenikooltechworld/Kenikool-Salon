@@ -31,10 +31,10 @@ export function useShifts(filters?: ShiftFilters) {
   return useQuery({
     queryKey: ["shifts", filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Shift[] }>("/shifts", {
+      const { data } = await apiClient.get<Shift[]>("/shifts", {
         params: filters,
       });
-      return data.data || [];
+      return Array.isArray(data) ? data : [];
     },
   });
 }
@@ -46,8 +46,8 @@ export function useShift(id: string) {
   return useQuery({
     queryKey: ["shifts", id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Shift }>(`/shifts/${id}`);
-      return data.data || null;
+      const { data } = await apiClient.get<Shift>(`/shifts/${id}`);
+      return data || null;
     },
     enabled: !!id,
   });
@@ -61,11 +61,8 @@ export function useCreateShift() {
 
   return useMutation({
     mutationFn: async (shiftData: CreateShiftData) => {
-      const { data } = await apiClient.post<{ data: Shift }>(
-        "/shifts",
-        shiftData,
-      );
-      return data.data;
+      const { data } = await apiClient.post<Shift>("/shifts", shiftData);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shifts"] });
@@ -81,11 +78,8 @@ export function useUpdateShift() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Shift> & { id: string }) => {
-      const { data } = await apiClient.put<{ data: Shift }>(
-        `/shifts/${id}`,
-        updates,
-      );
-      return data.data;
+      const { data } = await apiClient.put<Shift>(`/shifts/${id}`, updates);
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["shifts"] });

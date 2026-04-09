@@ -18,10 +18,8 @@ export function useTimeSlots(filters?: TimeSlotFilters) {
       if (filters?.page) params.append("page", filters.page.toString());
       if (filters?.limit) params.append("limit", filters.limit.toString());
 
-      const { data } = await apiClient.get<{ data: TimeSlot[] }>(
-        `/time-slots?${params}`,
-      );
-      return data.data || [];
+      const { data } = await apiClient.get<TimeSlot[]>(`/time-slots?${params}`);
+      return Array.isArray(data) ? data : [];
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -31,10 +29,8 @@ export function useTimeSlot(id: string) {
   return useQuery({
     queryKey: [TIME_SLOTS_QUERY_KEY, id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: TimeSlot }>(
-        `/time-slots/${id}`,
-      );
-      return data.data || null;
+      const { data } = await apiClient.get<TimeSlot>(`/time-slots/${id}`);
+      return data || null;
     },
     enabled: !!id,
     staleTime: 2 * 60 * 1000,
@@ -46,11 +42,8 @@ export function useCreateTimeSlot() {
 
   return useMutation({
     mutationFn: async (input: CreateTimeSlotInput) => {
-      const { data } = await apiClient.post<{ data: TimeSlot }>(
-        "/time-slots",
-        input,
-      );
-      return data.data;
+      const { data } = await apiClient.post<TimeSlot>("/time-slots", input);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TIME_SLOTS_QUERY_KEY] });
@@ -63,10 +56,10 @@ export function useConfirmTimeSlot() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.post<{ data: TimeSlot }>(
+      const { data } = await apiClient.post<TimeSlot>(
         `/time-slots/${id}/confirm`,
       );
-      return data.data;
+      return data;
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: [TIME_SLOTS_QUERY_KEY] });

@@ -59,7 +59,7 @@ class TenantSettingsSchema(BaseModel):
     
     class Config:
         """Pydantic config."""
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "salon_name": "Acme Salon",
                 "email": "info@acmesalon.com",

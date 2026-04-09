@@ -16,7 +16,7 @@ _db_connection: Optional[object] = None
 
 
 def init_db():
-    """Initialize database connection."""
+    """Initialize MongoDB Atlas connection."""
     global _db_connection
     
     if not MONGOENGINE_AVAILABLE:
@@ -26,29 +26,107 @@ def init_db():
     try:
         from app.config import settings
         
-        if not settings.database_url or not settings.database_name:
-            logger.error("DATABASE_URL or DATABASE_NAME not configured in environment")
+        if not settings.database_name:
+            logger.error("DATABASE_NAME not configured in environment")
             raise ValueError("Missing required database configuration")
         
-        logger.info(f"Attempting to connect to MongoDB with database: {settings.database_name}")
-        logger.debug(f"Connection string (masked): {settings.database_url[:50]}...")
+        if not settings.database_url:
+            logger.error("DATABASE_URL not configured in environment")
+            raise ValueError("Missing DATABASE_URL configuration")
         
-        # Connect to MongoDB
-        _db_connection = connect(
-            db=settings.database_name,
-            host=settings.database_url,
-            connect=True,  # Establish connection immediately - eager connect
-            serverSelectionTimeoutMS=5000,  # 5 second timeout
-            retryWrites=True,
-            w="majority",
-            connectTimeoutMS=5000,
-            socketTimeoutMS=5000,
-        )
-        logger.info(f"MongoDB connection configured for database: {settings.database_name}")
+        # Disconnect any existing connections first
+        try:
+            disconnect()
+        except Exception:
+            pass
+        
+        # Connect to MongoDB Atlas
+        logger.info(f"Connecting to MongoDB Atlas: {settings.database_name}")
+        if _try_connect_to_db(settings.database_url, settings.database_name):
+            logger.info("✓ Connected to MongoDB Atlas")
+        else:
+            logger.error("✗ Failed to connect to MongoDB Atlas")
+            raise ConnectionError("Could not establish MongoDB Atlas connection")
+        
     except Exception as e:
         logger.error(f"Failed to configure database: {e}", exc_info=True)
-        # Don't raise - allow app to start without database for development
-        logger.warning("App will continue without database connection")
+        raise
+
+
+def _try_connect_to_db(connection_url: str, database_name: str) -> bool:
+    """Try to connect to a MongoDB instance.
+    
+    Args:
+        connection_url: MongoDB connection string
+        database_name: Database name to use
+        
+    Returns:
+        True if connection successful, False otherwise
+    """
+    global _db_connection
+    
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            # Remove database name from URL if present, use the database_name parameter instead
+            # This ensures we use the DATABASE_NAME env variable, not hardcoded values in the URL
+            clean_url = connection_url.split('?')[0]  # Remove query params
+            if clean_url.endswith('/'):
+                clean_url = clean_url[:-1]
+            # Remove database name from path if present (e.g., /Kenikool_Salon)
+            if '/' in clean_url.split('@')[-1]:  # Check after the host part
+                clean_url = '/'.join(clean_url.split('/')[:-1])
+            
+            _db_connection = connect(
+                db=database_name,
+                host=clean_url,
+                connect=True,  # Establish connection immediately
+                serverSelectionTimeoutMS=10000,  # 10 second timeout for server selection
+                connectTimeoutMS=10000,  # 10 second timeout for initial connection
+                socketTimeoutMS=None,  # No timeout for socket operations (queries)
+                retryWrites=True,
+                w="majority",
+                maxPoolSize=50,
+                minPoolSize=10,
+            )
+            logger.debug(f"Successfully connected to MongoDB database: {database_name}")
+            return True
+            
+        except Exception as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.debug(f"Connection attempt {retry_count} failed: {str(e)[:100]}. Retrying...")
+                import time
+                time.sleep(2 ** retry_count)  # Exponential backoff: 2s, 4s, 8s
+            else:
+                logger.error(f"All {max_retries} connection attempts failed: {str(e)}")
+    
+    return False
+
+
+def get_db():
+    """Get the raw MongoDB database connection for aggregation queries.
+    
+    Returns:
+        pymongo.database.Database: The MongoDB database instance
+        
+    Raises:
+        RuntimeError: If database is not initialized
+    """
+    if not MONGOENGINE_AVAILABLE:
+        raise RuntimeError("Mongoengine not installed - database features unavailable")
+    
+    if _db_connection is None:
+        raise RuntimeError("Database not initialized. Call init_db() first.")
+    
+    try:
+        from mongoengine import get_db as mongoengine_get_db
+        return mongoengine_get_db()
+    except Exception as e:
+        logger.error(f"Failed to get database connection: {e}")
+        raise
 
 
 def close_db():

@@ -1,21 +1,36 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { useState, useEffect } from "react";
+import { get } from "@/lib/utils/api";
 
-export interface BookingStatistics {
-  total_bookings: number;
-  average_rating: number;
-  average_response_time: number;
+interface Statistics {
+  totalBookings: number;
+  averageRating: number;
+  responseTimeMinutes: number;
 }
 
 export function usePublicBookingStatistics() {
-  return useQuery({
-    queryKey: ["public-booking-statistics"],
-    queryFn: async () => {
-      const { data } = await apiClient.get<BookingStatistics>(
-        "/public/bookings/statistics",
-      );
-      return data;
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        setLoading(true);
+        const data = await get<Statistics>("/public/bookings/statistics");
+        setStatistics(data);
+        setError(null);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch statistics",
+        );
+        setStatistics(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+  }, []);
+
+  return { statistics, loading, error };
 }

@@ -145,20 +145,57 @@ class AuthenticationService:
             return None
 
     def authenticate_user(
-        self, email: str, password: str, tenant_id: str
+        self, email: str, password: str, tenant_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Authenticate a user with email and password."""
+        """Authenticate a user with email and password.
+        
+        Args:
+            email: User email
+            password: User password
+            tenant_id: Optional tenant_id. If None, will be looked up from user.
+        """
         try:
-            # Look up user by email only (tenant_id is already verified in login endpoint)
+            from app.models.tenant import Tenant
+            from datetime import datetime, timedelta
+
+            # Look up user by email
             user = User.objects(email=email).first()
             if not user:
                 logger.warning(f"User not found: {email}")
                 return None
 
-            # Verify tenant_id matches
+            # If tenant_id not provided, get it from user
+            if tenant_id is None:
+                tenant_id = str(user.tenant_id)
+            
+            # Verify tenant_id matches if provided
             if str(user.tenant_id) != tenant_id:
                 logger.warning(f"Tenant mismatch for user: {email}")
                 return None
+
+            # Check if tenant is deleted
+            tenant = Tenant.objects(id=tenant_id).first()
+            if tenant and tenant.deletion_status == "soft_deleted":
+                grace_period_days = 14
+                days_remaining = (
+                    tenant.recovery_token_expires_at - datetime.utcnow()
+                ).days
+                
+                if days_remaining > 0:
+                    logger.warning(f"Tenant deleted but within grace period: {tenant_id}")
+                    return {
+                        "error": "account_deleted",
+                        "message": "Your account is deactivated",
+                        "days_remaining": max(0, days_remaining),
+                        "recovery_token": tenant.recovery_token,
+                    }
+                else:
+                    logger.warning(f"Tenant deleted and grace period expired: {tenant_id}")
+                    return {
+                        "error": "account_permanently_deleted",
+                        "message": "Your account was permanently deleted",
+                        "paid_recovery_available": True,
+                    }
 
             if not self.verify_password(password, user.password_hash):
                 logger.warning(f"Invalid password for user: {email}")
@@ -171,9 +208,11 @@ class AuthenticationService:
             return {
                 "user_id": str(user.id),
                 "email": user.email,
+                "tenant_id": tenant_id,
                 "role_ids": [str(rid) for rid in user.role_ids],
                 "mfa_enabled": user.mfa_enabled,
                 "mfa_method": user.mfa_method,
+                "password_change_required": user.password_change_required,
             }
         except Exception as e:
             logger.error(f"Authentication error: {e}")

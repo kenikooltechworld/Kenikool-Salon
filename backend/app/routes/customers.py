@@ -2,9 +2,11 @@
 
 import logging
 from typing import Optional
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from bson import ObjectId
 from app.models.customer import Customer
+from app.models.tenant import Tenant
 from app.services.appointment_history_service import AppointmentHistoryService
 from app.context import get_tenant_id
 from app.decorators.tenant_isolated import tenant_isolated
@@ -264,10 +266,74 @@ async def create_customer(
             preferred_services=preferred_services,
             communication_preference=customer_data.get("communication_preference", "email"),
             status=customer_data.get("status", "active"),
+            is_guest=False,  # Customers created by owners are not guests
         )
         
         new_customer.save()
         logger.info(f"Created customer: {new_customer.id}")
+        
+        # Send welcome email with portal setup instructions
+        try:
+            from app.tasks import send_email
+            from app.config import settings
+            from app.services.email_template_service import EmailTemplateService
+            import secrets
+            
+            # Get tenant details for email branding
+            tenant = Tenant.objects(id=tenant_id).first()
+            if tenant:
+                # Generate a secure setup token for password creation
+                setup_token = secrets.token_urlsafe(32)
+                new_customer.password_reset_token = setup_token
+                new_customer.password_reset_expires = datetime.utcnow() + timedelta(days=7)  # 7 days to set up
+                new_customer.save()
+                
+                # Build portal setup URL
+                platform_domain = settings.platform_domain
+                setup_url = f"https://{tenant.subdomain}.{platform_domain}/customer/setup-password?token={setup_token}"
+                booking_url = f"https://{tenant.subdomain}.{platform_domain}/book"
+                
+                # Get tenant settings
+                tenant_settings = tenant.settings or {}
+                
+                # Prepare template context with setup URL
+                email_context = {
+                    "customer_name": f"{new_customer.first_name} {new_customer.last_name}",
+                    "customer_email": new_customer.email,
+                    "customer_phone": new_customer.phone,
+                    "business_name": tenant.name,
+                    "business_address": tenant.address,
+                    "business_phone": tenant_settings.get("phone"),
+                    "business_email": tenant_settings.get("email"),
+                    "logo_url": tenant.logo_url,
+                    "primary_color": tenant.primary_color or "#6366f1",
+                    "secondary_color": tenant.secondary_color or "#8b5cf6",
+                    "booking_url": booking_url,
+                    "setup_url": setup_url,  # Add setup URL for password creation
+                }
+                
+                # Render custom or default template
+                rendered_html = EmailTemplateService.render_customer_welcome_email(
+                    str(tenant_id),
+                    email_context
+                )
+                
+                if rendered_html:
+                    # Send email with rendered template
+                    send_email.delay(
+                        to=new_customer.email,
+                        subject=f"Welcome to {tenant.name}!",
+                        template="custom",  # Special template type for custom HTML
+                        context={"html_content": rendered_html},
+                    )
+                    logger.info(f"Welcome email queued for customer: {new_customer.email}")
+                else:
+                    logger.error(f"Failed to render email template for customer: {new_customer.email}")
+        except Exception as e:
+            logger.error(f"Failed to send welcome email to customer {new_customer.email}: {str(e)}")
+            # Don't fail customer creation if email fails
+        
+        # Return success response regardless of email status
         return customer_to_response(new_customer)
     except HTTPException:
         raise
@@ -311,7 +377,15 @@ async def update_customer(
         if "address" in customer_data:
             customer.address = customer_data["address"]
         if "date_of_birth" in customer_data:
-            customer.date_of_birth = customer_data["date_of_birth"]
+            # Parse date string to date object if it's a string
+            dob = customer_data["date_of_birth"]
+            if dob:
+                if isinstance(dob, str):
+                    customer.date_of_birth = datetime.fromisoformat(dob.replace('Z', '+00:00')).date()
+                else:
+                    customer.date_of_birth = dob
+            else:
+                customer.date_of_birth = None
         if "preferred_staff_id" in customer_data:
             customer.preferred_staff_id = ObjectId(customer_data["preferred_staff_id"]) if customer_data["preferred_staff_id"] else None
         if "preferred_services" in customer_data:
@@ -339,21 +413,44 @@ async def delete_customer(
     tenant_id: ObjectId = Depends(get_tenant_id_from_context),
 ):
     """
-    Delete a customer.
+    Delete a customer and all their related data.
 
-    Deletes the customer profile for the given customer ID.
+    Performs cascading deletion of customer and all associated records including:
+    - Appointments
+    - Appointment history
+    - Customer preferences
+    - Invoices
+    - Payments
+    - Memberships
+    - Receipts
+    - Transactions
+    - Carts
+    - Time slots
+    - Waiting room entries
+    - Public bookings
+    - Recommendations
     """
     try:
-        customer = Customer.objects(id=ObjectId(customer_id), tenant_id=tenant_id).first()
-        if not customer:
-            raise HTTPException(status_code=404, detail="Customer not found")
-
-        customer_id_str = str(customer.id)
-        customer.delete()
-        logger.info(f"Deleted customer: {customer_id_str}")
-        return {"message": "Customer deleted successfully"}
+        from app.services.customer_deletion_service import CustomerDeletionService
+        
+        customer_id_obj = ObjectId(customer_id)
+        
+        # Perform cascading deletion
+        deletion_stats = CustomerDeletionService.delete_customer_and_related_data(
+            tenant_id=tenant_id,
+            customer_id=customer_id_obj
+        )
+        
+        logger.info(f"Deleted customer {customer_id} with {deletion_stats['total_related_records_deleted']} related records")
+        
+        return {
+            "message": "Customer and all related data deleted successfully",
+            "deleted_records": deletion_stats["total_related_records_deleted"]
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to delete customer: {str(e)}")
+        logger.error(f"Failed to delete customer: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="Failed to delete customer")

@@ -720,3 +720,62 @@ async def mark_no_show(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{appointment_id}", response_model=AppointmentResponse)
+async def update_appointment(
+    appointment_id: str,
+    request: AppointmentUpdateRequest,
+    tenant_id: ObjectId = Depends(get_tenant_id),
+):
+    """
+    Update an appointment (notes, status, etc).
+    
+    - **appointment_id**: Appointment ID
+    - **notes**: Appointment notes (optional)
+    - **status**: Appointment status (optional)
+    """
+    try:
+        appt_id = ObjectId(appointment_id)
+        appointment = AppointmentService.get_appointment(tenant_id, appt_id)
+
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+
+        # Update notes if provided
+        if request.notes is not None:
+            appointment.notes = request.notes
+
+        # Update status if provided
+        if request.status is not None:
+            appointment.status = request.status
+
+        # Update cancellation reason if provided
+        if request.cancellation_reason is not None:
+            appointment.cancellation_reason = request.cancellation_reason
+
+        appointment.save()
+
+        return AppointmentResponse(
+            id=str(appointment.id),
+            customer_id=str(appointment.customer_id),
+            staff_id=str(appointment.staff_id),
+            service_id=str(appointment.service_id),
+            location_id=str(appointment.location_id) if appointment.location_id else None,
+            start_time=appointment.start_time.isoformat(),
+            end_time=appointment.end_time.isoformat(),
+            status=appointment.status,
+            notes=appointment.notes,
+            price=appointment.price,
+            cancellation_reason=appointment.cancellation_reason,
+            cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            no_show_reason=appointment.no_show_reason,
+            marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
+            confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
+            created_at=appointment.created_at.isoformat(),
+            updated_at=appointment.updated_at.isoformat(),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

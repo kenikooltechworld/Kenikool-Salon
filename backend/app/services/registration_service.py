@@ -261,8 +261,8 @@ class RegistrationService:
                             "trial_end_date": (datetime.utcnow() + timedelta(days=30)).isoformat(),
                             "owner_phone": temp_reg.phone,
                             "owner_email": temp_reg.email,
-                            "email": "",
-                            "phone": "",
+                            "email": temp_reg.email,  # Set business email from owner email
+                            "phone": temp_reg.phone,  # Set business phone from owner phone
                             "tax_rate": 0.0,
                             "currency": "NGN",
                             "timezone": "Africa/Lagos",

@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "No Promise Chains in Components",
+  "description": "Detects promise chains (.then) in React components and reminds to use React Query mutations instead",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "salon/src/**/*.tsx",
+      "salon/src/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check if this file contains promise chains (.then() or .catch() calls). If found, remind me to refactor them to use React Query mutations with onSuccess/onError callbacks instead. Show the specific lines that need refactoring."
+  }
+}

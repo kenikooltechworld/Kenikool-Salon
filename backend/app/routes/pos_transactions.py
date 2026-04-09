@@ -27,6 +27,9 @@ async def create_transaction(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Create a new transaction."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     import logging
     logger = logging.getLogger(__name__)
     
@@ -118,6 +121,9 @@ async def list_transactions(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """List transactions."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         transactions, total = TransactionService.list_transactions(
             tenant_id=tenant_id,
@@ -179,6 +185,9 @@ async def get_transaction(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get transaction details."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         transaction = TransactionService.get_transaction(
             tenant_id=tenant_id,
@@ -233,6 +242,9 @@ async def update_transaction(
     user_id: ObjectId = Depends(get_user_id),
 ):
     """Update transaction."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         transaction = TransactionService.update_transaction_status(
             tenant_id=tenant_id,
@@ -315,6 +327,9 @@ async def initialize_transaction_payment(
     Raises:
         HTTPException: If transaction not found or payment initialization fails
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     import logging
     logger = logging.getLogger(__name__)
     
@@ -411,6 +426,9 @@ async def verify_transaction_payment(
     Raises:
         HTTPException: If transaction not found or verification fails
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     import logging
     logger = logging.getLogger(__name__)
     
@@ -523,6 +541,9 @@ async def generate_receipt_for_transaction(
     Raises:
         HTTPException: If transaction not found or receipt generation fails
     """
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     import logging
     logger = logging.getLogger(__name__)
     

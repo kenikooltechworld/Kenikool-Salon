@@ -64,4 +64,4 @@ export {
   useUpdateTenantSettings,
   type TenantSettingsData,
   type BusinessHours,
-} from "./useTenantSettings";
+} from "./owner/useTenantSettings";

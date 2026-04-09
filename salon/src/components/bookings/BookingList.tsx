@@ -215,7 +215,7 @@ export function BookingList({
                     <Skeleton className="h-3 w-12" />
                     <Skeleton className="h-4 w-20" />
                   </div>
-                  <Skeleton className="h-6 w-20 rounded-full flex-shrink-0" />
+                  <Skeleton className="h-6 w-20 rounded-full shrink-0" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
@@ -276,7 +276,7 @@ export function BookingList({
                 </Button>
                 {booking.status === "scheduled" && (
                   <Button
-                    variant="success"
+                    variant="primary"
                     size="sm"
                     onClick={() => onConfirmBooking(booking.id)}
                     disabled={isConfirming || isCancelling}

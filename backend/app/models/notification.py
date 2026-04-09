@@ -185,7 +185,7 @@ class NotificationTemplate(BaseDocument):
 
 
 class NotificationPreference(BaseDocument):
-    """Notification preference model for customers."""
+    """Notification preference model for customers and staff."""
 
     NOTIFICATION_TYPES = [
         "appointment_confirmation",
@@ -194,11 +194,20 @@ class NotificationPreference(BaseDocument):
         "appointment_cancelled",
         "appointment_completed",
         "payment_receipt",
+        "shift_assigned",
+        "shift_reminder",
+        "time_off_approved",
+        "time_off_rejected",
+        "commission_payment",
     ]
 
     CHANNELS = ["email", "sms", "push", "in_app"]
 
-    customer_id = StringField(required=True)
+    # Support both customer_id and user_id for staff
+    customer_id = StringField(required=False)
+    user_id = StringField(required=False)  # For staff preferences
+    recipient_type = StringField(choices=["customer", "staff"], default="customer")
+    
     notification_type = StringField(choices=NOTIFICATION_TYPES, required=True)
     channel = StringField(choices=CHANNELS, required=True)
 
@@ -209,6 +218,9 @@ class NotificationPreference(BaseDocument):
         "indexes": [
             ("tenant_id", "customer_id", "notification_type", "channel"),
             ("tenant_id", "customer_id"),
+            ("tenant_id", "user_id", "notification_type", "channel"),
+            ("tenant_id", "user_id"),
+            ("tenant_id", "recipient_type"),
         ],
     }
 

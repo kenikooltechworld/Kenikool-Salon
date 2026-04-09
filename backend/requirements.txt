@@ -8,6 +8,7 @@ pydantic-settings
 python-dotenv
 python-jose
 bcrypt>=5.0.0
+Jinja2
 pytest
 pytest-asyncio
 httpx
@@ -26,3 +27,5 @@ openpyxl
 pandas
 python-dateutil
 pytz
+python-socketio
+python-engineio

@@ -17,7 +17,7 @@ def tenant_isolated(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         """Wrapper function to check tenant context."""
         tenant_id = get_tenant_id()
 
@@ -28,6 +28,6 @@ def tenant_isolated(func: Callable) -> Callable:
                 detail="Tenant context required",
             )
 
-        return await func(*args, **kwargs)
+        return func(*args, **kwargs)
 
     return wrapper

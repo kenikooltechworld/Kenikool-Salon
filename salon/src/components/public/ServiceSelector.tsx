@@ -101,7 +101,7 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
                 )}
               </div>
               {selectedServiceId === service.id && (
-                <CheckIcon size={20} className="text-primary flex-shrink-0" />
+                <CheckIcon size={20} className="text-primary shrink-0" />
               )}
             </div>
 
@@ -125,7 +125,17 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
 
       {selectedServiceId && (
         <div className="flex justify-end">
-          <Button variant="primary">Continue →</Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              const service = services.find((s) => s.id === selectedServiceId);
+              if (service) {
+                handleSelect(service.id, service.duration_minutes);
+              }
+            }}
+          >
+            Continue →
+          </Button>
         </div>
       )}
     </div>

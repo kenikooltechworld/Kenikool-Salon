@@ -1,13 +1,13 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+} from "@/components/ui/modal";
 import { CustomerForm, type CustomerFormData } from "./CustomerForm";
 import { useUpdateCustomer, useCustomer } from "@/hooks/useCustomers";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 
 interface EditCustomerModalProps {
   customerId: string | null;
@@ -26,55 +26,67 @@ export function EditCustomerModal({
     customerId || "",
   );
   const updateMutation = useUpdateCustomer();
+  const { showToast } = useToast();
 
   const handleSubmit = async (data: CustomerFormData) => {
     if (!customerId) return;
-    await updateMutation.mutateAsync({
-      id: customerId,
-      ...data,
-    });
-    onOpenChange(false);
-    onSuccess?.();
+    try {
+      await updateMutation.mutateAsync({
+        id: customerId,
+        ...data,
+      });
+      showToast({
+        title: "Success",
+        description: "Customer updated successfully",
+        variant: "success",
+      });
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to update customer";
+      showToast({
+        title: "Error",
+        description: errorMessage,
+        variant: "error",
+      });
+      throw error;
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="space-y-1 xs:space-y-2 flex-shrink-0">
-          <DialogTitle className="text-lg xs:text-xl sm:text-2xl font-bold">
-            Edit Customer
-          </DialogTitle>
-          <DialogDescription>Update customer information</DialogDescription>
-        </DialogHeader>
-
-        <div className="overflow-y-auto flex-1 min-h-0">
-          <div className="pr-2">
-            {isLoadingCustomer ? (
-              <div className="space-y-4 xs:space-y-5">
-                <Skeleton className="h-10 xs:h-11 w-full" />
-                <Skeleton className="h-10 xs:h-11 w-full" />
-                <Skeleton className="h-10 xs:h-11 w-full" />
-              </div>
-            ) : customer ? (
-              <CustomerForm
-                initialData={{
-                  firstName: customer.firstName,
-                  lastName: customer.lastName,
-                  email: customer.email,
-                  phone: customer.phone,
-                  address: customer.address,
-                  dateOfBirth: customer.dateOfBirth,
-                  communicationPreference: customer.communicationPreference,
-                  status: customer.status,
-                }}
-                onSubmit={handleSubmit}
-                isLoading={updateMutation.isPending}
-                onCancel={() => onOpenChange(false)}
-              />
-            ) : null}
+    <Modal open={open} onClose={() => onOpenChange(false)} size="lg">
+      <ModalHeader>
+        <ModalTitle>Edit Customer</ModalTitle>
+        <ModalDescription>Update customer information</ModalDescription>
+      </ModalHeader>
+      <div className="px-6 py-4">
+        {isLoadingCustomer ? (
+          <div className="space-y-4 xs:space-y-5">
+            <Skeleton className="h-10 xs:h-11 w-full" />
+            <Skeleton className="h-10 xs:h-11 w-full" />
+            <Skeleton className="h-10 xs:h-11 w-full" />
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        ) : customer ? (
+          <CustomerForm
+            initialData={{
+              firstName: customer.firstName,
+              lastName: customer.lastName,
+              email: customer.email,
+              phone: customer.phone,
+              address: customer.address,
+              dateOfBirth: customer.dateOfBirth,
+              communicationPreference: customer.communicationPreference,
+              status: customer.status,
+            }}
+            onSubmit={handleSubmit}
+            isLoading={updateMutation.isPending}
+            onCancel={() => onOpenChange(false)}
+          />
+        ) : null}
+      </div>
+    </Modal>
   );
 }

@@ -433,3 +433,201 @@ def send_booking_reminder_email(self, booking_id: str, tenant_id: str, reminder_
     except Exception as e:
         logger.error(f"Error in send_booking_reminder_email: {str(e)}")
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
+
+
+@shared_task(bind=True, max_retries=3)
+def send_staff_appointment_reminders(self):
+    """
+    Send appointment reminders to staff 24 hours before appointments.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from app.models.appointment import Appointment
+        from app.models.staff import Staff
+        from app.services.notification_service import NotificationService
+        from app.context import set_tenant_id
+        
+        # Find appointments 24 hours away
+        now = datetime.utcnow()
+        tomorrow_start = now + timedelta(hours=23, minutes=30)
+        tomorrow_end = now + timedelta(hours=24, minutes=30)
+        
+        # Get all confirmed appointments 24 hours away
+        appointments = Appointment.objects(
+            status__in=["scheduled", "confirmed"],
+            start_time__gte=tomorrow_start,
+            start_time__lte=tomorrow_end,
+        )
+        
+        for appointment in appointments:
+            try:
+                set_tenant_id(str(appointment.tenant_id))
+                
+                # Get staff details
+                staff = Staff.objects(
+                    tenant_id=appointment.tenant_id,
+                    id=appointment.staff_id
+                ).first()
+                
+                if not staff or not staff.user_id:
+                    continue
+                
+                # Check if staff wants appointment reminders
+                from app.services.notification_service import NotificationService
+                
+                # Get staff email and phone
+                staff_email = staff.user_id.email if hasattr(staff.user_id, 'email') else None
+                staff_phone = staff.user_id.phone if hasattr(staff.user_id, 'phone') else None
+                
+                # Determine which channels to use based on preferences
+                channels = []
+                if NotificationService.is_notification_enabled(
+                    user_id=str(staff.user_id.id),
+                    notification_type="appointment_reminder_24h",
+                    channel="in_app"
+                ):
+                    channels.append("in_app")
+                if NotificationService.is_notification_enabled(
+                    user_id=str(staff.user_id.id),
+                    notification_type="appointment_reminder_24h",
+                    channel="email"
+                ) and staff_email:
+                    channels.append("email")
+                if NotificationService.is_notification_enabled(
+                    user_id=str(staff.user_id.id),
+                    notification_type="appointment_reminder_24h",
+                    channel="sms"
+                ) and staff_phone:
+                    channels.append("sms")
+                
+                if channels:
+                    # Get customer name
+                    customer_name = "Customer"
+                    if appointment.customer_id:
+                        from app.models.customer import Customer
+                        customer = Customer.objects(
+                            tenant_id=appointment.tenant_id,
+                            id=appointment.customer_id
+                        ).first()
+                        if customer:
+                            customer_name = customer.name
+                    
+                    # Get service name
+                    service_name = "Service"
+                    if appointment.service_id:
+                        from app.models.service import Service
+                        service = Service.objects(
+                            tenant_id=appointment.tenant_id,
+                            id=appointment.service_id
+                        ).first()
+                        if service:
+                            service_name = service.name
+                    
+                    # Create notifications
+                    NotificationService.create_staff_appointment_reminder(
+                        staff_id=str(staff.user_id.id),
+                        appointment_id=str(appointment.id),
+                        appointment_time=appointment.start_time,
+                        customer_name=customer_name,
+                        service_name=service_name,
+                        staff_email=staff_email,
+                        staff_phone=staff_phone,
+                        channels=channels,
+                    )
+                    
+                    logger.info(f"Staff appointment reminder created for appointment {appointment.id}")
+                    
+            except Exception as e:
+                logger.error(f"Error processing appointment {appointment.id} for staff reminder: {str(e)}")
+        
+        logger.info("Staff appointment reminders task completed")
+        
+    except Exception as e:
+        logger.error(f"Error in send_staff_appointment_reminders: {str(e)}")
+        raise self.retry(exc=e, countdown=300)
+
+
+@shared_task(bind=True, max_retries=3)
+def send_staff_shift_reminders(self):
+    """
+    Send shift reminders to staff at the start of their shifts.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from app.models.shift import Shift
+        from app.models.staff import Staff
+        from app.services.notification_service import NotificationService
+        from app.context import set_tenant_id
+        
+        # Find shifts starting in the next 30 minutes
+        now = datetime.utcnow()
+        start_window = now + timedelta(minutes=25)
+        end_window = now + timedelta(minutes=35)
+        
+        # Get all scheduled shifts starting soon
+        shifts = Shift.objects(
+            status="scheduled",
+            start_time__gte=start_window,
+            start_time__lte=end_window,
+        )
+        
+        for shift in shifts:
+            try:
+                set_tenant_id(str(shift.tenant_id))
+                
+                # Get staff details
+                staff = Staff.objects(
+                    tenant_id=shift.tenant_id,
+                    id=shift.staff_id
+                ).first()
+                
+                if not staff or not staff.user_id:
+                    continue
+                
+                # Get staff email and phone
+                staff_email = staff.user_id.email if hasattr(staff.user_id, 'email') else None
+                staff_phone = staff.user_id.phone if hasattr(staff.user_id, 'phone') else None
+                
+                # Determine which channels to use based on preferences
+                channels = []
+                if NotificationService.is_notification_enabled(
+                    user_id=str(staff.user_id.id),
+                    notification_type="shift_assigned",
+                    channel="in_app"
+                ):
+                    channels.append("in_app")
+                if NotificationService.is_notification_enabled(
+                    user_id=str(staff.user_id.id),
+                    notification_type="shift_assigned",
+                    channel="email"
+                ) and staff_email:
+                    channels.append("email")
+                if NotificationService.is_notification_enabled(
+                    user_id=str(staff.user_id.id),
+                    notification_type="shift_assigned",
+                    channel="sms"
+                ) and staff_phone:
+                    channels.append("sms")
+                
+                if channels:
+                    # Create notifications
+                    NotificationService.create_staff_shift_reminder(
+                        staff_id=str(staff.user_id.id),
+                        shift_id=str(shift.id),
+                        shift_start=shift.start_time,
+                        shift_end=shift.end_time,
+                        staff_email=staff_email,
+                        staff_phone=staff_phone,
+                        channels=channels,
+                    )
+                    
+                    logger.info(f"Staff shift reminder created for shift {shift.id}")
+                    
+            except Exception as e:
+                logger.error(f"Error processing shift {shift.id} for staff reminder: {str(e)}")
+        
+        logger.info("Staff shift reminders task completed")
+        
+    except Exception as e:
+        logger.error(f"Error in send_staff_shift_reminders: {str(e)}")
+        raise self.retry(exc=e, countdown=300)

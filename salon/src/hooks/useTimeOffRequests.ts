@@ -31,13 +31,10 @@ export function useTimeOffRequests(filters?: TimeOffFilters) {
   return useQuery({
     queryKey: ["time-off-requests", filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: TimeOffRequest[] }>(
-        "/time-off-requests",
-        {
-          params: filters,
-        },
-      );
-      return data.data || [];
+      const { data } = await apiClient.get<any>("/time-off-requests", {
+        params: filters,
+      });
+      return data || [];
     },
   });
 }
@@ -49,10 +46,8 @@ export function useTimeOffRequest(id: string) {
   return useQuery({
     queryKey: ["time-off-requests", id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: TimeOffRequest }>(
-        `/time-off-requests/${id}`,
-      );
-      return data.data || null;
+      const { data } = await apiClient.get<any>(`/time-off-requests/${id}`);
+      return data || null;
     },
     enabled: !!id,
   });
@@ -66,11 +61,11 @@ export function useCreateTimeOffRequest() {
 
   return useMutation({
     mutationFn: async (requestData: CreateTimeOffData) => {
-      const { data } = await apiClient.post<{ data: TimeOffRequest }>(
+      const { data } = await apiClient.post<any>(
         "/time-off-requests",
         requestData,
       );
-      return data.data;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time-off-requests"] });
@@ -86,11 +81,11 @@ export function useApproveTimeOffRequest() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.put<{ data: TimeOffRequest }>(
+      const { data } = await apiClient.put<any>(
         `/time-off-requests/${id}/approve`,
         {},
       );
-      return data.data;
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["time-off-requests"] });
@@ -109,11 +104,11 @@ export function useDenyTimeOffRequest() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.put<{ data: TimeOffRequest }>(
+      const { data } = await apiClient.put<any>(
         `/time-off-requests/${id}/deny`,
         {},
       );
-      return data.data;
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["time-off-requests"] });

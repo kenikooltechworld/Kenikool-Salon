@@ -21,6 +21,9 @@ async def calculate_commission(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Calculate commission for a completed appointment."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         commission = ServiceCommissionService.calculate_commission_for_appointment(
             tenant_id=tenant_id,
@@ -60,6 +63,9 @@ async def get_staff_commissions(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get staff commissions with filtering."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         # Parse dates if provided
         start_dt = None
@@ -113,6 +119,9 @@ async def get_commission_summary(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get commission summary for a staff member."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         # Parse dates if provided
         start_dt = None
@@ -164,6 +173,9 @@ async def get_pending_commissions(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Get all pending commissions for a staff member."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         commissions, total_pending = ServiceCommissionService.get_pending_commissions(
             tenant_id=tenant_id,
@@ -198,6 +210,9 @@ async def mark_commission_as_paid(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Mark a commission as paid."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         commission = ServiceCommissionService.mark_commission_as_paid(
             tenant_id=tenant_id,
@@ -224,6 +239,9 @@ async def mark_commissions_as_paid_batch(
     tenant_id: ObjectId = Depends(get_tenant_id),
 ):
     """Mark multiple commissions as paid."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
     try:
         count = ServiceCommissionService.mark_commissions_as_paid(
             tenant_id=tenant_id,

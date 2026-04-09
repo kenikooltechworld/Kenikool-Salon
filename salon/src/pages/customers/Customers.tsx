@@ -18,13 +18,7 @@ import {
 } from "@/hooks/useCustomers";
 import { CreateCustomerModal } from "@/components/customers/CreateCustomerModal";
 import { EditCustomerModal } from "@/components/customers/EditCustomerModal";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectTrigger, SelectItem } from "@/components/ui/select";
 
 export default function Customers() {
   const navigate = useNavigate();
@@ -143,22 +137,18 @@ export default function Customers() {
           />
         </div>
 
-        <Select
+        <SelectTrigger
+          className="w-full text-sm xs:text-base py-3 h-auto"
           value={statusFilter}
           onValueChange={(value) => {
             setStatusFilter(value);
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-full text-sm xs:text-base py-3 h-auto">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="inactive">Inactive</SelectItem>
+        </SelectTrigger>
       </div>
 
       {/* Customers Table - Responsive */}
@@ -455,43 +445,173 @@ export default function Customers() {
 
       {/* Pagination */}
       {!isLoading && customers.length > 0 && (
-        <div className="flex flex-col gap-4 xs:gap-5 sm:gap-6 p-4 xs:p-5 sm:p-6 bg-muted/50 rounded-lg border border-border">
-          <div className="text-sm xs:text-base text-muted-foreground text-center sm:text-left font-medium">
-            Showing {(currentPage - 1) * pageSize + 1} to{" "}
-            {Math.min(currentPage * pageSize, total)} of {total} customers
+        <div className="bg-card border border-border rounded-lg shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5">
+            {/* Results Info */}
+            <div className="text-sm text-muted-foreground order-2 sm:order-1">
+              Showing{" "}
+              <span className="font-semibold text-foreground">
+                {(currentPage - 1) * pageSize + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-semibold text-foreground">
+                {Math.min(currentPage * pageSize, total)}
+              </span>{" "}
+              of <span className="font-semibold text-foreground">{total}</span>{" "}
+              customers
+            </div>
+
+            {/* Page Size Selector */}
+            <div className="flex items-center gap-2 order-1 sm:order-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                Rows per page:
+              </span>
+              <SelectTrigger
+                className="w-20 text-sm h-9 border-border"
+                value={pageSize.toString()}
+                onValueChange={(value) => {
+                  setPageSize(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectTrigger>
+            </div>
           </div>
 
-          <div className="flex flex-col xs:flex-row items-center justify-center xs:justify-between gap-3 xs:gap-4 sm:gap-5 flex-wrap">
+          {/* Page Navigation */}
+          <div className="flex items-center justify-center gap-1 p-4 pt-0 sm:p-5 sm:pt-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="h-9 w-9 p-0 hidden sm:inline-flex"
+              title="First page"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              </svg>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="text-sm xs:text-base h-9 xs:h-10 px-4 xs:px-5"
+              className="h-9 px-3 gap-1"
             >
-              Previous
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              <span className="hidden xs:inline text-sm">Previous</span>
             </Button>
 
-            <div className="flex items-center gap-2 xs:gap-3 flex-wrap justify-center">
-              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNum)}
-                    className="text-sm xs:text-base h-9 xs:h-10 w-9 xs:w-10 p-0"
-                  >
-                    {pageNum}
-                  </Button>
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const maxVisible = 5;
+                let startPage = Math.max(
+                  1,
+                  currentPage - Math.floor(maxVisible / 2),
                 );
-              })}
-              {totalPages > 5 && (
-                <span className="text-muted-foreground text-sm xs:text-base font-medium">
-                  ...
-                </span>
-              )}
+                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+                if (endPage - startPage < maxVisible - 1) {
+                  startPage = Math.max(1, endPage - maxVisible + 1);
+                }
+
+                if (startPage > 1) {
+                  pages.push(
+                    <Button
+                      key={1}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      className="h-9 w-9 p-0 text-sm"
+                    >
+                      1
+                    </Button>,
+                  );
+                  if (startPage > 2) {
+                    pages.push(
+                      <span
+                        key="ellipsis-start"
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>,
+                    );
+                  }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <Button
+                      key={i}
+                      variant={currentPage === i ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(i)}
+                      className={`h-9 w-9 p-0 text-sm ${
+                        currentPage === i
+                          ? "font-semibold shadow-sm"
+                          : "hover:bg-muted"
+                      }`}
+                    >
+                      {i}
+                    </Button>,
+                  );
+                }
+
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pages.push(
+                      <span
+                        key="ellipsis-end"
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>,
+                    );
+                  }
+                  pages.push(
+                    <Button
+                      key={totalPages}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                      className="h-9 w-9 p-0 text-sm"
+                    >
+                      {totalPages}
+                    </Button>,
+                  );
+                }
+
+                return pages;
+              })()}
             </div>
 
             <Button
@@ -501,28 +621,46 @@ export default function Customers() {
                 setCurrentPage(Math.min(totalPages, currentPage + 1))
               }
               disabled={currentPage === totalPages}
-              className="text-sm xs:text-base h-9 xs:h-10 px-4 xs:px-5"
+              className="h-9 px-3 gap-1"
             >
-              Next
+              <span className="hidden xs:inline text-sm">Next</span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
             </Button>
 
-            <Select
-              value={pageSize.toString()}
-              onValueChange={(value) => {
-                setPageSize(parseInt(value));
-                setCurrentPage(1);
-              }}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="h-9 w-9 p-0 hidden sm:inline-flex"
+              title="Last page"
             >
-              <SelectTrigger className="w-24 xs:w-28 text-sm xs:text-base h-9 xs:h-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                />
+              </svg>
+            </Button>
           </div>
         </div>
       )}

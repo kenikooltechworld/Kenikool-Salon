@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,8 +21,15 @@ export default function Services() {
   }>({
     isOpen: false,
   });
-  const { data: services = [], isLoading } = useServices();
+  const { data: services = [], isLoading, refetch } = useServices();
   const { mutate: deleteService } = useDeleteService();
+
+  // Refetch services when form closes
+  useEffect(() => {
+    if (!showForm) {
+      refetch();
+    }
+  }, [showForm, refetch]);
 
   const filteredServices = services.filter(
     (service: Service) =>
@@ -166,7 +173,7 @@ export default function Services() {
                     </p>
                   </div>
                   <div
-                    className="flex items-center gap-2 flex-shrink-0"
+                    className="flex items-center gap-2 shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -221,6 +228,7 @@ export default function Services() {
           <div className="bg-background rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <ServiceForm
               service={editingService}
+              existingServices={services}
               onSuccess={handleFormClose}
               onCancel={handleFormClose}
             />

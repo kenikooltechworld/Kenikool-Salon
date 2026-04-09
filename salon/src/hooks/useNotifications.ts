@@ -42,7 +42,7 @@ export const useNotification = (notificationId: string) => {
     queryKey: ["notification", notificationId],
     queryFn: async () => {
       const { data } = await apiClient.get(`/notifications/${notificationId}`);
-      return (data.data || data) as Notification;
+      return data as Notification;
     },
   });
 };
@@ -55,7 +55,7 @@ export const useMarkNotificationRead = () => {
       const { data } = await apiClient.patch(
         `/notifications/${notificationId}/mark-read`,
       );
-      return data.data;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -85,7 +85,7 @@ export const useUnreadNotificationCount = () => {
     queryKey: ["notifications-unread-count"],
     queryFn: async () => {
       const { data } = await apiClient.get("/notifications/unread-count");
-      return (data.data?.unread_count || data.unread_count || 0) as number;
+      return (data?.unread_count || 0) as number;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -97,9 +97,7 @@ export const useNotificationPreferences = () => {
     queryKey: ["notification-preferences"],
     queryFn: async () => {
       const { data } = await apiClient.get("/notifications/preferences");
-      return (
-        Array.isArray(data) ? data : data.data || []
-      ) as NotificationPreference[];
+      return (Array.isArray(data) ? data : []) as NotificationPreference[];
     },
   });
 };
@@ -112,7 +110,7 @@ export const useUpdateNotificationPreferences = () => {
       const { data } = await apiClient.post("/notifications/preferences", {
         preferences,
       });
-      return data.data;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });

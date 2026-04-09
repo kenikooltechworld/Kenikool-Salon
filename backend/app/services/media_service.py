@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 
 _cloudinary_configured = False
 
+# File size limits in bytes
+FILE_SIZE_LIMITS = {
+    "image": 5 * 1024 * 1024,      # 5 MB
+    "document": 10 * 1024 * 1024,  # 10 MB
+}
+
 
 class MediaUploadError(Exception):
     """Raised when media upload fails"""
@@ -96,6 +102,15 @@ def upload_media(
             file_data = base64.b64decode(base64_data)
         except Exception as e:
             raise MediaUploadError(f"Invalid base64 data: {str(e)}")
+        
+        # Validate file size
+        file_size = len(file_data)
+        max_size = FILE_SIZE_LIMITS.get(media_type, FILE_SIZE_LIMITS["image"])
+        if file_size > max_size:
+            max_size_mb = max_size / (1024 * 1024)
+            raise MediaUploadError(
+                f"File size ({file_size / (1024 * 1024):.2f}MB) exceeds {max_size_mb:.0f}MB limit for {media_type}s"
+            )
         
         # Create file-like object
         file_obj = io.BytesIO(file_data)
