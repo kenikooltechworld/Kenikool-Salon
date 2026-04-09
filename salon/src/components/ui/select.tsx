@@ -156,9 +156,13 @@ export const SelectTrigger = React.forwardRef<
 });
 SelectTrigger.displayName = "SelectTrigger";
 
-export const SelectValue = ({ children }: { children?: React.ReactNode }) => (
-  <>{children}</>
-);
+export const SelectValue = ({
+  children,
+  placeholder,
+}: {
+  children?: React.ReactNode;
+  placeholder?: string;
+}) => <>{children || placeholder}</>;
 
 export const SelectContent = ({ children }: { children: React.ReactNode }) => (
   <>{children}</>

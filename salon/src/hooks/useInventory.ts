@@ -65,14 +65,16 @@ export const useInventory = () => {
   });
 
   // Get single inventory
-  const getInventory = useQuery({
-    queryKey: ["inventory", "single"],
-    queryFn: async (inventoryId: string) => {
-      const response = await apiClient.get(`/inventory/${inventoryId}`);
-      return response.data;
-    },
-    enabled: false,
-  });
+  const useGetInventory = (inventoryId?: string) =>
+    useQuery({
+      queryKey: ["inventory", inventoryId],
+      queryFn: async () => {
+        if (!inventoryId) throw new Error("Inventory ID required");
+        const response = await apiClient.get(`/inventory/${inventoryId}`);
+        return response.data;
+      },
+      enabled: !!inventoryId,
+    });
 
   // Create inventory
   const createInventoryMutation = useMutation({

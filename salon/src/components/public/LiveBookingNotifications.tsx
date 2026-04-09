@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { UsersIcon as Users, ClockIcon as Clock } from "@/components/icons";
 import { apiClient } from "@/lib/utils/api";
 

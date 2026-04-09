@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { LockIcon, CheckIcon, ShieldIcon } from "@/components/icons";
 
 export function TrustIndicators() {

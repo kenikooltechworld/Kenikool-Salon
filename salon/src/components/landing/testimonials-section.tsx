@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { StarIcon } from "@/components/icons";
 import { Swiper, SwiperSlide } from "swiper/react";

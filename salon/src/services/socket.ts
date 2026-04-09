@@ -7,17 +7,16 @@ let socket: Socket | null = null;
 /**
  * Initialize Socket.io connection
  * Note: Socket connects to /socket.io path on the backend
+ * Authentication is handled via httpOnly cookies
  */
-export function initializeSocket(token: string): Socket {
+export function initializeSocket(): Socket {
   if (socket?.connected) {
     return socket;
   }
 
   socket = io(SOCKET_URL, {
     path: "/socket.io", // Explicitly set the Socket.IO path
-    auth: {
-      token,
-    },
+    withCredentials: true, // Send cookies with requests
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

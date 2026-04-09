@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { CheckCircleIcon } from "@/components/icons";
 import whyImage from "@/assets/why.jpg";
 
