@@ -184,7 +184,7 @@ export default function StaffDetailPage() {
               <div className="flex items-start gap-3">
                 <MailIcon
                   size={18}
-                  className="text-muted-foreground mt-1 flex-shrink-0"
+                  className="text-muted-foreground mt-1 shrink-0"
                 />
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Email</p>
@@ -199,7 +199,7 @@ export default function StaffDetailPage() {
               <div className="flex items-start gap-3">
                 <PhoneIcon
                   size={18}
-                  className="text-muted-foreground mt-1 flex-shrink-0"
+                  className="text-muted-foreground mt-1 shrink-0"
                 />
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Phone</p>
@@ -221,7 +221,7 @@ export default function StaffDetailPage() {
               <div className="flex items-start gap-3">
                 <CalendarIcon
                   size={18}
-                  className="text-muted-foreground mt-1 flex-shrink-0"
+                  className="text-muted-foreground mt-1 shrink-0"
                 />
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">
@@ -243,7 +243,7 @@ export default function StaffDetailPage() {
               <div className="flex items-start gap-3">
                 <BriefcaseIcon
                   size={18}
-                  className="text-muted-foreground mt-1 flex-shrink-0"
+                  className="text-muted-foreground mt-1 shrink-0"
                 />
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">
@@ -257,7 +257,7 @@ export default function StaffDetailPage() {
               <div className="flex items-start gap-3">
                 <DollarSignIcon
                   size={18}
-                  className="text-muted-foreground mt-1 flex-shrink-0"
+                  className="text-muted-foreground mt-1 shrink-0"
                 />
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">
@@ -410,7 +410,7 @@ export default function StaffDetailPage() {
             <div className="flex items-start gap-3">
               <ClockIcon
                 size={18}
-                className="text-muted-foreground mt-0.5 flex-shrink-0"
+                className="text-muted-foreground mt-0.5 shrink-0"
               />
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Created</p>
@@ -422,7 +422,7 @@ export default function StaffDetailPage() {
             <div className="flex items-start gap-3">
               <ClockIcon
                 size={18}
-                className="text-muted-foreground mt-0.5 flex-shrink-0"
+                className="text-muted-foreground mt-0.5 shrink-0"
               />
               <div>
                 <p className="text-xs text-muted-foreground mb-1">

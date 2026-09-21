@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
-import { PlusIcon, SearchIcon, TrashIcon, EditIcon } from "@/components/icons";
+import { PlusIcon, SearchIcon, TrashIcon, EditIcon, UsersIcon } from "@/components/icons";
 import { useServices, useDeleteService } from "@/hooks/useServices";
 import { ServiceForm } from "@/components/services/ServiceForm";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
@@ -212,6 +212,12 @@ export default function Services() {
                     </p>
                   </div>
                 </div>
+                {service.staff_ids?.length > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <UsersIcon size={13} />
+                    <span>{service.staff_ids.length} staff assigned</span>
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -225,7 +231,7 @@ export default function Services() {
       {/* Service Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-background rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <ServiceForm
               service={editingService}
               existingServices={services}

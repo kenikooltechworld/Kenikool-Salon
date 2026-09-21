@@ -185,7 +185,7 @@ class AppointmentService:
                     tenant_id=tenant_id,
                     customer_name=customer_name,
                     service_name=service.name,
-                    booking_time=start_time
+                    booking_type='appointment'
                 )
         except Exception as e:
             logger.error(f"Error creating booking activity: {str(e)}")
@@ -405,7 +405,7 @@ class AppointmentService:
             Q(is_recurring=True) &
             Q(day_of_week=day_of_week) &
             Q(effective_from__lte=date.date()) &
-            (Q(effective_to__gte=date.date()) | Q(effective_to__exists=False))
+            (Q(effective_to__gte=date.date()) | Q(effective_to=None))
         )
         
         if not availabilities:

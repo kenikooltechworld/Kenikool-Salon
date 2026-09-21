@@ -1,8 +1,6 @@
 fastapi
 uvicorn
 mongoengine
-celery
-redis
 pydantic>=2.0
 pydantic-settings
 python-dotenv
@@ -29,3 +27,6 @@ python-dateutil
 pytz
 python-socketio
 python-engineio
+apscheduler
+tenacity
+cachetools

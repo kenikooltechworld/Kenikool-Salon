@@ -35,10 +35,7 @@ export default function InvoiceDetail() {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircleIcon
-            size={20}
-            className="text-red-600 flex-shrink-0 mt-0.5"
-          />
+          <AlertCircleIcon size={20} className="text-red-600 shrink-0 mt-0.5" />
           <p className="text-sm text-red-800 dark:text-red-200">
             Invoice not found
           </p>
@@ -85,7 +82,7 @@ export default function InvoiceDetail() {
             Invoice #{invoice.id}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Created {formatDate(new Date(invoice.created_at))}
+            Created {formatDate(new Date(invoice.createdAt))}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,18 +110,18 @@ export default function InvoiceDetail() {
                 <span className="font-medium text-foreground">
                   Customer ID:
                 </span>{" "}
-                {invoice.customer_id}
+                {invoice.customerId}
               </p>
               <p>
                 <span className="font-medium text-foreground">Due Date:</span>{" "}
-                {formatDate(new Date(invoice.due_date))}
+                {formatDate(new Date(invoice.dueDate))}
               </p>
-              {invoice.appointment_id && (
+              {invoice.appointmentId && (
                 <p>
                   <span className="font-medium text-foreground">
                     Appointment ID:
                   </span>{" "}
-                  {invoice.appointment_id}
+                  {invoice.appointmentId}
                 </p>
               )}
             </div>
@@ -156,17 +153,17 @@ export default function InvoiceDetail() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoice.line_items && invoice.line_items.length > 0 ? (
-                    invoice.line_items.map((item, index) => (
+                  {invoice.lineItems && invoice.lineItems.length > 0 ? (
+                    invoice.lineItems.map((item, index) => (
                       <tr key={index} className="border-b border-border">
                         <td className="px-4 md:px-6 py-4 text-sm text-foreground">
-                          {item.service_name}
+                          {item.serviceName}
                         </td>
                         <td className="px-4 md:px-6 py-4 text-right text-sm text-muted-foreground">
                           {item.quantity}
                         </td>
                         <td className="px-4 md:px-6 py-4 text-right text-sm text-muted-foreground">
-                          {formatCurrency(item.unit_price)}
+                          {formatCurrency(item.unitPrice)}
                         </td>
                         <td className="px-4 md:px-6 py-4 text-right text-sm font-medium text-foreground">
                           {formatCurrency(item.total)}

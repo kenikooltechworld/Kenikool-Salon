@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { get } from "@/lib/utils/api";
 
 interface Statistics {
-  totalBookings: number;
-  averageRating: number;
-  responseTimeMinutes: number;
+  total_bookings: number;
+  average_rating: number;
+  average_response_time: number;
 }
 
 export function usePublicBookingStatistics() {

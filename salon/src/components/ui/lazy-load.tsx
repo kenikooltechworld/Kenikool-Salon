@@ -1,4 +1,4 @@
-import { Suspense, lazy, ComponentType } from "react";
+import { Suspense, lazy, type ComponentType } from "react";
 import { Spinner } from "./spinner";
 
 interface LazyLoadProps {
@@ -31,7 +31,7 @@ export function LazyLoad({ fallback, children }: LazyLoadProps) {
  * Helper function to create lazy-loaded components
  */
 export function createLazyComponent<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>
+  importFn: () => Promise<{ default: T }>,
 ) {
   return lazy(importFn);
 }

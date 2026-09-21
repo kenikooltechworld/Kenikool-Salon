@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/lib/utils";
 import { useState } from "react";
 
 export interface AuditLog {
@@ -30,7 +30,6 @@ export interface AuditSummary {
 }
 
 export const useAuditLogs = () => {
-  const queryClient = useQueryClient();
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(100);
   const [eventType, setEventType] = useState<string | undefined>();

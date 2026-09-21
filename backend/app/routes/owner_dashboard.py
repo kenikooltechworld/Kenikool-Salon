@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, HTTPException, Depends
 from app.services.owner_dashboard_service import OwnerDashboardService
 from app.decorators.tenant_isolated import tenant_isolated
 from app.context import get_tenant_id
+from app.routes.auth import get_current_user_dependency
 from bson import ObjectId
 
 logger = logging.getLogger(__name__)
@@ -13,11 +14,18 @@ router = APIRouter(prefix="/owner/dashboard", tags=["owner-dashboard"])
 service = OwnerDashboardService()
 
 
+def _require_owner_or_manager(current_user: dict):
+    role_names = current_user.get("role_names", [])
+    if "Owner" not in role_names and "Manager" not in role_names:
+        raise HTTPException(status_code=403, detail="Owner or Manager access required")
+
+
 @router.get("/metrics")
 @tenant_isolated
 async def get_dashboard_metrics(
     use_cache: bool = Query(True, description="Use cached results"),
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Get all dashboard metrics in a single request.
@@ -58,10 +66,12 @@ async def get_dashboard_metrics(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
         metrics = service.get_all_metrics(tenant_id, use_cache)
+        logger.info(f"[DashboardAPI][GET /metrics] tenant={tenant_id} metrics={metrics}")
         return {
             "success": True,
             "data": metrics,
@@ -80,6 +90,7 @@ async def get_upcoming_appointments(
     limit: int = Query(10, ge=5, le=50, description="Number of appointments to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Get upcoming appointments for the dashboard.
@@ -115,10 +126,12 @@ async def get_upcoming_appointments(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
         appointments = service.get_upcoming_appointments(tenant_id, limit, offset)
+        logger.info(f"[DashboardAPI][GET /appointments] tenant={tenant_id} count={len(appointments['appointments'])} total={appointments['total']}")
         return {
             "success": True,
             "data": appointments,
@@ -136,6 +149,7 @@ async def get_upcoming_appointments(
 async def get_pending_actions(
     limit: int = Query(10, ge=1, le=50, description="Maximum number of actions to return"),
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Get pending actions requiring owner attention.
@@ -166,10 +180,12 @@ async def get_pending_actions(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
         actions = service.get_pending_actions(tenant_id, limit)
+        logger.info(f"[DashboardAPI][GET /pending-actions] tenant={tenant_id} actions={len(actions['actions'])} total={actions['total']}")
         return {
             "success": True,
             "data": actions,
@@ -188,6 +204,7 @@ async def get_revenue_analytics(
     start_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: str = Query(None, description="End date (YYYY-MM-DD)"),
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Get revenue analytics data for charts and reporting.
@@ -230,10 +247,12 @@ async def get_revenue_analytics(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
         analytics = service.get_revenue_analytics(tenant_id, start_date, end_date)
+        logger.info(f"[DashboardAPI][GET /revenue-analytics] tenant={tenant_id} totalRevenue={analytics.get('totalRevenue')} period={analytics.get('period')}")
         return {
             "success": True,
             "data": analytics,
@@ -250,6 +269,7 @@ async def get_revenue_analytics(
 @tenant_isolated
 async def get_staff_performance(
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Get staff performance metrics.
@@ -283,10 +303,12 @@ async def get_staff_performance(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
         performance = service.get_staff_performance(tenant_id)
+        logger.info(f"[DashboardAPI][GET /staff-performance] tenant={tenant_id} topStaff={len(performance.get('topStaff', []))}")
         return {
             "success": True,
             "data": performance,
@@ -304,6 +326,7 @@ async def get_staff_performance(
 async def mark_action_complete(
     action_id: str,
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Mark a pending action as complete.
@@ -319,6 +342,7 @@ async def mark_action_complete(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
@@ -340,6 +364,7 @@ async def mark_action_complete(
 async def dismiss_action(
     action_id: str,
     tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
 ):
     """
     Dismiss a pending action.
@@ -355,6 +380,7 @@ async def dismiss_action(
         }
     """
     try:
+        _require_owner_or_manager(current_user)
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 

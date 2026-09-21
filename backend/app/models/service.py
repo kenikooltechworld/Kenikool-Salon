@@ -1,7 +1,7 @@
 """Service model for managing salon/spa/gym services."""
 
 from datetime import datetime
-from mongoengine import StringField, IntField, DecimalField, ListField, DateTimeField, BooleanField
+from mongoengine import StringField, IntField, DecimalField, ListField, ObjectIdField, DateTimeField, BooleanField
 from app.models.base import BaseDocument
 
 
@@ -25,6 +25,7 @@ class Service(BaseDocument):
     benefits = ListField(StringField(max_length=200), default=[])  # Service benefits/features
     # Option B: Per-service commission rate (overrides staff default)
     commission_percentage = DecimalField(null=True, min_value=0, max_value=100)
+    staff_ids = ListField(ObjectIdField(), default=[])  # Staff who can perform this service
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 
@@ -36,6 +37,7 @@ class Service(BaseDocument):
             ("tenant_id", "category"),
             ("tenant_id", "is_active"),
             ("tenant_id", "is_published"),
+            ("tenant_id", "staff_ids"),
         ],
     }
 

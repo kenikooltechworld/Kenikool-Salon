@@ -19,11 +19,6 @@ services:
         sync: false  # You'll set this manually
       - key: DATABASE_NAME
         sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: salon-redis
-          property: connectionString
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: SECRET_KEY
@@ -51,39 +46,6 @@ services:
       - key: TERMII_API_KEY
         sync: false
       - key: TERMII_SENDER_ID
-        sync: false
-
-  # Redis Cache
-  - type: redis
-    name: salon-redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
-
-  # Celery Worker (Background Jobs)
-  - type: worker
-    name: salon-celery-worker
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    plan: free
-    region: oregon
-    startCommand: celery -A app.tasks worker --loglevel=info
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_NAME
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: salon-redis
-          property: connectionString
-      - key: JWT_SECRET_KEY
-        sync: false
-      - key: SECRET_KEY
         sync: false
 
   # Frontend (Static Site)

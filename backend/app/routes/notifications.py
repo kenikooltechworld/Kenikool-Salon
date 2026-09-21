@@ -34,10 +34,12 @@ async def get_unread_count(current_user: dict = Depends(get_current_user_depende
         user_id = current_user.get("id") or current_user.get("user_id")
         if not user_id:
             raise HTTPException(status_code=401, detail="User not authenticated")
+        logger.info(f"[Notifications] Getting unread count for user_id={user_id}")
         notifications = NotificationService.get_unread_notifications(user_id)
+        logger.info(f"[Notifications] Unread count: {len(notifications)}")
         return {"data": {"unread_count": len(notifications)}}
     except Exception as e:
-        logger.error(f"Error getting unread count: {str(e)}", exc_info=True)
+        logger.error(f"[Notifications] Error getting unread count: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to get unread count")
 
 
@@ -253,8 +255,6 @@ async def create_notification(notification: NotificationCreate):
 
 @router.get("", response_model=List[NotificationResponse])
 @tenant_isolated
-@router.get("")
-@tenant_isolated
 async def list_notifications(
     recipient_id: Optional[str] = Query(None),
     notification_type: Optional[str] = Query(None),
@@ -270,6 +270,8 @@ async def list_notifications(
         if not recipient_id:
             recipient_id = current_user.get("id") or current_user.get("user_id")
         
+        logger.info(f"[Notifications] Listing notifications for recipient_id={recipient_id}")
+        
         notifications = NotificationService.get_notifications(
             recipient_id=recipient_id,
             notification_type=notification_type,
@@ -278,9 +280,10 @@ async def list_notifications(
             limit=limit,
             skip=skip,
         )
+        logger.info(f"[Notifications] Found {len(notifications)} notifications")
         return [NotificationResponse.from_orm(n) for n in notifications]
     except Exception as e:
-        logger.error(f"Error listing notifications: {str(e)}", exc_info=True)
+        logger.error(f"[Notifications] Error listing notifications: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to list notifications: {str(e)}")
 
 

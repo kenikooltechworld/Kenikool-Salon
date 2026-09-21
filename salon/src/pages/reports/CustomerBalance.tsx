@@ -60,10 +60,7 @@ export default function CustomerBalance() {
           {/* Warning */}
           {(report.totalOutstanding || 0) > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 flex gap-4">
-              <AlertCircleIcon
-                size={24}
-                className="text-yellow-600 flex-shrink-0"
-              />
+              <AlertCircleIcon size={24} className="text-yellow-600 shrink-0" />
               <div>
                 <h3 className="font-semibold text-yellow-900 mb-1">
                   Outstanding Balances
@@ -166,7 +163,8 @@ export default function CustomerBalance() {
           </div>
 
           {/* Payment History */}
-          {report.recentPayments && report.recentPayments.length > 0 && (
+          {/* TODO: Add recentPayments to OutstandingBalanceReport type if needed */}
+          {/* {report.recentPayments && report.recentPayments.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="font-semibold mb-4">Recent Payments</h3>
               <div className="overflow-x-auto">
@@ -188,7 +186,7 @@ export default function CustomerBalance() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {report.recentPayments.map(
+                    {report.recent_payments.map(
                       (payment: any, index: number) => (
                         <tr key={index} className="hover:bg-muted/50">
                           <td className="px-4 py-3 text-sm font-medium">
@@ -218,7 +216,7 @@ export default function CustomerBalance() {
                 </table>
               </div>
             </div>
-          )}
+          )} */}
         </>
       ) : (
         <div className="text-center py-8 text-muted-foreground">

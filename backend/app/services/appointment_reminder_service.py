@@ -233,7 +233,7 @@ class AppointmentReminderService:
         try:
             from app.tasks import send_email
 
-            send_email.delay(
+            run_in_background(send_email,
                 to=email,
                 subject=subject,
                 template="appointment_reminder",
@@ -259,3 +259,5 @@ class AppointmentReminderService:
                 error_message=str(e),
             )
             return False
+
+

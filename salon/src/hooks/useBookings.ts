@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 import type { CreateBookingInput, BookingFilters } from "@/types";
 
 const BOOKINGS_QUERY_KEY = "bookings";

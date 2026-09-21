@@ -4,7 +4,7 @@ import {
   useDeleteResource,
   useMarkResourceMaintenance,
 } from "@/hooks/useResources";
-import { Edit2Icon, Trash2Icon, WrenchIcon } from "@/components/icons";
+import { Edit, Trash2, WrenchIcon } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
 
 interface ResourceListProps {
@@ -170,7 +170,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
                   onClick={() => onEdit?.(resource.id)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit className="w-4 h-4" />
                   Edit
                 </button>
                 {resource.status !== "maintenance" && (
@@ -179,7 +179,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
                     disabled={markMaintenance.isPending}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 text-sm font-medium"
                   >
-                    <Wrench className="w-4 h-4" />
+                    <WrenchIcon className="w-4 h-4" />
                   </button>
                 )}
                 <button

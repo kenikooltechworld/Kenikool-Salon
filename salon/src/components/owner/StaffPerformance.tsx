@@ -11,6 +11,7 @@ interface StaffPerformanceProps {
   error?: string;
   onRetry?: () => void;
   onStaffClick?: (staffId: string) => void;
+  onViewAllStaff?: () => void;
   currency?: string;
 }
 
@@ -20,6 +21,7 @@ export function StaffPerformance({
   error,
   onRetry,
   onStaffClick,
+  onViewAllStaff,
   currency = "USD",
 }: StaffPerformanceProps) {
   if (isLoading) {
@@ -228,7 +230,7 @@ export function StaffPerformance({
           </div>
         </div>
 
-        <Button variant="outline" className="w-full" size="sm">
+        <Button variant="outline" className="w-full" size="sm" onClick={onViewAllStaff}>
           View All Staff
         </Button>
       </CardContent>

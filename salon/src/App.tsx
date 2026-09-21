@@ -41,7 +41,6 @@ import AccountRecovery from "@/pages/auth/AccountRecovery";
 
 // Dashboard Pages
 import Dashboard from "@/pages/dashboard/Dashboard";
-import Appointments from "@/pages/appointments/Appointments";
 import Bookings from "@/pages/bookings/Bookings";
 import CreateBooking from "@/pages/bookings/CreateBooking";
 import BookingConfirmationSuccess from "@/pages/bookings/BookingConfirmationSuccess";
@@ -105,6 +104,7 @@ import StaffAttendance from "@/pages/staff/Attendance";
 import StaffDocuments from "@/pages/staff/Documents";
 import StaffGoals from "@/pages/staff/Goals";
 import StaffMessages from "@/pages/staff/Messages";
+import StaffCommissionDashboardPage from "@/pages/staff/StaffCommissionDashboard";
 
 // Public Booking Pages
 import PublicBookingPage from "@/pages/public/PublicBookingApp";
@@ -129,6 +129,7 @@ import OwnerSocialProof from "@/pages/owner/SocialProof";
 
 // Payment Pages
 import { BookingPayment } from "@/pages/payments/BookingPayment";
+import PaymentHistoryPage from "@/pages/payments/PaymentHistory";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -168,7 +169,7 @@ function RoleBasedRoute({
     } else if (userRoleNames.includes("Manager")) {
       return <Navigate to="/manager" replace />;
     } else if (userRoleNames.includes("Staff")) {
-      return <Navigate to="/appointments" replace />;
+      return <Navigate to="/staff/appointments" replace />;
     } else if (userRoleNames.includes("Customer")) {
       return <Navigate to="/my-account" replace />;
     }
@@ -380,14 +381,6 @@ function AppContent() {
             }
           />
           <Route
-            path="/appointments"
-            element={
-              <RoleBasedRoute allowedRoles={["Owner", "Manager", "Staff"]}>
-                <Appointments />
-              </RoleBasedRoute>
-            }
-          />
-          <Route
             path="/bookings"
             element={
               <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
@@ -408,6 +401,14 @@ function AppContent() {
             element={
               <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
                 <BookingConfirmationSuccess />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <PaymentHistoryPage />
               </RoleBasedRoute>
             }
           />
@@ -792,6 +793,7 @@ function AppContent() {
           <Route path="/staff/documents" element={<StaffDocuments />} />
           <Route path="/staff/goals" element={<StaffGoals />} />
           <Route path="/staff/messages" element={<StaffMessages />} />
+          <Route path="/staff/commissions" element={<StaffCommissionDashboardPage />} />
           <Route
             path="/staff/settings"
             element={

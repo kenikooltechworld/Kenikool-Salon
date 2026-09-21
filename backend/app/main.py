@@ -16,10 +16,9 @@ from .middleware.public_booking import PublicBookingMiddleware, PublicBookingRat
 from .middleware.feature_flags import FeatureFlagMiddleware
 from .middleware_setup import setup_middleware
 from .db import init_db, close_db
-from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, billing, tenant_recovery, staff_settings, owner_dashboard, websocket_notifications, service_addons, customer_auth, customer_portal, public_waitlist, service_packages, public_service_packages, gift_cards, public_gift_cards, recommendations, availability_events, memberships, public_memberships, group_bookings, public_group_bookings, social_proof, email_templates
+from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, commissions, billing, tenant_recovery, staff_settings, owner_dashboard, websocket_notifications, service_addons, customer_auth, customer_portal, public_waitlist, service_packages, public_service_packages, gift_cards, public_gift_cards, recommendations, availability_events, memberships, public_memberships, group_bookings, public_group_bookings, social_proof, email_templates, attendance, backups, goals, inventory
 from .routes import settings as settings_router
-# Import celery app to register all tasks
-from .tasks import celery_app  # noqa: F401
+from .scheduler import start_scheduler, shutdown_scheduler, register_jobs
 
 # Try to import socketio, but make it optional
 try:
@@ -252,6 +251,9 @@ def create_app() -> FastAPI:
     app.include_router(time_slots.router, prefix=settings.api_prefix)
     app.include_router(staff.router, prefix=settings.api_prefix)
     app.include_router(shifts.router, prefix=settings.api_prefix)
+    app.include_router(attendance.router, prefix=settings.api_prefix)
+    app.include_router(backups.router, prefix=settings.api_prefix)
+    app.include_router(goals.router, prefix=settings.api_prefix)
     app.include_router(time_off_requests.router, prefix=settings.api_prefix)
     app.include_router(customers.router, prefix=settings.api_prefix)
     app.include_router(customer_preferences.router, prefix=settings.api_prefix)
@@ -279,6 +281,7 @@ def create_app() -> FastAPI:
     app.include_router(settings_router.router, prefix=settings.api_prefix)
     app.include_router(email_templates.router, prefix=settings.api_prefix)
     app.include_router(websocket_notifications.router)
+    app.include_router(inventory.router, prefix=settings.api_prefix)
     # Service packages routes (both public and admin)
     app.include_router(service_packages.router, prefix=settings.api_prefix)
     app.include_router(public_service_packages.router, prefix=settings.api_prefix)
@@ -313,6 +316,12 @@ def create_app() -> FastAPI:
     # Social proof routes
     app.include_router(social_proof.router, prefix=settings.api_prefix)
 
+    # Parsed/aggregated commission routes (alias to match useCommissions hook)
+    app.include_router(commissions.router, prefix=settings.api_prefix)
+    app.include_router(attendance.router, prefix=settings.api_prefix)
+    app.include_router(backups.router, prefix=settings.api_prefix)
+    app.include_router(goals.router, prefix=settings.api_prefix)
+
     # Initialize database on startup
     @app.on_event("startup")
     async def startup_event():
@@ -320,7 +329,7 @@ def create_app() -> FastAPI:
         try:
             init_db()
             logger.info("Database initialized successfully")
-            
+
             # Seed pricing plans if they don't exist
             from .models.pricing_plan import PricingPlan
             existing_plans = PricingPlan.objects().count()
@@ -328,7 +337,12 @@ def create_app() -> FastAPI:
                 logger.info("Seeding pricing plans...")
                 _seed_pricing_plans()
                 logger.info("Pricing plans seeded successfully")
-            
+
+            # Register and start APScheduler
+            register_jobs()
+            start_scheduler()
+            logger.info("APScheduler started")
+
             # Log all registered routes
             logger.info("=" * 60)
             logger.info("Registered API Routes:")
@@ -347,6 +361,7 @@ def create_app() -> FastAPI:
     async def shutdown_event():
         """Close database on shutdown."""
         try:
+            shutdown_scheduler()
             close_db()
             logger.info("Database connection closed")
         except Exception as e:

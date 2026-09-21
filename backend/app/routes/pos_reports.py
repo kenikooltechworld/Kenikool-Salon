@@ -23,24 +23,43 @@ async def get_sales_report(
         raise HTTPException(status_code=401, detail="Tenant context not found")
     
     try:
-        transactions, total = TransactionService.list_transactions(
-            tenant_id=tenant_id,
-            page=1,
-            page_size=1000,
-        )
-
+        from datetime import datetime
+        from bson import ObjectId
+        
+        # Build query with date filtering
+        query = Q(tenant_id=tenant_id)
+        
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+                query &= Q(created_at__gte=start_dt)
+            except ValueError:
+                pass
+        
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                query &= Q(created_at__lte=end_dt)
+            except ValueError:
+                pass
+        
+        # Get filtered transactions
+        transactions = Transaction.objects(query)
+        total = transactions.count()
+        
         # Calculate sales metrics
         total_sales = sum(t.total for t in transactions)
-        total_transactions = len(transactions)
+        total_transactions = total
         average_transaction = total_sales / total_transactions if total_transactions > 0 else 0
 
         return {
-            "total_sales": total_sales,
-            "total_transactions": total_transactions,
-            "average_transaction": average_transaction,
+            "totalSales": total_sales,
+            "totalTransactions": total_transactions,
+            "averageTransaction": average_transaction,
             "period": {
-                "start_date": start_date,
-                "end_date": end_date,
+                "startDate": start_date,
+                "endDate": end_date,
             },
         }
     except Exception as e:
@@ -58,25 +77,41 @@ async def get_revenue_report(
         raise HTTPException(status_code=401, detail="Tenant context not found")
     
     try:
-        transactions, total = TransactionService.list_transactions(
-            tenant_id=tenant_id,
-            page=1,
-            page_size=1000,
-        )
-
+        from datetime import datetime
+        
+        # Build query with date filtering
+        query = Q(tenant_id=tenant_id)
+        
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+                query &= Q(created_at__gte=start_dt)
+            except ValueError:
+                pass
+        
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                query &= Q(created_at__lte=end_dt)
+            except ValueError:
+                pass
+        
+        transactions = Transaction.objects(query)
+        
         # Calculate revenue metrics
         total_revenue = sum(t.total for t in transactions)
         total_tax = sum(t.tax_amount for t in transactions)
         total_discount = sum(t.discount_amount for t in transactions)
 
         return {
-            "total_revenue": total_revenue,
-            "total_tax": total_tax,
-            "total_discount": total_discount,
-            "net_revenue": total_revenue - total_tax,
+            "totalRevenue": total_revenue,
+            "totalTax": total_tax,
+            "totalDiscount": total_discount,
+            "netRevenue": total_revenue - total_tax,
             "period": {
-                "start_date": start_date,
-                "end_date": end_date,
+                "startDate": start_date,
+                "endDate": end_date,
             },
         }
     except Exception as e:
@@ -98,18 +133,22 @@ async def get_inventory_report(
 
         low_stock_items = [
             {
-                "product_id": str(inv.product_id),
-                "quantity_on_hand": inv.quantity_on_hand,
-                "reorder_point": inv.reorder_point,
+                "productId": str(inv.id),
+                "name": inv.name,
+                "sku": inv.sku,
+                "quantityOnHand": inv.quantity,
+                "reorderPoint": inv.reorder_level,
+                "unitCost": float(inv.unit_cost),
+                "category": inv.category,
             }
             for inv in inventories
-            if inv.quantity_on_hand <= inv.reorder_point
+            if inv.quantity <= inv.reorder_level
         ]
 
         return {
-            "total_items": len(list(inventories)),
-            "low_stock_items": low_stock_items,
-            "low_stock_count": len(low_stock_items),
+            "totalItems": len(list(inventories)),
+            "lowStockItems": low_stock_items,
+            "lowStockCount": len(low_stock_items),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -126,12 +165,29 @@ async def get_payment_report(
         raise HTTPException(status_code=401, detail="Tenant context not found")
     
     try:
-        transactions, total = TransactionService.list_transactions(
-            tenant_id=tenant_id,
-            page=1,
-            page_size=1000,
-        )
-
+        from datetime import datetime
+        
+        # Build query with date filtering
+        query = Q(tenant_id=tenant_id)
+        
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+                query &= Q(created_at__gte=start_dt)
+            except ValueError:
+                pass
+        
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                query &= Q(created_at__lte=end_dt)
+            except ValueError:
+                pass
+        
+        transactions = Transaction.objects(query)
+        total = transactions.count()
+        
         # Group by payment method
         payment_methods = {}
         for t in transactions:
@@ -144,11 +200,11 @@ async def get_payment_report(
             payment_methods[t.payment_method]["total"] += t.total
 
         return {
-            "payment_methods": payment_methods,
-            "total_transactions": len(transactions),
+            "paymentMethods": payment_methods,
+            "totalTransactions": total,
             "period": {
-                "start_date": start_date,
-                "end_date": end_date,
+                "startDate": start_date,
+                "endDate": end_date,
             },
         }
     except Exception as e:
@@ -162,33 +218,37 @@ def _generate_csv_report(report_type: str, data: dict) -> BytesIO:
 
     if report_type == "sales":
         writer.writerow(["Sales Report"])
-        writer.writerow(["Total Sales", data.get("total_sales", 0)])
-        writer.writerow(["Total Transactions", data.get("total_transactions", 0)])
-        writer.writerow(["Average Transaction", data.get("average_transaction", 0)])
+        writer.writerow(["Total Sales", data.get("totalSales", 0)])
+        writer.writerow(["Total Transactions", data.get("totalTransactions", 0)])
+        writer.writerow(["Average Transaction", data.get("averageTransaction", 0)])
     elif report_type == "revenue":
         writer.writerow(["Revenue Report"])
-        writer.writerow(["Total Revenue", data.get("total_revenue", 0)])
-        writer.writerow(["Total Tax", data.get("total_tax", 0)])
-        writer.writerow(["Total Discount", data.get("total_discount", 0)])
-        writer.writerow(["Net Revenue", data.get("net_revenue", 0)])
+        writer.writerow(["Total Revenue", data.get("totalRevenue", 0)])
+        writer.writerow(["Total Tax", data.get("totalTax", 0)])
+        writer.writerow(["Total Discount", data.get("totalDiscount", 0)])
+        writer.writerow(["Net Revenue", data.get("netRevenue", 0)])
     elif report_type == "inventory":
         writer.writerow(["Inventory Report"])
-        writer.writerow(["Total Items", data.get("total_items", 0)])
-        writer.writerow(["Low Stock Count", data.get("low_stock_count", 0)])
+        writer.writerow(["Total Items", data.get("totalItems", 0)])
+        writer.writerow(["Low Stock Count", data.get("lowStockCount", 0)])
         writer.writerow([])
-        writer.writerow(["Product ID", "Quantity On Hand", "Reorder Point"])
-        for item in data.get("low_stock_items", []):
+        writer.writerow(["ID", "Name", "SKU", "Quantity On Hand", "Reorder Point", "Unit Cost", "Category"])
+        for item in data.get("lowStockItems", []):
             writer.writerow([
-                item.get("product_id"),
-                item.get("quantity_on_hand"),
-                item.get("reorder_point"),
+                item.get("id"),
+                item.get("name"),
+                item.get("sku"),
+                item.get("quantityOnHand"),
+                item.get("reorderPoint"),
+                item.get("unitCost"),
+                item.get("category"),
             ])
     elif report_type == "payments":
         writer.writerow(["Payments Report"])
-        writer.writerow(["Total Transactions", data.get("total_transactions", 0)])
+        writer.writerow(["Total Transactions", data.get("totalTransactions", 0)])
         writer.writerow([])
         writer.writerow(["Payment Method", "Count", "Total"])
-        for method, info in data.get("payment_methods", {}).items():
+        for method, info in data.get("paymentMethods", {}).items():
             writer.writerow([method, info.get("count"), info.get("total")])
 
     output.seek(0)
@@ -220,32 +280,32 @@ def _generate_pdf_report(report_type: str, data: dict) -> BytesIO:
             elements.append(Paragraph("Sales Report", title_style))
             data_list = [
                 ["Metric", "Value"],
-                ["Total Sales", f"₦{data.get('total_sales', 0):,.2f}"],
-                ["Total Transactions", str(data.get("total_transactions", 0))],
-                ["Average Transaction", f"₦{data.get('average_transaction', 0):,.2f}"],
+                ["Total Sales", f"₦{data.get('totalSales', 0):,.2f}"],
+                ["Total Transactions", str(data.get("totalTransactions", 0))],
+                ["Average Transaction", f"₦{data.get('averageTransaction', 0):,.2f}"],
             ]
         elif report_type == "revenue":
             elements.append(Paragraph("Revenue Report", title_style))
             data_list = [
                 ["Metric", "Value"],
-                ["Total Revenue", f"₦{data.get('total_revenue', 0):,.2f}"],
-                ["Total Tax", f"₦{data.get('total_tax', 0):,.2f}"],
-                ["Total Discount", f"₦{data.get('total_discount', 0):,.2f}"],
-                ["Net Revenue", f"₦{data.get('net_revenue', 0):,.2f}"],
+                ["Total Revenue", f"₦{data.get('totalRevenue', 0):,.2f}"],
+                ["Total Tax", f"₦{data.get('totalTax', 0):,.2f}"],
+                ["Total Discount", f"₦{data.get('totalDiscount', 0):,.2f}"],
+                ["Net Revenue", f"₦{data.get('netRevenue', 0):,.2f}"],
             ]
         elif report_type == "inventory":
             elements.append(Paragraph("Inventory Report", title_style))
             data_list = [
                 ["Metric", "Value"],
-                ["Total Items", str(data.get("total_items", 0))],
-                ["Low Stock Count", str(data.get("low_stock_count", 0))],
+                ["Total Items", str(data.get("totalItems", 0))],
+                ["Low Stock Count", str(data.get("lowStockCount", 0))],
             ]
         elif report_type == "payments":
             elements.append(Paragraph("Payments Report", title_style))
             data_list = [
                 ["Payment Method", "Count", "Total"],
             ]
-            for method, info in data.get("payment_methods", {}).items():
+            for method, info in data.get("paymentMethods", {}).items():
                 data_list.append([
                     method,
                     str(info.get("count")),
@@ -298,9 +358,9 @@ async def export_report(
             total_transactions = len(transactions)
             average_transaction = total_sales / total_transactions if total_transactions > 0 else 0
             data = {
-                "total_sales": total_sales,
-                "total_transactions": total_transactions,
-                "average_transaction": average_transaction,
+                "totalSales": total_sales,
+                "totalTransactions": total_transactions,
+                "averageTransaction": average_transaction,
             }
         elif report_type == "revenue":
             transactions, _ = TransactionService.list_transactions(
@@ -312,27 +372,31 @@ async def export_report(
             total_tax = sum(t.tax_amount for t in transactions)
             total_discount = sum(t.discount_amount for t in transactions)
             data = {
-                "total_revenue": total_revenue,
-                "total_tax": total_tax,
-                "total_discount": total_discount,
-                "net_revenue": total_revenue - total_tax,
+                "totalRevenue": total_revenue,
+                "totalTax": total_tax,
+                "totalDiscount": total_discount,
+                "netRevenue": total_revenue - total_tax,
             }
         elif report_type == "inventory":
             from app.models.inventory import Inventory
             inventories = Inventory.objects(tenant_id=tenant_id)
             low_stock_items = [
                 {
-                    "product_id": str(inv.product_id),
-                    "quantity_on_hand": inv.quantity_on_hand,
-                    "reorder_point": inv.reorder_point,
+                    "productId": str(inv.id),
+                    "name": inv.name,
+                    "sku": inv.sku,
+                    "quantityOnHand": inv.quantity,
+                    "reorderPoint": inv.reorder_level,
+                    "unitCost": float(inv.unit_cost),
+                    "category": inv.category,
                 }
                 for inv in inventories
-                if inv.quantity_on_hand <= inv.reorder_point
+                if inv.quantity <= inv.reorder_level
             ]
             data = {
-                "total_items": len(list(inventories)),
-                "low_stock_items": low_stock_items,
-                "low_stock_count": len(low_stock_items),
+                "totalItems": len(list(inventories)),
+                "lowStockItems": low_stock_items,
+                "lowStockCount": len(low_stock_items),
             }
         elif report_type == "payments":
             transactions, _ = TransactionService.list_transactions(
@@ -347,8 +411,8 @@ async def export_report(
                 payment_methods[t.payment_method]["count"] += 1
                 payment_methods[t.payment_method]["total"] += t.total
             data = {
-                "payment_methods": payment_methods,
-                "total_transactions": len(transactions),
+                "paymentMethods": payment_methods,
+                "totalTransactions": len(transactions),
             }
         else:
             raise HTTPException(status_code=400, detail="Invalid report type")

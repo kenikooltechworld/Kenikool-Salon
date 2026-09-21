@@ -6,13 +6,8 @@ import {
   useMarkCompleted,
   useMarkNoShow,
 } from "@/hooks/useWaitingRoom";
-import {
-  UsersIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  AlertCircleIcon,
-} from "@/components/icons";
-import { cn } from "@/lib/utils/cn";
+import { Users, Clock, CheckCircle, AlertCircle } from "@/components/icons";
+import { cn } from "@/lib/utils";
 
 export default function WaitingRoomQueue() {
   const { data: queue = [], isLoading: queueLoading } = useWaitingRoomQueue();

@@ -3,24 +3,24 @@ import { apiClient } from "@/lib/utils/api";
 
 export interface Shift {
   id: string;
-  staff_id: string;
-  start_time: string;
-  end_time: string;
+  staffId: string;
+  startTime: string;
+  endTime: string;
   status: "scheduled" | "in_progress" | "completed" | "cancelled";
-  labor_cost: number;
-  created_at: string;
-  updated_at: string;
+  laborCost: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface ShiftFilters {
-  staff_id?: string;
+  staffId?: string;
   status?: string;
 }
 
 interface CreateShiftData {
-  staff_id: string;
-  start_time: string;
-  end_time: string;
+  staffId: string;
+  startTime: string;
+  endTime: string;
   status?: "scheduled" | "in_progress" | "completed" | "cancelled";
 }
 

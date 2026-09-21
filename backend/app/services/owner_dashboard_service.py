@@ -36,6 +36,7 @@ class OwnerDashboardService:
             cached = cache.get(cache_key)
             if cached:
                 logger.debug(f"Returning cached metrics for tenant {tenant_id}")
+                logger.info(f"[DashboardMetrics][CACHE HIT] tenant={tenant_id}")
                 return cached
 
         try:
@@ -47,6 +48,9 @@ class OwnerDashboardService:
                 "pendingPayments": self._get_pending_payments(tenant_id),
                 "inventoryStatus": self._get_inventory_status(tenant_id),
             }
+
+            logger.info(f"[DashboardMetrics] tenant={tenant_id} revenue={metrics['revenue']} appointments={metrics['appointments']} satisfaction={metrics['satisfaction']} pendingPayments={metrics['pendingPayments']} inventory={metrics['inventoryStatus']}")
+            logger.debug(f"[DashboardMetrics] tenant={tenant_id} full_metrics={metrics}")
 
             cache.set(cache_key, metrics, self.CACHE_TTL)
             return metrics
@@ -113,6 +117,8 @@ class OwnerDashboardService:
 
             trend = "up" if trend_percentage > 0 else "down" if trend_percentage < 0 else "neutral"
 
+            logger.debug(f"[RevenueMetrics] tenant={tenant_id} current={current_revenue} previous={previous_revenue}")
+
             return {
                 "current": round(current_revenue, 2),
                 "previous": round(previous_revenue, 2),
@@ -121,6 +127,7 @@ class OwnerDashboardService:
             }
         except Exception as e:
             logger.error(f"Error calculating revenue metrics: {e}")
+            logger.error(f"[RevenueMetrics] tenant={tenant_id} error={str(e)}")
             return {
                 "current": 0.0,
                 "previous": 0.0,
@@ -240,6 +247,7 @@ class OwnerDashboardService:
             }
         except Exception as e:
             logger.error(f"Error calculating appointment metrics: {e}")
+            logger.error(f"[AppointmentMetrics] tenant={tenant_id} error={str(e)}")
             return {
                 "today": 0,
                 "thisWeek": 0,
@@ -296,6 +304,7 @@ class OwnerDashboardService:
             }
         except Exception as e:
             logger.error(f"Error calculating satisfaction metrics: {e}")
+            logger.error(f"[SatisfactionMetrics] tenant={tenant_id} error={str(e)}")
             return {
                 "score": 0.0,
                 "count": 0,
@@ -373,6 +382,7 @@ class OwnerDashboardService:
             }
         except Exception as e:
             logger.error(f"Error calculating utilization metrics: {e}")
+            logger.error(f"[UtilizationMetrics] tenant={tenant_id} error={str(e)}")
             return {
                 "percentage": 0.0,
                 "bookedHours": 0.0,
@@ -418,6 +428,7 @@ class OwnerDashboardService:
                     "oldestDate": results[0]["oldestDate"].isoformat() if results[0]["oldestDate"] else None
                 }
             else:
+                logger.info(f"[PendingPayments] tenant={tenant_id} no pending payments found")
                 return {
                     "count": 0,
                     "totalAmount": 0.0,
@@ -442,12 +453,12 @@ class OwnerDashboardService:
             now = datetime.utcnow()
             thirty_days_from_now = now + timedelta(days=30)
 
-            # Count low stock items
-            low_stock_count = Inventory.objects(
-                tenant_id=tenant_id,
-                is_active=True,
-                quantity__lt=Inventory.objects(tenant_id=tenant_id).first().reorder_level if Inventory.objects(tenant_id=tenant_id).first() else 10
-            ).count()
+            # Count low stock items using each item's own reorder_level
+            low_stock_items = [
+                item for item in Inventory.objects(tenant_id=tenant_id, is_active=True)
+                if item.quantity < item.reorder_level
+            ]
+            low_stock_count = len(low_stock_items)
 
             # Count expiring items (within 30 days)
             expiring_count = Inventory.objects(
@@ -465,6 +476,7 @@ class OwnerDashboardService:
             }
         except Exception as e:
             logger.error(f"Error calculating inventory status: {e}")
+            logger.error(f"[InventoryStatus] tenant={tenant_id} error={str(e)}")
             return {
                 "lowStockCount": 0,
                 "expiringCount": 0
@@ -504,24 +516,28 @@ class OwnerDashboardService:
 
             now = datetime.utcnow()
 
-            # Get internal appointments with select_related to reduce queries
-            internal_appointments = Appointment.objects(
+            # Get internal appointments
+            internal_appointments = list(Appointment.objects(
                 tenant_id=tenant_id,
                 start_time__gte=now,
                 status__in=["scheduled", "confirmed", "in_progress"]
-            ).order_by("start_time").limit(limit + offset)
+            ).order_by("start_time"))
 
-            # Batch fetch related objects to avoid N+1 queries
+            # Get public bookings
+            public_bookings = list(PublicBooking.objects(
+                tenant_id=tenant_id,
+                booking_date__gte=now.date(),
+                status__in=["pending", "confirmed"]
+            ).order_by("booking_date", "booking_time"))
+
+            # Batch fetch related objects for internal appointments
             customer_ids = [appt.customer_id for appt in internal_appointments if appt.customer_id]
             service_ids = [appt.service_id for appt in internal_appointments if appt.service_id]
             staff_ids = [appt.staff_id for appt in internal_appointments if appt.staff_id]
 
-            # Fetch all related objects in bulk
             customers_map = {str(c.id): c for c in Customer.objects(id__in=customer_ids)} if customer_ids else {}
             services_map = {str(s.id): s for s in Service.objects(id__in=service_ids)} if service_ids else {}
             staff_map = {str(s.id): s for s in Staff.objects(id__in=staff_ids)} if staff_ids else {}
-            
-            # Fetch users for staff in bulk
             user_ids = [s.user_id for s in staff_map.values() if s.user_id]
             users_map = {str(u.id): u for u in User.objects(id__in=user_ids)} if user_ids else {}
 
@@ -529,7 +545,6 @@ class OwnerDashboardService:
             internal_appointment_list = []
             for appt in internal_appointments:
                 try:
-                    # Get customer name from map
                     customer_name = "Guest"
                     if appt.customer_id:
                         customer = customers_map.get(str(appt.customer_id))
@@ -538,14 +553,12 @@ class OwnerDashboardService:
                     elif appt.guest_name:
                         customer_name = appt.guest_name
 
-                    # Get service name from map
                     service_name = "Unknown Service"
                     if appt.service_id:
                         service = services_map.get(str(appt.service_id))
                         if service:
                             service_name = service.name
 
-                    # Get staff name from map
                     staff_name = "Unknown Staff"
                     if appt.staff_id:
                         staff = staff_map.get(str(appt.staff_id))
@@ -568,9 +581,50 @@ class OwnerDashboardService:
                     logger.warning(f"Error processing appointment {appt.id}: {e}")
                     continue
 
-            # Apply pagination
-            total = len(internal_appointment_list)
-            paginated_appointments = internal_appointment_list[offset : offset + limit]
+            # Batch fetch related objects for public bookings
+            pb_service_ids = [pb.service_id for pb in public_bookings if pb.service_id]
+            pb_staff_ids = [pb.staff_id for pb in public_bookings if pb.staff_id]
+            pb_services_map = {str(s.id): s for s in Service.objects(id__in=pb_service_ids)} if pb_service_ids else {}
+            pb_staff_map = {str(s.id): s for s in Staff.objects(id__in=pb_staff_ids)} if pb_staff_ids else {}
+            pb_user_ids = [s.user_id for s in pb_staff_map.values() if s.user_id]
+            pb_users_map = {str(u.id): u for u in User.objects(id__in=pb_user_ids)} if pb_user_ids else {}
+
+            # Convert public bookings to appointment format
+            public_appointment_list = []
+            for pb in public_bookings:
+                try:
+                    service_name = pb_services_map.get(str(pb.service_id), {}).name if str(pb.service_id) in pb_services_map else "Unknown Service"
+                    staff_name = "Unknown Staff"
+                    if str(pb.staff_id) in pb_staff_map:
+                        staff = pb_staff_map[str(pb.staff_id)]
+                        if staff.user_id and str(staff.user_id) in pb_users_map:
+                            user = pb_users_map[str(staff.user_id)]
+                            staff_name = f"{user.first_name} {user.last_name}"
+
+                    booking_datetime = datetime.combine(pb.booking_date, datetime.strptime(pb.booking_time, "%H:%M").time())
+                    end_datetime = booking_datetime + timedelta(minutes=pb.duration_minutes)
+
+                    public_appointment_list.append({
+                        "id": str(pb.id),
+                        "customerName": pb.customer_name,
+                        "serviceName": service_name,
+                        "staffName": staff_name,
+                        "startTime": booking_datetime.isoformat(),
+                        "endTime": end_datetime.isoformat(),
+                        "status": pb.status.value if hasattr(pb.status, 'value') else str(pb.status),
+                        "isPublicBooking": True,
+                    })
+                except Exception as e:
+                    logger.warning(f"Error processing public booking {pb.id}: {e}")
+                    continue
+
+            # Merge and sort by start time
+            all_appointments = internal_appointment_list + public_appointment_list
+            all_appointments.sort(key=lambda x: x["startTime"])
+
+            # Get true total before pagination
+            total = len(all_appointments)
+            paginated_appointments = all_appointments[offset : offset + limit]
 
             return {
                 "appointments": paginated_appointments,
@@ -615,7 +669,7 @@ class OwnerDashboardService:
                 priority = "high" if days_pending >= 3 else "medium"
                 actions.append({
                     "id": str(payment.id),
-                    "description": f"Payment of ${payment.amount:.2f} pending for {days_pending} days",
+                    "description": f"Payment of ₦{payment.amount:.2f} pending for {days_pending} days",
                     "dueDate": payment.created_at.isoformat(),
                     "priority": priority,
                     "type": "payment",
@@ -639,11 +693,10 @@ class OwnerDashboardService:
                 })
 
             # 3. Low inventory alerts (MEDIUM priority)
-            low_stock_items = Inventory.objects(
-                tenant_id=tenant_id,
-                is_active=True,
-                quantity__lt=10  # Assuming 10 is low stock threshold
-            )
+            low_stock_items = [
+                item for item in Inventory.objects(tenant_id=tenant_id, is_active=True)
+                if item.quantity < item.reorder_level
+            ]
 
             for item in low_stock_items:
                 actions.append({
@@ -751,7 +804,9 @@ class OwnerDashboardService:
 
             # Batch fetch related objects
             service_ids = [p.service_id for p in payments if p.service_id]
-            staff_ids = [p.staff_id for p in payments if p.staff_id]
+            # Note: Payment model does not currently have staff_id field
+            # staff_ids would be empty until staff_id is added to Payment model
+            staff_ids = [getattr(p, 'staff_id', None) for p in payments if getattr(p, 'staff_id', None)]
             
             services_map = {str(s.id): s for s in Service.objects(id__in=service_ids)} if service_ids else {}
             staff_map = {str(s.id): s for s in Staff.objects(id__in=staff_ids)} if staff_ids else {}
@@ -860,6 +915,8 @@ class OwnerDashboardService:
                 "period": "daily",
             }
 
+            logger.info(f"[RevenueAnalytics] tenant={tenant_id} totalRevenue={analytics['totalRevenue']} payments_count={len(payments)} byStaff_count={len(by_staff)} period={analytics['period']}")
+
             cache.set(cache_key, analytics, 3600)  # 1 hour cache
             return analytics
         except Exception as e:
@@ -918,12 +975,13 @@ class OwnerDashboardService:
                 }
 
             # Batch fetch all payments for current and previous month
-            all_payments = Payment.objects(
+            # Note: Payment model does not currently have staff_id, so we fetch all successful payments
+            all_payments = list(Payment.objects(
                 tenant_id=tenant_id,
-                staff_id__in=staff_ids,
                 created_at__gte=prev_month_start,
                 status="success"
-            )
+            ))
+            logger.info(f"[StaffPerformance] tenant={tenant_id} payments_fetched={len(all_payments)} staff_count={len(staff_ids)}")
 
             # Group payments by staff and period
             current_revenue_map = {}
@@ -1026,6 +1084,7 @@ class OwnerDashboardService:
                 "averageSatisfaction": round(avg_satisfaction, 2),
                 "averageAttendance": round(avg_attendance, 2),
             }
+            logger.info(f"[StaffPerformance] tenant={tenant_id} topStaff={len(top_staff)} avgUtilization={result['averageUtilization']} avgSatisfaction={result['averageSatisfaction']} avgAttendance={result['averageAttendance']}")
             cache.set(cache_key, result, 3600)  # 1 hour cache
             return result
         except Exception as e:

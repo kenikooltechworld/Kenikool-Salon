@@ -15,22 +15,22 @@ export default function Memberships() {
   const { data: tiers, isLoading } = usePublicMembershipTiers();
   const { data: myMembership } = useMyMembership();
   const subscribe = useSubscribeToMembership();
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const [selectedTier, setSelectedTier] = useState<MembershipTier | null>(null);
 
   const handleSubscribe = async (tierId: string) => {
     try {
       // In a real implementation, this would open a payment modal
       // For now, we'll just show a toast
-      toast({
+      showToast({
         title: "Coming Soon",
         description: "Payment integration for memberships is coming soon",
       });
     } catch (error) {
-      toast({
+      showToast({
         title: "Error",
         description: "Failed to subscribe to membership",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };

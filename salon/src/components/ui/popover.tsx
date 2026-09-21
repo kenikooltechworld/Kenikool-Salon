@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
+import { useDropdownPosition } from "@/hooks/useDropdownPosition";
 
 interface PopoverContextType {
   isOpen: boolean;
@@ -58,11 +59,15 @@ export function PopoverContent({
   const context = React.useContext(PopoverContext);
   if (!context) throw new Error("PopoverContent must be used within Popover");
 
-  const ref = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const { style } = useDropdownPosition(triggerRef, contentRef, {
+    align: align === "start" ? "left" : align === "end" ? "right" : "center",
+  });
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      if (contentRef.current && !contentRef.current.contains(event.target as Node)) {
         context!.setIsOpen(false);
       }
     }
@@ -76,19 +81,13 @@ export function PopoverContent({
 
   if (!context!.isOpen) return null;
 
-  const alignmentClasses = {
-    start: "left-0",
-    center: "left-1/2 -translate-x-1/2",
-    end: "right-0",
-  };
-
   return (
     <div
-      ref={ref}
+      ref={contentRef}
+      style={style}
       className={cn(
-        "absolute z-50 mt-2 rounded-[var(--radius-md)] border-2 border-[var(--border)] bg-[var(--popover)] shadow-[var(--shadow-lg)] animate-in fade-in-0 zoom-in-95",
-        alignmentClasses[align],
-        className,
+        "rounded-[var(--radius-md)] border-2 border-[var(--border)] bg-[var(--popover)] shadow-[var(--shadow-lg)] animate-in fade-in-0 zoom-in-95",
+        className
       )}
     >
       {children}

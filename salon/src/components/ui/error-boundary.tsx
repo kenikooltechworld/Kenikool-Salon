@@ -1,4 +1,4 @@
-import React, { ReactNode, ReactElement } from "react";
+import React, type { ReactNode, ReactElement } from "react";
 import { AlertTriangleIcon } from "@/components/icons";
 import { Card } from "@/components/ui/card";
 

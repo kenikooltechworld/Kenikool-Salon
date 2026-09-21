@@ -14,9 +14,13 @@ export function ExitIntentPopup() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    const hasSeenPopup = localStorage.getItem("exitIntentPopupShown");
+    if (hasSeenPopup) return;
+
     const handleMouseLeave = (e: MouseEvent) => {
       if ((e as any).clientY <= 0) {
         setIsVisible(true);
+        localStorage.setItem("exitIntentPopupShown", "true");
       }
     };
 

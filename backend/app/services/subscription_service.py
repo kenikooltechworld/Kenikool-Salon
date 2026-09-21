@@ -503,11 +503,26 @@ class SubscriptionService:
 
             for sub in subs_7_days:
                 if not sub.renewal_reminders_sent.get("7_days"):
-                    # TODO: Send email reminder
-                    sub.renewal_reminders_sent["7_days"] = True
-                    sub.save()
-                    result["7_days"] += 1
-                    logger.info(f"7-day renewal reminder sent to tenant {sub.tenant_id}")
+                    try:
+                        from app.tasks import send_email
+                        from app.services.email_template_service import EmailTemplateService
+                        from app.models.tenant import Tenant
+                        tenant = Tenant.objects(id=sub.tenant_id).first()
+                        business_email = tenant.settings.get("email", tenant.email) if tenant.settings else tenant.email
+                        email_context = {
+                            "customer_email": tenant.email,
+                            "business_email": business_email,
+                            "renewal_date": sub.next_billing_date.isoformat(),
+                        }
+                        rendered = EmailTemplateService.render_customer_welcome_email(str(sub.tenant_id), email_context)
+                        run_in_background(send_email,
+                            to=tenant.email,
+                            subject="Your subscription renews in 7 days",
+                            template=rendered or "<p>Your subscription renews in 7 days.</p>",
+                            context=email_context,
+                        )
+                    except Exception as email_err:
+                        logger.warning(f"7-day renewal email failed for tenant {sub.tenant_id}: {email_err}")
 
             # 3 days before expiry
             three_days_later = now + timedelta(days=3)
@@ -519,11 +534,26 @@ class SubscriptionService:
 
             for sub in subs_3_days:
                 if not sub.renewal_reminders_sent.get("3_days"):
-                    # TODO: Send email reminder
-                    sub.renewal_reminders_sent["3_days"] = True
-                    sub.save()
-                    result["3_days"] += 1
-                    logger.info(f"3-day renewal reminder sent to tenant {sub.tenant_id}")
+                    try:
+                        from app.tasks import send_email
+                        from app.services.email_template_service import EmailTemplateService
+                        from app.models.tenant import Tenant
+                        tenant = Tenant.objects(id=sub.tenant_id).first()
+                        business_email = tenant.settings.get("email", tenant.email) if tenant.settings else tenant.email
+                        email_context = {
+                            "customer_email": tenant.email,
+                            "business_email": business_email,
+                            "renewal_date": sub.next_billing_date.isoformat(),
+                        }
+                        rendered = EmailTemplateService.render_customer_welcome_email(str(sub.tenant_id), email_context)
+                        run_in_background(send_email,
+                            to=tenant.email,
+                            subject="Your subscription renews in 3 days",
+                            template=rendered or "<p>Your subscription renews in 3 days.</p>",
+                            context=email_context,
+                        )
+                    except Exception as email_err:
+                        logger.warning(f"3-day renewal email failed for tenant {sub.tenant_id}: {email_err}")
 
             # On expiry date
             tomorrow = now + timedelta(days=1)
@@ -728,3 +758,5 @@ class SubscriptionService:
         except Exception as e:
             logger.error(f"Error upgrading from expired trial: {str(e)}")
             raise
+
+

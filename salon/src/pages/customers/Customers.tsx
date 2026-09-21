@@ -106,12 +106,12 @@ export default function Customers() {
       {/* Error State */}
       {error && (
         <div className="flex items-start gap-2 xs:gap-3 p-2 xs:p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircleIcon className="w-4 h-4 xs:w-5 xs:h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircleIcon className="w-4 h-4 xs:w-5 xs:h-5 text-red-600 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
             <p className="text-xs xs:text-sm font-medium text-red-800">
               Failed to load customers
             </p>
-            <p className="text-xs text-red-700 break-words">
+            <p className="text-xs text-red-700 wrap-break-word">
               {error instanceof Error ? error.message : "Please try again"}
             </p>
           </div>
@@ -123,7 +123,7 @@ export default function Customers() {
         <div className="relative w-full">
           <SearchIcon
             size={18}
-            className="absolute left-3 xs:left-3 top-1/2 -translate-y-1/2 text-muted-foreground flex-shrink-0"
+            className="absolute left-3 xs:left-3 top-1/2 -translate-y-1/2 text-muted-foreground shrink-0"
           />
           <input
             type="text"
@@ -281,7 +281,7 @@ export default function Customers() {
                           {deleteConfirm === customer.id && (
                             <div className="absolute right-0 top-full mt-2 sm:mt-3 bg-card border border-border rounded-lg shadow-lg p-3 sm:p-4 z-10 w-56">
                               <div className="flex items-start gap-3 mb-3 sm:mb-4">
-                                <AlertTriangleIcon className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                <AlertTriangleIcon className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
                                 <p className="text-sm sm:text-base text-foreground font-medium">
                                   Are you sure? This action cannot be undone.
                                 </p>
@@ -388,7 +388,7 @@ export default function Customers() {
                         {deleteConfirm === customer.id && (
                           <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-lg shadow-lg p-3 z-10 w-56">
                             <div className="flex items-start gap-3 mb-3">
-                              <AlertTriangleIcon className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                              <AlertTriangleIcon className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
                               <p className="text-sm text-foreground font-medium">
                                 Are you sure? This action cannot be undone.
                               </p>

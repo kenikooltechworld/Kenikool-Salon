@@ -22,7 +22,7 @@ router = APIRouter(prefix="/public/memberships", tags=["Public Memberships"])
 @router.get("/tiers", response_model=List[MembershipTierResponse])
 async def get_public_membership_tiers(request: Request):
     """Get all available membership tiers for public viewing."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     tiers = MembershipService.get_active_tiers(tenant_id)
     
     return [
@@ -59,7 +59,7 @@ async def subscribe_to_membership(
     current_customer: Customer = Depends(get_current_customer)
 ):
     """Subscribe to a membership tier (requires customer authentication)."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     # Ensure customer is subscribing for themselves
     if str(current_customer.id) != membership_data.customer_id:
@@ -101,7 +101,7 @@ async def get_my_membership(
     current_customer: Customer = Depends(get_current_customer)
 ):
     """Get current customer's active membership."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     membership = MembershipService.get_customer_membership(
         tenant_id=tenant_id,
@@ -167,7 +167,7 @@ async def cancel_my_membership(
     current_customer: Customer = Depends(get_current_customer)
 ):
     """Cancel current customer's membership."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     membership = MembershipService.get_customer_membership(
         tenant_id=tenant_id,
@@ -197,7 +197,7 @@ async def get_my_membership_transactions(
     skip: int = 0
 ):
     """Get transaction history for current customer's membership."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     membership = MembershipService.get_customer_membership(
         tenant_id=tenant_id,

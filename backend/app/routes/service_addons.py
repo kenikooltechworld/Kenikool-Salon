@@ -21,7 +21,7 @@ async def get_service_addons(
     service_id: str
 ):
     """Get all active addons for a specific service (public endpoint)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         service_oid = ObjectId(service_id)

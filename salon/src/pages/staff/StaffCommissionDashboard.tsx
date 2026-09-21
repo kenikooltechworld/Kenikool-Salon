@@ -32,7 +32,7 @@ export default function StaffCommissionDashboardPage() {
           <div className="flex justify-center py-4">
             <Spinner />
           </div>
-        ) : (
+        ) : staff && staff.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
             {staff.map((member: any) => (
               <Button
@@ -45,6 +45,10 @@ export default function StaffCommissionDashboardPage() {
               </Button>
             ))}
           </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            No staff members found
+          </p>
         )}
       </Card>
 

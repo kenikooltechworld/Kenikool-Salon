@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { AlertTriangleIcon } from "@/components/icons";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface ConfirmationModalProps {
   isOpen: boolean;

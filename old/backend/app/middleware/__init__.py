@@ -1,3 +1,0 @@
-"""
-Custom middleware for FastAPI
-"""

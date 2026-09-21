@@ -129,7 +129,7 @@ export default function ShiftDetail() {
           <div>
             <p className="text-sm text-muted-foreground font-medium">Date</p>
             <p className="text-lg font-semibold mt-1">
-              {formatDate(new Date(shift.start_time))}
+              {formatDate(new Date(shift.startTime))}
             </p>
           </div>
 
@@ -139,7 +139,7 @@ export default function ShiftDetail() {
               Start Time
             </p>
             <p className="text-lg font-semibold mt-1">
-              {formatTime(new Date(shift.start_time))}
+              {formatTime(new Date(shift.startTime))}
             </p>
           </div>
 
@@ -149,18 +149,18 @@ export default function ShiftDetail() {
               End Time
             </p>
             <p className="text-lg font-semibold mt-1">
-              {formatTime(new Date(shift.end_time))}
+              {formatTime(new Date(shift.endTime))}
             </p>
           </div>
 
           {/* Labor Cost */}
-          {shift.labor_cost !== null && shift.labor_cost !== undefined && (
+          {shift.laborCost !== null && shift.laborCost !== undefined && (
             <div className="border-t border-border pt-4">
               <p className="text-sm text-muted-foreground font-medium">
                 Labor Cost
               </p>
               <p className="text-lg font-semibold mt-1">
-                ${shift.labor_cost.toFixed(2)}
+                ${shift.laborCost.toFixed(2)}
               </p>
             </div>
           )}
@@ -168,7 +168,7 @@ export default function ShiftDetail() {
           {/* Created At */}
           <div className="border-t border-border pt-4">
             <p className="text-xs text-muted-foreground">
-              Created on {formatDate(new Date(shift.created_at))}
+              Created on {formatDate(new Date(shift.createdAt))}
             </p>
           </div>
 

@@ -20,13 +20,11 @@ export default function CustomerSelector({
 }: CustomerSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: customersData, isLoading } = useCustomers({
-    pageSize: 50,
-  });
+  const { data: customersData, isLoading } = useCustomers({});
 
   const customers = customersData?.customers || [];
   const filtered = customers.filter(
-    (c) =>
+    (c: any) =>
       c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.phone?.includes(searchTerm),
@@ -65,7 +63,7 @@ export default function CustomerSelector({
         )}
       </div>
 
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
+      <Modal open={isOpen} onClose={() => setIsOpen(false)}>
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Select Customer</h2>
 
@@ -86,7 +84,7 @@ export default function CustomerSelector({
                 No customers found
               </Card>
             ) : (
-              filtered.map((customer) => (
+              filtered.map((customer: any) => (
                 <Card
                   key={customer.id}
                   className="p-3 cursor-pointer hover:bg-muted transition"

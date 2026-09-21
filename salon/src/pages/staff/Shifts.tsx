@@ -32,8 +32,7 @@ export default function StaffShifts() {
 
   // Sort shifts by date ascending
   const sortedShifts = [...shifts].sort(
-    (a, b) =>
-      new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
   );
 
   return (

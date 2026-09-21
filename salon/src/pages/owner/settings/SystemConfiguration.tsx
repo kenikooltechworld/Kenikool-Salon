@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, CheckCircle, AlertCircle } from "@/components/icons";
 
 interface SystemConfig {
   middlewareSettings: {
@@ -89,7 +90,7 @@ export function SystemConfiguration() {
           className={`flex items-center gap-2 p-4 rounded-lg ${message.type === "success" ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"}`}
         >
           {message.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5" />
+            <CheckCircle className="w-5 h-5" />
           ) : (
             <AlertCircle className="w-5 h-5" />
           )}

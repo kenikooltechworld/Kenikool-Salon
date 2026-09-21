@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
+import { useDropdownPosition } from "@/hooks/useDropdownPosition";
 
 interface DropdownContextType {
   isOpen: boolean;
@@ -46,11 +47,13 @@ export function DropdownContent({
   const context = React.useContext(DropdownContext);
   if (!context) throw new Error("DropdownContent must be used within Dropdown");
 
-  const ref = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const { style } = useDropdownPosition(triggerRef, contentRef, { align });
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      if (contentRef.current && !contentRef.current.contains(event.target as Node)) {
         context!.setIsOpen(false);
       }
     }
@@ -66,10 +69,10 @@ export function DropdownContent({
 
   return (
     <div
-      ref={ref}
+      ref={contentRef}
+      style={style}
       className={cn(
-        "absolute z-50 mt-2 min-w-[200px] rounded-[var(--radius-md)] border-2 border-[var(--border)] bg-[var(--popover)] p-1 shadow-[var(--shadow-lg)] animate-in fade-in-0 zoom-in-95",
-        align === "right" ? "right-0" : "left-0",
+        "min-w-[200px] rounded-[var(--radius-md)] border-2 border-[var(--border)] bg-[var(--popover)] p-1 shadow-[var(--shadow-lg)] animate-in fade-in-0 zoom-in-95",
         className
       )}
     >

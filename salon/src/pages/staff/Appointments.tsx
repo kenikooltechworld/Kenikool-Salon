@@ -118,7 +118,7 @@ export default function StaffAppointments() {
 
       {/* Appointments List */}
       <StaffAppointmentsList
-        appointments={sortedAppointments}
+        appointments={sortedAppointments as unknown as StaffAppointment[]}
         isLoading={isLoading}
         error={error?.message}
         onViewDetails={handleViewDetails}

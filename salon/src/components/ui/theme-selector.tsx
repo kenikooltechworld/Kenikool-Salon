@@ -6,6 +6,7 @@ import type {
   ThemeName,
   ThemeMode,
 } from "@/components/providers/theme-provider";
+import { useDropdownPosition } from "@/hooks/useDropdownPosition";
 
 interface ThemeSelectorProps {
   variant?: "icon" | "full";
@@ -29,24 +30,29 @@ export function ThemeSelector({
 }: ThemeSelectorProps) {
   const { themeName, themeMode, setThemeName, toggleThemeMode } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { style } = useDropdownPosition(triggerRef, contentRef, { align: "right" });
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        contentRef.current &&
+        !contentRef.current.contains(event.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [isOpen]);
 
   const handleThemeSelect = (name: ThemeName) => {
     setThemeName(name);
@@ -55,8 +61,9 @@ export function ThemeSelector({
 
   if (variant === "icon") {
     return (
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative">
         <Button
+          ref={triggerRef}
           variant="ghost"
           size="icon"
           onClick={() => setIsOpen(!isOpen)}
@@ -70,7 +77,7 @@ export function ThemeSelector({
         </Button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-64 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] z-50">
+          <div ref={contentRef} style={style} className="w-64 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)]">
             <div className="p-3 border-b border-[var(--border)]">
               <h3 className="font-semibold text-[var(--foreground)] text-sm">
                 Theme Settings
@@ -147,8 +154,9 @@ export function ThemeSelector({
 
   // Full variant with label
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <Button
+        ref={triggerRef}
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2"
@@ -158,7 +166,7 @@ export function ThemeSelector({
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] z-50">
+        <div ref={contentRef} style={style} className="w-64 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)]">
           <div className="p-3 border-b border-[var(--border)]">
             <h3 className="font-semibold text-[var(--foreground)] text-sm">
               Theme Settings

@@ -44,6 +44,7 @@ def service_to_response(service: Service) -> ServiceResponse:
         public_image_url=service.public_image_url,
         allow_public_booking=service.allow_public_booking,
         tags=service.tags,
+        staff_ids=[str(s) for s in (service.staff_ids or [])],
         created_at=service.created_at.isoformat(),
         updated_at=service.updated_at.isoformat(),
     )
@@ -61,6 +62,7 @@ async def create_service(
     Creates a new service for the tenant with the provided details.
     """
     try:
+        staff_ids = [ObjectId(s) for s in (request.staff_ids or [])]
         service = Service(
             tenant_id=tenant_id,
             name=request.name,
@@ -74,9 +76,10 @@ async def create_service(
             public_image_url=request.public_image_url,
             allow_public_booking=request.allow_public_booking,
             tags=request.tags,
+            staff_ids=staff_ids,
         )
         service.save()
-        logger.info(f"Service created: {service.id} for tenant {tenant_id}")
+        logger.info(f"Service created: {service.id} for tenant {tenant_id} with {len(staff_ids)} assigned staff")
         return service_to_response(service)
     except Exception as e:
         logger.error(f"Failed to create service: {str(e)}")
@@ -166,6 +169,10 @@ async def update_service(
 
         # Update only provided fields
         update_data = request.model_dump(exclude_unset=True)
+        if "staff_ids" in update_data:
+            update_data["staff_ids"] = [
+                ObjectId(s) for s in (update_data["staff_ids"] or [])
+            ]
         for key, value in update_data.items():
             setattr(service, key, value)
 

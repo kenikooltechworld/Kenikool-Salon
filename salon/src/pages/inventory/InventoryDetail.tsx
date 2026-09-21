@@ -172,13 +172,13 @@ export default function InventoryDetail() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Last Updated</span>
                 <span className="font-medium">
-                  {new Date(item.updated_at).toLocaleDateString()}
+                  {new Date(item.updatedAt).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Created</span>
                 <span className="font-medium">
-                  {new Date(item.created_at).toLocaleDateString()}
+                  {new Date(item.createdAt).toLocaleDateString()}
                 </span>
               </div>
             </div>

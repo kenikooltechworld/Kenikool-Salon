@@ -11,6 +11,7 @@ from app.schemas.transaction import (
     TransactionResponse,
     TransactionListResponse,
 )
+from app.schemas.receipt import ReceiptResponse
 from app.services.transaction_service import TransactionService
 from app.services.receipt_service import ReceiptService
 from app.services.pos_audit_service import POSAuditService
@@ -349,6 +350,7 @@ async def initialize_transaction_payment(
         # Extract email from request
         email = request.get("email")
         callback_url = request.get("callback_url")
+        reference = request.get("reference")
         
         if not email:
             logger.error(f"[TransactionPayment] Email not provided")
@@ -368,6 +370,7 @@ async def initialize_transaction_payment(
                 "transaction_type": transaction.transaction_type,
                 "payment_type": "pos",
             },
+            reference=reference,
         )
         
         # Store Paystack reference in transaction
@@ -492,8 +495,8 @@ async def verify_transaction_payment(
             
             return {
                 "success": True,
-                "payment_status": "completed",
-                "transaction_id": str(transaction.id),
+                "paymentStatus": "completed",
+                "transactionId": str(transaction.id),
                 "reference": reference,
                 "amount": float(transaction.total),
                 "message": "Payment verified successfully",
@@ -505,8 +508,8 @@ async def verify_transaction_payment(
             
             return {
                 "success": False,
-                "payment_status": payment_status,
-                "transaction_id": str(transaction.id),
+                "paymentStatus": payment_status,
+                "transactionId": str(transaction.id),
                 "reference": reference,
                 "message": f"Payment {payment_status}",
             }
@@ -563,14 +566,47 @@ async def generate_receipt_for_transaction(
         # Generate receipt
         logger.info(f"[GenerateReceipt] Generating receipt")
         try:
-            ReceiptService.generate_receipt(tenant_id, transaction.id)
+            receipt = ReceiptService.generate_receipt(tenant_id, transaction.id)
             logger.info(f"[GenerateReceipt] Receipt generated successfully")
-            
-            return {
-                "success": True,
-                "message": "Receipt generated successfully",
-                "transaction_id": str(transaction.id),
-            }
+
+            if not receipt:
+                raise HTTPException(status_code=500, detail="Receipt generation failed")
+
+            return ReceiptResponse(
+                id=str(receipt.id),
+                transaction_id=str(receipt.transaction_id),
+                customer_id=str(receipt.customer_id),
+                receipt_number=receipt.receipt_number,
+                receipt_date=receipt.receipt_date.isoformat(),
+                customer_name=receipt.customer_name,
+                customer_email=receipt.customer_email,
+                customer_phone=receipt.customer_phone,
+                items=[
+                    {
+                        "item_type": item.item_type,
+                        "item_id": str(item.item_id),
+                        "item_name": item.item_name,
+                        "quantity": item.quantity,
+                        "unit_price": item.unit_price,
+                        "line_total": item.line_total,
+                        "tax_amount": item.tax_amount,
+                        "discount_amount": item.discount_amount,
+                    }
+                    for item in receipt.items
+                ],
+                subtotal=receipt.subtotal,
+                tax_amount=receipt.tax_amount,
+                discount_amount=receipt.discount_amount,
+                total=receipt.total,
+                payment_method=receipt.payment_method,
+                payment_reference=receipt.payment_reference,
+                receipt_format=receipt.receipt_format,
+                printed_at=receipt.printed_at.isoformat() if receipt.printed_at else None,
+                emailed_at=receipt.emailed_at.isoformat() if receipt.emailed_at else None,
+                created_at=receipt.created_at.isoformat(),
+            )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"[GenerateReceipt] Error generating receipt: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Receipt generation failed: {str(e)}")

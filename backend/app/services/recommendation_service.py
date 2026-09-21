@@ -15,36 +15,28 @@ class RecommendationService:
     """Service for generating personalized recommendations"""
     
     @staticmethod
-    async def update_customer_preferences(tenant_id: ObjectId, customer_id: ObjectId) -> CustomerPreference:
+    def update_customer_preferences(tenant_id: ObjectId, customer_id: ObjectId) -> CustomerPreference:
         """Update customer preferences based on booking history"""
-        # Get customer's booking history
-        bookings = await Appointment.find(
-            Appointment.tenant_id == tenant_id,
-            Appointment.customer_id == customer_id,
-            Appointment.status.in_(["completed", "confirmed"])
-        ).to_list()
+        bookings = list(Appointment.objects(
+            tenant_id=tenant_id,
+            customer_id=customer_id,
+            status__in=["completed", "confirmed"]
+        ))
         
         if not bookings:
-            # Create empty preference record
             preference = CustomerPreference(
                 tenant_id=tenant_id,
                 customer_id=customer_id
             )
-            await preference.insert()
+            preference.save()
             return preference
         
-        # Analyze booking patterns
         service_ids = [b.service_id for b in bookings if b.service_id]
         staff_ids = [b.staff_id for b in bookings if b.staff_id]
         
-        # Get services to extract categories
-        services = await Service.find(
-            Service.id.in_([ObjectId(sid) for sid in service_ids if sid])
-        ).to_list()
-        
+        services = list(Service.objects(id__in=[ObjectId(sid) for sid in service_ids if sid]))
         service_categories = [s.category for s in services if s.category]
         
-        # Calculate time slot preferences
         time_slots = []
         days = []
         for booking in bookings:
@@ -59,7 +51,6 @@ class RecommendationService:
                 
                 days.append(booking.start_time.strftime("%A").lower())
         
-        # Calculate booking frequency
         if len(bookings) > 1:
             sorted_bookings = sorted(bookings, key=lambda x: x.start_time or datetime.min)
             date_diffs = []
@@ -73,22 +64,19 @@ class RecommendationService:
         else:
             avg_frequency = None
         
-        # Calculate average spend
         total_spend = sum([float(b.total_price.to_decimal()) for b in bookings if b.total_price])
         avg_spend = total_spend / len(bookings) if bookings else 0
         
-        # Get most common preferences
         most_common_services = [sid for sid, _ in Counter(service_ids).most_common(5)]
         most_common_staff = [sid for sid, _ in Counter(staff_ids).most_common(3)]
         most_common_categories = [cat for cat, _ in Counter(service_categories).most_common(5)]
         most_common_time_slots = [slot for slot, _ in Counter(time_slots).most_common(3)]
         most_common_days = [day for day, _ in Counter(days).most_common(3)]
         
-        # Update or create preference
-        preference = await CustomerPreference.find_one(
-            CustomerPreference.tenant_id == tenant_id,
-            CustomerPreference.customer_id == customer_id
-        )
+        preference = CustomerPreference.objects(
+            tenant_id=tenant_id,
+            customer_id=customer_id
+        ).first()
         
         if not preference:
             preference = CustomerPreference(
@@ -107,11 +95,11 @@ class RecommendationService:
         preference.total_bookings = len(bookings)
         preference.updated_at = datetime.utcnow()
         
-        await preference.save()
+        preference.save()
         return preference
     
     @staticmethod
-    async def generate_recommendations(
+    def generate_recommendations(
         tenant_id: ObjectId,
         customer_id: Optional[ObjectId] = None,
         limit: int = 5
@@ -120,37 +108,32 @@ class RecommendationService:
         recommendations = []
         
         if customer_id:
-            # Get or update customer preferences
-            preference = await CustomerPreference.find_one(
-                CustomerPreference.tenant_id == tenant_id,
-                CustomerPreference.customer_id == customer_id
-            )
+            preference = CustomerPreference.objects(
+                tenant_id=tenant_id,
+                customer_id=customer_id
+            ).first()
             
             if not preference:
-                preference = await RecommendationService.update_customer_preferences(tenant_id, customer_id)
+                preference = RecommendationService.update_customer_preferences(tenant_id, customer_id)
             
-            # Content-based recommendations (based on past services)
             if preference.preferred_services:
-                content_recs = await RecommendationService._content_based_recommendations(
+                content_recs = RecommendationService._content_based_recommendations(
                     tenant_id, preference, limit=3
                 )
                 recommendations.extend(content_recs)
             
-            # Collaborative filtering (what similar customers booked)
             if preference.preferred_service_categories:
-                collab_recs = await RecommendationService._collaborative_recommendations(
+                collab_recs = RecommendationService._collaborative_recommendations(
                     tenant_id, preference, limit=2
                 )
                 recommendations.extend(collab_recs)
         
-        # Fill remaining slots with popular services
         if len(recommendations) < limit:
-            popular_recs = await RecommendationService._popular_recommendations(
+            popular_recs = RecommendationService._popular_recommendations(
                 tenant_id, limit=limit - len(recommendations)
             )
             recommendations.extend(popular_recs)
         
-        # Remove duplicates and limit
         seen_services = set()
         unique_recs = []
         for rec in recommendations:
@@ -163,7 +146,7 @@ class RecommendationService:
         return unique_recs
     
     @staticmethod
-    async def _content_based_recommendations(
+    def _content_based_recommendations(
         tenant_id: ObjectId,
         preference: CustomerPreference,
         limit: int = 3
@@ -171,23 +154,21 @@ class RecommendationService:
         """Generate content-based recommendations"""
         recommendations = []
         
-        # Find services in preferred categories that customer hasn't booked
-        services = await Service.find(
-            Service.tenant_id == tenant_id,
-            Service.is_active == True,
-            Service.allow_public_booking == True,
-            Service.category.in_(preference.preferred_service_categories),
-            Service.id.not_in(preference.preferred_services)
-        ).limit(limit).to_list()
+        services = list(Service.objects(
+            tenant_id=tenant_id,
+            is_active=True,
+            allow_public_booking=True,
+            category__in=preference.preferred_service_categories,
+            id__nin=preference.preferred_services
+        ).limit(limit))
         
         for service in services:
-            # Get preferred staff for this service if available
             staff = None
             if preference.preferred_staff:
-                staff = await Staff.find_one(
-                    Staff.id.in_(preference.preferred_staff),
-                    Staff.services.in_([service.id])
-                )
+                staff = Staff.objects(
+                    id__in=preference.preferred_staff,
+                    services__in=[service.id]
+                ).first()
             
             recommendations.append({
                 "service_id": str(service.id),
@@ -206,7 +187,7 @@ class RecommendationService:
         return recommendations
     
     @staticmethod
-    async def _collaborative_recommendations(
+    def _collaborative_recommendations(
         tenant_id: ObjectId,
         preference: CustomerPreference,
         limit: int = 2
@@ -214,28 +195,25 @@ class RecommendationService:
         """Generate collaborative filtering recommendations"""
         recommendations = []
         
-        # Find customers with similar booking patterns
-        similar_customers = await CustomerPreference.find(
-            CustomerPreference.tenant_id == tenant_id,
-            CustomerPreference.id != preference.id,
-            CustomerPreference.preferred_service_categories.in_(preference.preferred_service_categories)
-        ).limit(10).to_list()
+        similar_customers = list(CustomerPreference.objects(
+            tenant_id=tenant_id,
+            id__ne=preference.id,
+            preferred_service_categories__in=preference.preferred_service_categories
+        ).limit(10))
         
-        # Aggregate services booked by similar customers
         service_scores = defaultdict(int)
         for similar_pref in similar_customers:
             for service_id in similar_pref.preferred_services:
                 if service_id not in preference.preferred_services:
                     service_scores[service_id] += 1
         
-        # Get top services
         top_service_ids = sorted(service_scores.keys(), key=lambda x: service_scores[x], reverse=True)[:limit]
         
-        services = await Service.find(
-            Service.id.in_(top_service_ids),
-            Service.is_active == True,
-            Service.allow_public_booking == True
-        ).to_list()
+        services = list(Service.objects(
+            id__in=top_service_ids,
+            is_active=True,
+            allow_public_booking=True
+        ))
         
         for service in services:
             recommendations.append({
@@ -255,28 +233,27 @@ class RecommendationService:
         return recommendations
     
     @staticmethod
-    async def _popular_recommendations(
+    def _popular_recommendations(
         tenant_id: ObjectId,
         limit: int = 5
     ) -> List[Dict]:
         """Generate popular service recommendations"""
-        # Get most booked services in last 30 days
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         
-        bookings = await Appointment.find(
-            Appointment.tenant_id == tenant_id,
-            Appointment.created_at >= thirty_days_ago,
-            Appointment.status.in_(["completed", "confirmed"])
-        ).to_list()
+        bookings = list(Appointment.objects(
+            tenant_id=tenant_id,
+            created_at__gte=thirty_days_ago,
+            status__in=["completed", "confirmed"]
+        ))
         
         service_counts = Counter([b.service_id for b in bookings if b.service_id])
         top_service_ids = [ObjectId(sid) for sid, _ in service_counts.most_common(limit) if sid]
         
-        services = await Service.find(
-            Service.id.in_(top_service_ids),
-            Service.is_active == True,
-            Service.allow_public_booking == True
-        ).to_list()
+        services = list(Service.objects(
+            id__in=top_service_ids,
+            is_active=True,
+            allow_public_booking=True
+        ))
         
         recommendations = []
         for service in services:
@@ -297,12 +274,12 @@ class RecommendationService:
         return recommendations
     
     @staticmethod
-    async def track_recommendation_interaction(
+    def track_recommendation_interaction(
         recommendation_id: str,
         action: str
     ) -> None:
         """Track user interaction with recommendation"""
-        recommendation = await BookingRecommendation.get(ObjectId(recommendation_id))
+        recommendation = BookingRecommendation.objects.get(id=ObjectId(recommendation_id))
         
         if not recommendation:
             return
@@ -315,4 +292,4 @@ class RecommendationService:
             recommendation.clicked = True
             recommendation.shown_to_customer = True
         
-        await recommendation.save()
+        recommendation.save()

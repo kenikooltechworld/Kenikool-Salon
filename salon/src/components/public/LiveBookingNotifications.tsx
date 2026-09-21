@@ -5,10 +5,10 @@ import { apiClient } from "@/lib/utils/api";
 
 interface BookingActivity {
   id: string;
-  customer_name: string;
-  service_name: string;
-  booking_type: string;
-  created_at: string;
+  customerName: string;
+  serviceName: string;
+  bookingType: string;
+  createdAt: string;
 }
 
 interface LiveBookingNotificationsProps {
@@ -98,14 +98,14 @@ function LiveBookingNotifications({ tenantId }: LiveBookingNotificationsProps) {
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900">
-                {currentActivity.customer_name} just booked
+                {currentActivity.customerName} just booked
               </p>
               <p className="text-sm text-gray-600 truncate">
-                {currentActivity.service_name}
+                {currentActivity.serviceName}
               </p>
               <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
                 <Clock size={12} />
-                <span>{getTimeAgo(currentActivity.created_at)}</span>
+                <span>{getTimeAgo(currentActivity.createdAt)}</span>
               </div>
             </div>
 

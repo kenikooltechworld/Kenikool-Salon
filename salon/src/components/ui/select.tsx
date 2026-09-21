@@ -110,8 +110,11 @@ export const SelectTrigger = React.forwardRef<
       return false;
     })
     .flatMap((selectContent) => {
-      if (React.isValidElement(selectContent) && selectContent.props.children) {
-        return React.Children.toArray(selectContent.props.children);
+      if (
+        React.isValidElement(selectContent) &&
+        (selectContent.props as any).children
+      ) {
+        return React.Children.toArray((selectContent.props as any).children);
       }
       return [];
     });

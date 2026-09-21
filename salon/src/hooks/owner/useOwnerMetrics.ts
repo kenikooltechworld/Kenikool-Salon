@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 
 export interface DashboardMetrics {
   revenue: {
@@ -48,12 +48,14 @@ export function useOwnerMetrics() {
       const { data } = await apiClient.get<{ data: DashboardMetrics }>(
         "/owner/dashboard/metrics",
       );
-      // Return the metrics object directly, not the response wrapper
-      return data.data || data;
+      const result = data.data || data;
+      console.log("[DashboardHook][useOwnerMetrics] raw response:", data);
+      console.log("[DashboardHook][useOwnerMetrics] extracted result:", result);
+      return result;
     },
-    refetchInterval: 30 * 1000, // 30 seconds
-    staleTime: 30 * 1000, // 30 seconds
-    retry: false, // Don't retry - fail fast
-    placeholderData: (previousData) => previousData, // Keep old data while refetching
+    refetchInterval: 30 * 1000,
+    staleTime: 30 * 1000,
+    retry: false,
+    placeholderData: (previousData) => previousData,
   });
 }

@@ -32,7 +32,7 @@ export default function Inventory() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredInventory = inventory.filter(
-    (item) =>
+    (item: any) =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()),
   );
@@ -88,7 +88,7 @@ export default function Inventory() {
             Low Stock Items
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {lowStockItems.slice(0, 3).map((item) => (
+            {lowStockItems.slice(0, 3).map((item: any) => (
               <div
                 key={item.id}
                 className="bg-yellow-50 border border-yellow-200 rounded p-3"
@@ -152,7 +152,7 @@ export default function Inventory() {
               </tr>
             </thead>
             <tbody>
-              {filteredInventory.map((item) => (
+              {filteredInventory.map((item: any) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium">{item.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">

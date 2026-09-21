@@ -320,7 +320,7 @@ async def create_customer(
                 
                 if rendered_html:
                     # Send email with rendered template
-                    send_email.delay(
+                    run_in_background(send_email,
                         to=new_customer.email,
                         subject=f"Welcome to {tenant.name}!",
                         template="custom",  # Special template type for custom HTML
@@ -454,3 +454,5 @@ async def delete_customer(
     except Exception as e:
         logger.error(f"Failed to delete customer: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="Failed to delete customer")
+
+

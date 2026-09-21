@@ -219,8 +219,8 @@ export default function CreateBooking() {
 
       console.log("[CreateBooking] Sending appointment (local timezone):");
       console.log("  selectedDate:", formData.selectedDate);
-      console.log("  start_time:", formData.selectedSlot.start_time);
-      console.log("  end_time:", formData.selectedSlot.end_time);
+      console.log("  startTime:", formData.selectedSlot.start_time);
+      console.log("  endTime:", formData.selectedSlot.end_time);
       console.log("  startTimeStr:", startTimeStr);
       console.log("  endTimeStr:", endTimeStr);
 
@@ -564,7 +564,6 @@ export default function CreateBooking() {
                     onClick={() => handleStaffSelect(member.id)}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      {/* Staff Image */}
                       <div className="flex-shrink-0">
                         {member.profile_image_url ? (
                           <img
@@ -604,7 +603,7 @@ export default function CreateBooking() {
                       {formData.staffId === member.id && (
                         <CheckIcon
                           size={20}
-                          className="text-primary flex-shrink-0"
+                          className="text-primary shrink-0"
                         />
                       )}
                     </div>

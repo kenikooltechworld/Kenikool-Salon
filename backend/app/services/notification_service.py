@@ -98,16 +98,15 @@ class NotificationService:
         if recipient_id:
             try:
                 recipient_obj_id = ObjectId(recipient_id) if isinstance(recipient_id, str) else recipient_id
-                query = query(recipient_id=recipient_obj_id)
+                query = query.filter(recipient_id=recipient_obj_id)
             except Exception:
-                # Invalid ObjectId format, return empty list
                 return []
         if notification_type:
-            query = query(notification_type=notification_type)
+            query = query.filter(notification_type=notification_type)
         if channel:
-            query = query(channel=channel)
+            query = query.filter(channel=channel)
         if status:
-            query = query(status=status)
+            query = query.filter(status=status)
 
         return query.order_by("-created_at")[skip : skip + limit]
 

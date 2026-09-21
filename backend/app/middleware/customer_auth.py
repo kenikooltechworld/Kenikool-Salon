@@ -14,7 +14,7 @@ async def get_current_customer(
 ) -> Customer:
     """Get current authenticated customer from JWT token"""
     token = credentials.credentials
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     customer = CustomerAuthService.get_customer_from_token(token, tenant_id)
     
@@ -37,6 +37,6 @@ async def get_current_customer_optional(
         return None
     
     token = credentials.credentials
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     return CustomerAuthService.get_customer_from_token(token, tenant_id)

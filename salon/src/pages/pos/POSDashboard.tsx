@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTransactions } from "@/hooks/useCheckout";
 import { usePOSStore } from "@/stores/pos";
+import { useTenantSettings } from "@/hooks/owner/useTenantSettings";
+import { useVerifyPOSPayment } from "@/hooks/usePayment";
+import { useGenerateReceipt } from "@/hooks/useReceipt";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
@@ -23,6 +26,7 @@ import POSReports from "./POSReports";
 import CommissionDashboard from "./CommissionDashboard";
 import DiscountManagement from "./DiscountManagement";
 import ReceiptHistory from "./ReceiptHistory";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function POSDashboard() {
   const [activeTab, setActiveTab] = useState("transaction");
@@ -32,15 +36,55 @@ export default function POSDashboard() {
     pageSize: 10,
   });
   const { isOffline, pendingTransactions, syncStatus } = usePOSStore();
+  const { data: tenantSettings } = useTenantSettings();
+  const { mutate: verifyPOSPayment } = useVerifyPOSPayment();
+  const { mutate: generateReceipt } = useGenerateReceipt();
+  const currency = tenantSettings?.currency || "USD";
+
+  // Handle Paystack payment callback
+  useEffect(() => {
+    const paymentDataStr = localStorage.getItem("posPaymentData");
+    if (paymentDataStr) {
+      try {
+        const paymentData = JSON.parse(paymentDataStr);
+        const { transactionId, reference } = paymentData;
+
+        if (transactionId && reference) {
+          verifyPOSPayment(
+            { transactionId, reference },
+            {
+              onSuccess: (result) => {
+                if (result.success) {
+                  generateReceipt(transactionId);
+                }
+                localStorage.removeItem("posPaymentData");
+              },
+              onError: () => {
+                localStorage.removeItem("posPaymentData");
+              },
+            },
+          );
+        }
+      } catch {
+        localStorage.removeItem("posPaymentData");
+      }
+    }
+  }, [verifyPOSPayment, generateReceipt]);
 
   const transactions = transactionsData?.transactions || [];
-  const todaysSales = transactions
-    .filter(
-      (t) => new Date(t.createdAt).toDateString() === new Date().toDateString(),
-    )
-    .reduce((sum, t) => sum + t.total, 0);
+  const todaysTransactions = transactions.filter((t) => {
+    if (!t.createdAt) return false;
+    try {
+      return new Date(t.createdAt).toDateString() === new Date().toDateString();
+    } catch {
+      return false;
+    }
+  });
+  const todaysSales = todaysTransactions.reduce((sum, t) => sum + t.total, 0);
   const avgTransaction =
-    transactions.length > 0 ? todaysSales / transactions.length : 0;
+    todaysTransactions.length > 0
+      ? todaysSales / todaysTransactions.length
+      : 0;
 
   // Primary workflow tabs (most used)
   const primaryTabs = [
@@ -151,10 +195,7 @@ export default function POSDashboard() {
                 Today's Sales
               </p>
               <p className="text-3xl font-bold text-foreground">
-                ₦
-                {todaysSales.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(todaysSales, currency)}
               </p>
             </Card>
             <Card className="p-6">
@@ -168,10 +209,7 @@ export default function POSDashboard() {
                 Average Transaction
               </p>
               <p className="text-3xl font-bold text-foreground">
-                ₦
-                {avgTransaction.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(avgTransaction, currency)}
               </p>
             </Card>
           </>

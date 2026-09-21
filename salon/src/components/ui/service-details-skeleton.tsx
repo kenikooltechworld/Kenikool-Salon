@@ -1,4 +1,4 @@
-import { Skeleton, StatCardSkeleton } from "./skeleton";
+import { Skeleton } from "./skeleton";
 import { Card } from "./card";
 
 export function ServiceDetailsPageSkeleton() {

@@ -144,7 +144,9 @@ export function PendingActions({
                   <span className="text-lg">
                     {typeIcons[action.type] || "📌"}
                   </span>
-                  <p className="font-medium text-sm">{action.description}</p>
+                  <p className="font-medium text-sm">
+                    {action.description.replace(/\$/g, "₦")}
+                  </p>
                   <Badge style={getPriorityStyle(action.priority)}>
                     {action.priority}
                   </Badge>

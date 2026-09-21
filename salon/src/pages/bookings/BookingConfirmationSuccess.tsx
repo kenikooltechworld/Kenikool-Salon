@@ -21,7 +21,7 @@ export default function BookingConfirmationSuccess() {
     }
   }, [location, navigate]);
 
-  if (!booking) {
+  if (!booking?.startTime) {
     return null;
   }
 

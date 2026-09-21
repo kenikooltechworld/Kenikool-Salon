@@ -227,23 +227,23 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
             >
               {isPrinting ? <Spinner className="w-4 h-4" /> : "Print"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const element = document.createElement("a");
-                element.href = `/receipts/${receipt.id}/pdf`;
-                element.download = `receipt-${receipt.receiptNumber}.pdf`;
-                element.click();
-                showToast({
-                  title: "Download Started",
-                  description: "Receipt PDF is downloading",
-                  variant: "default",
-                });
-              }}
-              className="flex-1 text-sm md:text-base"
-            >
-              Download PDF
-            </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const element = document.createElement("a");
+                  element.href = `/api/v1/receipts/${receipt.id}/pdf`;
+                  element.download = `receipt-${receipt.receiptNumber}.pdf`;
+                  element.click();
+                  showToast({
+                    title: "Download Started",
+                    description: "Receipt PDF is downloading",
+                    variant: "default",
+                  });
+                }}
+                className="flex-1 text-sm md:text-base"
+              >
+                Download PDF
+              </Button>
           </div>
 
           <div className="flex gap-2 flex-col sm:flex-row">

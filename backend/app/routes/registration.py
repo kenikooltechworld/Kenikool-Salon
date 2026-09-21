@@ -76,7 +76,7 @@ async def register(
         )
         
         # Send verification email asynchronously
-        send_email.delay(
+        run_in_background(send_email,
             to=register_request.email,
             subject="Verify Your Salon Registration",
             template="registration_verification",
@@ -153,7 +153,7 @@ async def verify_code(
 
         # Send welcome email asynchronously
         try:
-            send_email.delay(
+            run_in_background(send_email,
                 to=account_data["email"],
                 subject="Welcome to Kenikool!",
                 template="welcome",
@@ -211,7 +211,7 @@ async def resend_code(
 
     # Send verification email asynchronously
     try:
-        send_email.delay(
+        run_in_background(send_email,
             to=resend_request.email,
             subject="Your New Verification Code",
             template="registration_verification",
@@ -238,3 +238,5 @@ async def resend_code(
     except Exception as e:
         logger.error(f"Error resending code: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to resend code")
+
+

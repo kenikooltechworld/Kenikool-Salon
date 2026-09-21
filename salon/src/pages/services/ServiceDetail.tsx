@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeftIcon, EditIcon, TrashIcon } from "@/components/icons";
+import { ArrowLeftIcon, EditIcon, TrashIcon, UsersIcon } from "@/components/icons";
 import { useService, useDeleteService } from "@/hooks/useServices";
+import { useStaff } from "@/hooks/useStaff";
 import { useServiceCategories } from "@/hooks/useServiceCategories";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { ImageLightbox } from "@/components/services/ImageLightbox";
@@ -22,6 +23,12 @@ export default function ServiceDetail() {
   const { data: service, isLoading, refetch } = useService(id || "");
   const { data: categories = [] } = useServiceCategories();
   const { mutate: deleteService, isPending: isDeleting } = useDeleteService();
+
+  const { data: allStaff = [] } = useStaff();
+
+  const assignedStaff = (service?.staff_ids || [])
+    .map((sid) => allStaff.find((s) => s.id === sid))
+    .filter(Boolean);
 
   const category = categories.find(
     (cat: any) => cat.name === service?.category,
@@ -319,6 +326,39 @@ export default function ServiceDetail() {
                   >
                     {tag}
                   </span>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Assigned Staff */}
+          {assignedStaff.length > 0 && (
+            <Card className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
+                Assigned Staff
+              </h3>
+              <div className="space-y-3">
+                {assignedStaff.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3 p-2 rounded-lg bg-muted/40"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-semibold text-primary">
+                        {s.firstName?.[0]}{s.lastName?.[0]}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {s.firstName} {s.lastName}
+                      </p>
+                      {s.specialties?.length > 0 && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {s.specialties.join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </Card>

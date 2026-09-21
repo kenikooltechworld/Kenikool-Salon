@@ -121,7 +121,7 @@ export default function StaffDashboard() {
         />
         <MetricCard
           title="Earnings Summary"
-          value={`$${(metrics?.earningsSummary?.total ?? 0).toFixed(2)}`}
+          value={`₦${(metrics?.earningsSummary?.total ?? 0).toFixed(2)}`}
           icon={<DollarIcon size={20} />}
           actionLabel="Details"
           onAction={() => navigate("/staff/earnings")}

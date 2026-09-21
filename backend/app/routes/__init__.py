@@ -36,12 +36,17 @@ from app.routes import (
     pos_commissions,
     pos_reports,
     service_commissions,
+    commissions,
     billing,
     staff_settings,
     settings,
     availability_events,
     memberships,
     public_memberships,
+    attendance,
+    backups,
+    goals,
+    inventory,
 )
 
 __all__ = [
@@ -80,10 +85,15 @@ __all__ = [
     "pos_commissions",
     "pos_reports",
     "service_commissions",
+    "commissions",
     "billing",
     "staff_settings",
     "settings",
     "availability_events",
     "memberships",
     "public_memberships",
+    "attendance",
+    "backups",
+    "goals",
+    "inventory",
 ]

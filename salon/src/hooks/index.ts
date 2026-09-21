@@ -25,8 +25,8 @@ export {
   useCreateStaff,
   useUpdateStaff,
   useDeleteStaff,
-  type Staff,
 } from "./useStaff";
+export type { Staff } from "@/types/staff";
 
 // Services
 export {
@@ -35,8 +35,8 @@ export {
   useCreateService,
   useUpdateService,
   useDeleteService,
-  type Service,
 } from "./useServices";
+export type { Service, ServiceFilters } from "@/types/service";
 
 // Invoices
 export {

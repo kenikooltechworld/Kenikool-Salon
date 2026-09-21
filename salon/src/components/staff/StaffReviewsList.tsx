@@ -75,7 +75,7 @@ export function StaffReviewsList({
         <div className="flex justify-end">
           <div className="inline-flex rounded-md border border-input bg-background p-1">
             <Button
-              variant={sortBy === "date" ? "default" : "ghost"}
+              variant={sortBy === "date" ? "primary" : "ghost"}
               size="sm"
               onClick={() => onSortChange("date")}
               className="px-3"
@@ -83,7 +83,7 @@ export function StaffReviewsList({
               Newest First
             </Button>
             <Button
-              variant={sortBy === "rating" ? "default" : "ghost"}
+              variant={sortBy === "rating" ? "primary" : "ghost"}
               size="sm"
               onClick={() => onSortChange("rating")}
               className="px-3"

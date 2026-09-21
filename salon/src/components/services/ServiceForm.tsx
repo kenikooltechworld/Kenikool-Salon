@@ -11,6 +11,7 @@ import { ServiceCategoryModal } from "@/components/services/ServiceCategoryModal
 import { ColorPicker } from "@/components/services/ColorPicker";
 import { IconPicker } from "@/components/services/IconPicker";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { StaffMultiSelect } from "@/components/services/StaffMultiSelect";
 import type { Service } from "@/types/service";
 
 interface ServiceFormProps {
@@ -38,6 +39,7 @@ export function ServiceForm({
     public_image_url: service?.public_image_url || "",
     is_active: service?.is_active ?? true,
     is_published: service?.is_published ?? false,
+    staff_ids: service?.staff_ids || [],
   });
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -340,19 +342,36 @@ export function ServiceForm({
           />
         </div>
 
+        <StaffMultiSelect
+          value={formData.staff_ids}
+          onChange={(staff_ids) =>
+            setFormData((prev) => ({ ...prev, staff_ids }))
+          }
+        />
+
         <div className="space-y-3 border-t border-border pt-4">
           <Checkbox
             id="is_active"
             name="is_active"
             checked={formData.is_active}
-            onChange={handleChange}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({
+                ...prev,
+                is_active: checked as boolean,
+              }))
+            }
             label="Active"
           />
           <Checkbox
             id="is_published"
             name="is_published"
             checked={formData.is_published}
-            onChange={handleChange}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({
+                ...prev,
+                is_published: checked as boolean,
+              }))
+            }
             label="Published"
           />
         </div>

@@ -8,10 +8,10 @@ import { formatCurrency } from "@/lib/utils/format";
 import { useState, useEffect } from "react";
 
 interface LineItem {
-  service_id: string;
-  service_name: string;
+  serviceId: string;
+  serviceName: string;
   quantity: number;
-  unit_price: number;
+  unitPrice: number;
 }
 
 export default function EditInvoice() {
@@ -22,10 +22,10 @@ export default function EditInvoice() {
   const updateMutation = useUpdateInvoice();
 
   const [formData, setFormData] = useState({
-    customer_id: "",
-    line_items: [] as LineItem[],
+    customerId: "",
+    lineItems: [] as LineItem[],
     notes: "",
-    due_date: "",
+    dueDate: "",
   });
 
   useEffect(() => {
@@ -36,10 +36,10 @@ export default function EditInvoice() {
         return;
       }
       setFormData({
-        customer_id: invoice.customer_id,
-        line_items: invoice.line_items || [],
+        customerId: invoice.customerId,
+        lineItems: invoice.lineItems || [],
         notes: invoice.notes || "",
-        due_date: invoice.due_date,
+        dueDate: invoice.dueDate,
       });
     }
   }, [invoice, navigate]);
@@ -47,9 +47,9 @@ export default function EditInvoice() {
   const handleAddLineItem = () => {
     setFormData({
       ...formData,
-      line_items: [
-        ...formData.line_items,
-        { service_id: "", service_name: "", quantity: 1, unit_price: 0 },
+      lineItems: [
+        ...formData.lineItems,
+        { serviceId: "", serviceName: "", quantity: 1, unitPrice: 0 },
       ],
     });
   };
@@ -57,7 +57,7 @@ export default function EditInvoice() {
   const handleRemoveLineItem = (index: number) => {
     setFormData({
       ...formData,
-      line_items: formData.line_items.filter((_, i) => i !== index),
+      lineItems: formData.lineItems.filter((_, i) => i !== index),
     });
   };
 
@@ -66,14 +66,14 @@ export default function EditInvoice() {
     field: keyof LineItem,
     value: any,
   ) => {
-    const newItems = [...formData.line_items];
+    const newItems = [...formData.lineItems];
     newItems[index] = { ...newItems[index], [field]: value };
-    setFormData({ ...formData, line_items: newItems });
+    setFormData({ ...formData, lineItems: newItems });
   };
 
   const calculateTotal = () => {
-    return formData.line_items.reduce(
-      (sum, item) => sum + item.quantity * item.unit_price,
+    return formData.lineItems.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
       0,
     );
   };
@@ -85,15 +85,15 @@ export default function EditInvoice() {
     try {
       await updateMutation.mutateAsync({
         id,
-        line_items: formData.line_items.map((item) => ({
-          service_id: item.service_id,
-          service_name: item.service_name,
+        lineItems: formData.lineItems.map((item) => ({
+          serviceId: item.serviceId,
+          serviceName: item.serviceName,
           quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.quantity * item.unit_price,
+          unitPrice: item.unitPrice,
+          total: item.quantity * item.unitPrice,
         })),
         notes: formData.notes,
-        due_date: formData.due_date,
+        dueDate: formData.dueDate,
       });
       showToast({
         variant: "success",
@@ -149,7 +149,7 @@ export default function EditInvoice() {
           </label>
           <input
             type="text"
-            value={formData.customer_id}
+            value={formData.customerId}
             disabled
             className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground"
           />
@@ -172,7 +172,7 @@ export default function EditInvoice() {
           </div>
 
           <div className="space-y-4">
-            {formData.line_items.map((item, index) => (
+            {formData.lineItems.map((item, index) => (
               <div key={index} className="flex gap-4 items-end">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-foreground mb-1">
@@ -180,13 +180,9 @@ export default function EditInvoice() {
                   </label>
                   <input
                     type="text"
-                    value={item.service_name}
+                    value={item.serviceName}
                     onChange={(e) =>
-                      handleLineItemChange(
-                        index,
-                        "service_name",
-                        e.target.value,
-                      )
+                      handleLineItemChange(index, "serviceName", e.target.value)
                     }
                     className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Service description"
@@ -216,11 +212,11 @@ export default function EditInvoice() {
                   </label>
                   <input
                     type="number"
-                    value={item.unit_price}
+                    value={item.unitPrice}
                     onChange={(e) =>
                       handleLineItemChange(
                         index,
-                        "unit_price",
+                        "unitPrice",
                         parseFloat(e.target.value),
                       )
                     }
@@ -234,7 +230,7 @@ export default function EditInvoice() {
                     Amount
                   </label>
                   <div className="px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground text-sm">
-                    {formatCurrency(item.quantity * item.unit_price)}
+                    {formatCurrency(item.quantity * item.unitPrice)}
                   </div>
                 </div>
                 <button
@@ -248,7 +244,7 @@ export default function EditInvoice() {
             ))}
           </div>
 
-          {formData.line_items.length === 0 && (
+          {formData.lineItems.length === 0 && (
             <p className="text-muted-foreground text-center py-4">
               No line items. Click "Add Item" to add one.
             </p>
@@ -282,9 +278,9 @@ export default function EditInvoice() {
           </label>
           <input
             type="date"
-            value={formData.due_date}
+            value={formData.dueDate}
             onChange={(e) =>
-              setFormData({ ...formData, due_date: e.target.value })
+              setFormData({ ...formData, dueDate: e.target.value })
             }
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />

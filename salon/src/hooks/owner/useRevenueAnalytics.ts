@@ -47,8 +47,10 @@ export function useRevenueAnalytics(
         "/owner/dashboard/revenue-analytics",
         { params: { period, days } },
       );
-      // Return the analytics object directly, not the response wrapper
-      return data.data || data;
+      const result = data.data || data;
+      console.log("[DashboardHook][useRevenueAnalytics] raw response:", data);
+      console.log("[DashboardHook][useRevenueAnalytics] extracted result:", result);
+      return result;
     },
     refetchInterval: 60 * 60 * 1000, // 1 hour
     staleTime: 60 * 60 * 1000, // 1 hour

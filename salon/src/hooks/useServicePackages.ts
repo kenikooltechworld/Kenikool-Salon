@@ -1,15 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/utils/api";
 
-export type {
-  ServicePackage,
-  ServicePackageItem,
-  ServicePackageCreate,
-  ServicePackageUpdate,
-  ServicePackageFilters,
-  ServicePackageListResponse,
-};
-
 export interface ServicePackageItem {
   id: string;
   service_id: string;

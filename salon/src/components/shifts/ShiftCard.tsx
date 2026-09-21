@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shift } from "@/hooks/useShifts";
+import type { Shift } from "@/hooks/useShifts";
 import { formatDate, formatTime } from "@/lib/utils/format";
 
 interface ShiftCardProps {
@@ -24,8 +24,8 @@ export function ShiftCard({
   onEdit,
   onDelete,
 }: ShiftCardProps) {
-  const startDate = new Date(shift.start_time);
-  const endDate = new Date(shift.end_time);
+  const startDate = new Date(shift.startTime);
+  const endDate = new Date(shift.endTime);
 
   return (
     <Card className="p-4">
@@ -46,9 +46,7 @@ export function ShiftCard({
         <div className="flex items-center justify-between border-t pt-3">
           <div>
             <p className="text-sm text-gray-600">Labor Cost</p>
-            <p className="font-semibold">
-              ₦{shift.labor_cost.toLocaleString()}
-            </p>
+            <p className="font-semibold">₦{shift.laborCost.toLocaleString()}</p>
           </div>
           <div className="flex gap-2">
             {onEdit && (

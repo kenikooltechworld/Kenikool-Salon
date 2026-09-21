@@ -1,10 +1,13 @@
 """Gift card service"""
 import secrets
 import string
+import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional, Dict
 from bson import ObjectId, Decimal128
+
+logger = logging.getLogger(__name__)
 
 from app.models.gift_card import GiftCard, GiftCardTransaction
 from app.schemas.gift_card import (
@@ -30,16 +33,14 @@ class GiftCardService:
         return f"GC-{'-'.join(code_parts)}"
     
     @staticmethod
-    async def purchase_gift_card(
+    def purchase_gift_card(
         tenant_id: ObjectId,
         purchase_data: GiftCardPurchaseRequest
     ) -> GiftCard:
         """Purchase a new gift card"""
-        # Generate unique code
         code = GiftCardService.generate_gift_card_code()
         
-        # Ensure code is unique
-        while await GiftCard.find_one({"tenant_id": tenant_id, "code": code}):
+        while GiftCard.objects(tenant_id=tenant_id, code=code).first():
             code = GiftCardService.generate_gift_card_code()
         
         # Calculate expiry date
@@ -70,9 +71,8 @@ class GiftCardService:
             updated_at=datetime.utcnow()
         )
         
-        await gift_card.insert()
+        gift_card.save()
         
-        # Create purchase transaction
         transaction = GiftCardTransaction(
             tenant_id=tenant_id,
             gift_card_id=gift_card.id,
@@ -86,67 +86,95 @@ class GiftCardService:
             created_at=datetime.utcnow()
         )
         
-        await transaction.insert()
+        transaction.save()
         
-        # Schedule delivery if needed
         if not purchase_data.delivery_date or purchase_data.delivery_date <= datetime.utcnow():
-            await GiftCardService.deliver_gift_card(gift_card)
+            GiftCardService.deliver_gift_card(gift_card)
         
         return gift_card
     
     @staticmethod
-    async def deliver_gift_card(gift_card: GiftCard) -> bool:
+    def deliver_gift_card(gift_card: GiftCard) -> bool:
         """Deliver gift card via email/SMS"""
-        # TODO: Implement email/SMS delivery
-        # For now, mark as delivered
+        from app.tasks import send_email
+        from app.services.email_template_service import EmailTemplateService
+        from app.models.tenant import Tenant
+
+        recipient_email = gift_card.recipient_email or gift_card.purchased_by_email
+        recipient_phone = getattr(gift_card, "recipient_phone", None)
+
+        tenant = Tenant.objects(id=gift_card.tenant_id).first()
+        business_email = tenant.settings.get("email", tenant.email) if tenant.settings else tenant.email
+
+        email_context = {
+            "customer_email": recipient_email,
+            "business_email": business_email,
+            "gift_card_code": gift_card.code,
+            "amount": str(gift_card.initial_amount),
+            "currency": gift_card.currency or "NGN",
+        }
+
+        try:
+            rendered = EmailTemplateService.render_customer_welcome_email(
+                str(gift_card.tenant_id), email_context
+            )
+            run_in_background(send_email,
+                to=recipient_email,
+                subject="You have received a gift card!",
+                template=rendered or "<p>Your gift card code has been delivered.</p>",
+                context=email_context,
+            )
+        except Exception as e:
+            logger.warning(f"Gift card delivery email failed: {e}")
+
+        if recipient_phone:
+            try:
+                from app.services.termii_service import TermiiService
+                TermiiService().send_sms(
+                    phone_number=recipient_phone,
+                    message=f"You have received a gift card! Code: {gift_card.code}",
+                )
+            except Exception as e:
+                logger.warning(f"Gift card SMS delivery failed: {e}")
+
         gift_card.is_delivered = True
         gift_card.delivered_at = datetime.utcnow()
         gift_card.updated_at = datetime.utcnow()
-        await gift_card.save()
-        
+        gift_card.save()
         return True
     
     @staticmethod
-    async def check_balance(
+    def check_balance(
         tenant_id: ObjectId,
         code: str
     ) -> Optional[GiftCard]:
         """Check gift card balance"""
-        gift_card = await GiftCard.find_one({
-            "tenant_id": tenant_id,
-            "code": code.upper()
-        })
+        gift_card = GiftCard.objects(tenant_id=tenant_id, code=code.upper()).first()
         
         if not gift_card:
             return None
         
-        # Check if expired
         if gift_card.expiry_date and gift_card.expiry_date < datetime.utcnow():
             if gift_card.status != "expired":
                 gift_card.status = "expired"
                 gift_card.is_active = False
                 gift_card.updated_at = datetime.utcnow()
-                await gift_card.save()
+                gift_card.save()
         
         return gift_card
     
     @staticmethod
-    async def redeem_gift_card(
+    def redeem_gift_card(
         tenant_id: ObjectId,
         redemption_data: GiftCardRedemptionRequest,
         booking_id: Optional[ObjectId] = None
     ) -> Dict:
         """Redeem a gift card"""
-        # Find gift card
-        gift_card = await GiftCard.find_one({
-            "tenant_id": tenant_id,
-            "code": redemption_data.code.upper()
-        })
+        gift_card = GiftCard.objects(tenant_id=tenant_id, code=redemption_data.code.upper()).first()
         
         if not gift_card:
             raise ValueError("Gift card not found")
         
-        # Validate gift card
         if not gift_card.is_active:
             raise ValueError("Gift card is not active")
         
@@ -159,31 +187,26 @@ class GiftCardService:
         if gift_card.expiry_date and gift_card.expiry_date < datetime.utcnow():
             gift_card.status = "expired"
             gift_card.is_active = False
-            await gift_card.save()
+            gift_card.save()
             raise ValueError("Gift card has expired")
         
-        # Check balance
         current_balance = gift_card.current_balance.to_decimal()
         redemption_amount = redemption_data.amount
         
         if redemption_amount > current_balance:
             raise ValueError(f"Insufficient balance. Available: {current_balance}")
         
-        # Calculate new balance
         new_balance = current_balance - redemption_amount
         
-        # Update gift card
         gift_card.current_balance = Decimal128(str(new_balance))
         gift_card.updated_at = datetime.utcnow()
         
-        # Update status if fully redeemed
         if new_balance == 0:
             gift_card.status = "redeemed"
             gift_card.is_active = False
         
-        await gift_card.save()
+        gift_card.save()
         
-        # Create redemption transaction
         transaction = GiftCardTransaction(
             tenant_id=tenant_id,
             gift_card_id=gift_card.id,
@@ -197,7 +220,7 @@ class GiftCardService:
             created_at=datetime.utcnow()
         )
         
-        await transaction.insert()
+        transaction.save()
         
         return {
             "success": True,
@@ -207,47 +230,46 @@ class GiftCardService:
         }
     
     @staticmethod
-    async def get_gift_card_transactions(
+    def get_gift_card_transactions(
         tenant_id: ObjectId,
         gift_card_id: ObjectId
     ) -> List[GiftCardTransaction]:
         """Get transaction history for a gift card"""
-        transactions = await GiftCardTransaction.find({
-            "tenant_id": tenant_id,
-            "gift_card_id": gift_card_id
-        }).sort("-created_at").to_list()
+        transactions = list(GiftCardTransaction.objects(
+            tenant_id=tenant_id,
+            gift_card_id=gift_card_id
+        ).order_by("-created_at"))
         
         return transactions
     
     @staticmethod
-    async def list_gift_cards(
+    def list_gift_cards(
         tenant_id: ObjectId,
         status: Optional[str] = None,
         skip: int = 0,
         limit: int = 50
     ) -> tuple[List[GiftCard], int]:
         """List gift cards for a tenant"""
-        query = {"tenant_id": tenant_id}
+        from mongoengine import Q
+        
+        query = Q(tenant_id=tenant_id)
         
         if status:
-            query["status"] = status
+            query &= Q(status=status)
         
-        total = await GiftCard.find(query).count()
-        gift_cards = await GiftCard.find(query).sort("-created_at").skip(skip).limit(limit).to_list()
+        total = GiftCard.objects(query).count()
+        gift_cards = list(GiftCard.objects(query).order_by("-created_at").skip(skip).limit(limit))
         
         return gift_cards, total
     
     @staticmethod
-    async def cancel_gift_card(
+    def cancel_gift_card(
         tenant_id: ObjectId,
         gift_card_id: ObjectId,
         reason: str
     ) -> GiftCard:
         """Cancel a gift card"""
-        gift_card = await GiftCard.find_one({
-            "tenant_id": tenant_id,
-            "_id": gift_card_id
-        })
+        gift_card = GiftCard.objects(tenant_id=tenant_id, id=gift_card_id).first()
         
         if not gift_card:
             raise ValueError("Gift card not found")
@@ -258,9 +280,8 @@ class GiftCardService:
         gift_card.status = "cancelled"
         gift_card.is_active = False
         gift_card.updated_at = datetime.utcnow()
-        await gift_card.save()
+        gift_card.save()
         
-        # Create cancellation transaction
         transaction = GiftCardTransaction(
             tenant_id=tenant_id,
             gift_card_id=gift_card.id,
@@ -273,6 +294,8 @@ class GiftCardService:
             created_at=datetime.utcnow()
         )
         
-        await transaction.insert()
+        transaction.save()
         
         return gift_card
+
+

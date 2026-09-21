@@ -40,7 +40,7 @@ def staff_to_response(staff: Staff, user: User = None) -> dict:
         "lastName": user.last_name if user else "",
         "email": user.email if user else "",
         "phone": user.phone if user else "",
-        "service_ids": [str(sid) for sid in staff.service_ids],
+        "service_ids": [str(sid) for sid in getattr(staff, "service_ids", [])],
         "specialties": staff.specialties,
         "certifications": staff.certifications,
         "certification_files": staff.certification_files,
@@ -50,9 +50,43 @@ def staff_to_response(staff: Staff, user: User = None) -> dict:
         "bio": staff.bio,
         "profile_image_url": staff.profile_image_url,
         "status": staff.status,
-        "createdAt": staff.created_at.isoformat(),
-        "updatedAt": staff.updated_at.isoformat(),
+        "createdAt": staff.created_at.isoformat() if staff.created_at else None,
+        "updatedAt": staff.updated_at.isoformat() if staff.updated_at else None,
     }
+
+
+def _sync_service_staff_ids(tenant_id: ObjectId, service_ids: list, staff_id: ObjectId):
+    """
+    Keep `service.staff_ids` in sync with `staff.service_ids`.
+    
+    For each service in service_ids, ensure staff_id is present on the Service.staff_ids list.
+    For each service previously assigned to this staff but no longer in service_ids, remove it.
+    """
+    from app.models.service import Service
+    from mongoengine import Q
+
+    new_set = {ObjectId(sid) if isinstance(sid, str) else sid for sid in (service_ids or [])}
+
+    if new_set:
+        for sid in new_set:
+            try:
+                svc = Service.objects(tenant_id=tenant_id, pk=sid).first()
+                if not svc:
+                    continue
+                existing = {ObjectId(x) for x in (svc.staff_ids or [])}
+                if staff_id not in existing:
+                    existing.add(staff_id)
+                    svc.staff_ids = list(existing)
+                    svc.save()
+            except Exception:
+                pass
+
+    old_services = Service.objects(tenant_id=tenant_id, staff_ids=staff_id)
+    for svc in old_services:
+        if svc.id not in new_set:
+            cleaned = [x for x in (svc.staff_ids or []) if x != staff_id]
+            svc.staff_ids = cleaned
+            svc.save()
 
 
 @router.get("", response_model=dict)
@@ -247,6 +281,7 @@ async def create_staff(
             
             new_staff.save()
             logger.info(f"Created staff profile for user: {user_id}")
+            _sync_service_staff_ids(tenant_id, staff_data.service_ids, new_staff.id)
         except Exception as e:
             logger.error(f"Failed to create staff profile: {str(e)}", exc_info=True)
             raise HTTPException(status_code=400, detail=f"Failed to create staff profile: {str(e)}")
@@ -278,7 +313,7 @@ async def create_staff(
                     # Fallback to frontend URL
                     login_url = f"{settings.frontend_url}/login"
                 
-                send_email.delay(
+                run_in_background(send_email,
                     to=staff_data.email,
                     subject=f"Welcome to {salon_name} - Staff Account Created",
                     template="staff_welcome",
@@ -321,6 +356,71 @@ async def create_staff(
         except Exception as e:
             logger.error(f"Failed to create staff settings: {str(e)}")
             # Don't fail the request if settings creation fails
+        
+        # Auto-create default availability from tenant business hours
+        try:
+            from app.models.availability import Availability
+            from app.models.tenant import Tenant
+            from app.services.tenant_settings_service import TenantSettingsService
+            
+            tenant_settings = TenantSettingsService.get_settings(str(tenant_id))
+            business_hours = tenant_settings.get("business_hours") if tenant_settings else None
+            
+            if not business_hours:
+                business_hours = {
+                    "monday": {"open_time": "09:00", "close_time": "18:00", "is_closed": False},
+                    "tuesday": {"open_time": "09:00", "close_time": "18:00", "is_closed": False},
+                    "wednesday": {"open_time": "09:00", "close_time": "18:00", "is_closed": False},
+                    "thursday": {"open_time": "09:00", "close_time": "18:00", "is_closed": False},
+                    "friday": {"open_time": "09:00", "close_time": "18:00", "is_closed": False},
+                    "saturday": {"open_time": "10:00", "close_time": "16:00", "is_closed": False},
+                    "sunday": {"open_time": "00:00", "close_time": "00:00", "is_closed": True},
+                }
+            
+            day_map = {
+                "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+                "friday": 4, "saturday": 5, "sunday": 6,
+            }
+            
+            created_availability = []
+            for day_name, hours in business_hours.items():
+                if hours.get("is_closed"):
+                    continue
+                
+                day_of_week = day_map.get(day_name)
+                if day_of_week is None:
+                    continue
+                
+                open_time = hours["open_time"]
+                close_time = hours["close_time"]
+                
+                if len(open_time) == 5:
+                    open_time = f"{open_time}:00"
+                if len(close_time) == 5:
+                    close_time = f"{close_time}:00"
+                
+                availability = Availability(
+                    tenant_id=tenant_id,
+                    staff_id=new_staff.id,
+                    day_of_week=day_of_week,
+                    start_time=open_time,
+                    end_time=close_time,
+                    is_recurring=True,
+                    effective_from=date.today(),
+                    effective_to=None,
+                    breaks=[],
+                    slot_interval_minutes=30,
+                    buffer_time_minutes=15,
+                    concurrent_bookings_allowed=1,
+                    is_active=True,
+                    notes=f"Default availability from business hours ({day_name})",
+                )
+                availability.save()
+                created_availability.append(f"{day_name}:{open_time}-{close_time}")
+            
+            logger.info(f"[StaffCreate] Created {len(created_availability)} default availability records for staff {new_staff.id}: {created_availability}")
+        except Exception as e:
+            logger.error(f"Failed to create default availability for staff {new_staff.id}: {str(e)}", exc_info=True)
         
         return staff_to_response(new_staff, user)
     except HTTPException:
@@ -371,7 +471,8 @@ async def update_staff(
 
         staff.save()
         logger.info(f"Updated staff profile: {staff.id}")
-        
+        _sync_service_staff_ids(tenant_id, staff_data.service_ids, staff.id)
+
         user = User.objects(id=staff.user_id).first()
         return staff_to_response(staff, user)
     except HTTPException:
@@ -744,7 +845,7 @@ async def get_staff_activity_feed(
                 "id": str(commission.id),
                 "type": "earnings",
                 "title": f"Commission Earned",
-                "description": f"Amount: ${float(commission.commission_amount):.2f}",
+                "description": f"Amount: ₦{float(commission.commission_amount):.2f}",
                 "timestamp": commission.created_at.isoformat(),
                 "metadata": {
                     "commissionId": str(commission.id),
@@ -765,3 +866,119 @@ async def get_staff_activity_feed(
     except Exception as e:
         logger.error(f"Failed to get activity feed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="Failed to get activity feed")
+
+
+@router.get("/{staff_id}/performance-metrics", response_model=dict)
+@tenant_isolated
+async def get_staff_performance_metrics(
+    staff_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """
+    Get performance metrics for a staff member.
+
+    Returns ratings, appointment stats, and customer satisfaction derived from appointment history.
+    """
+    try:
+        staff = Staff.objects(id=ObjectId(staff_id), tenant_id=tenant_id).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff member not found")
+
+        completed_appointments = Appointment.objects(
+            tenant_id=tenant_id,
+            staff_id=ObjectId(staff_id),
+            status="completed",
+        )
+        total_completed = completed_appointments.count()
+
+        reviews = AppointmentHistory.objects(
+            tenant_id=tenant_id,
+            staff_id=ObjectId(staff_id),
+            rating__gt=0,
+        )
+
+        total_reviews = reviews.count()
+        avg_rating = reviews.average("rating") if total_reviews > 0 else (float(staff.rating) if staff.rating else 0.0)
+
+        rating_distribution = {str(i): 0 for i in range(1, 6)}
+        for r in reviews:
+            star = max(1, min(5, r.rating))
+            rating_distribution[str(star)] += 1
+
+        total_earnings = sum(c.commission_amount for c in StaffCommission.objects(tenant_id=tenant_id, staff_id=ObjectId(staff_id)))
+
+        recent_reviews = []
+        for r in reviews.order_by("-appointment_date").limit(10):
+            recent_reviews.append({
+                "id": str(r.id),
+                "customerId": str(r.customer_id),
+                "customerName": "",
+                "appointmentId": str(r.appointment_id),
+                "serviceName": "",
+                "rating": r.rating,
+                "feedback": r.feedback or "",
+                "appointmentDate": r.appointment_date.isoformat(),
+                "createdAt": r.created_at.isoformat(),
+            })
+
+        return {
+            "averageRating": round(avg_rating, 1),
+            "totalReviews": total_reviews,
+            "appointmentsCompleted": total_completed,
+            "customerSatisfaction": min(100, int((avg_rating / 5) * 100)),
+            "totalEarnings": round(float(total_earnings), 2),
+            "ratingDistribution": rating_distribution,
+            "recentReviews": recent_reviews,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to get performance metrics")
+
+
+@router.get("/{staff_id}/reviews", response_model=dict)
+@tenant_isolated
+async def get_staff_reviews(
+    staff_id: str,
+    limit: int = Query(25, ge=1, le=100),
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """
+    Get customer reviews for a staff member.
+
+    Returns recent reviews sorted by appointment date descending.
+    """
+    try:
+        staff = Staff.objects(id=ObjectId(staff_id), tenant_id=tenant_id).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff member not found")
+
+        reviews = AppointmentHistory.objects(
+            tenant_id=tenant_id,
+            staff_id=ObjectId(staff_id),
+            rating__gt=0,
+        ).order_by("-appointment_date").limit(limit)
+
+        result = []
+        for r in reviews:
+            result.append({
+                "id": str(r.id),
+                "customerId": str(r.customer_id),
+                "customerName": "",
+                "appointmentId": str(r.appointment_id),
+                "serviceName": "",
+                "rating": r.rating,
+                "feedback": r.feedback or "",
+                "appointmentDate": r.appointment_date.isoformat(),
+                "createdAt": r.created_at.isoformat(),
+            })
+
+        return {"reviews": result, "total": reviews.count()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get reviews: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to get reviews")
+
+

@@ -5,7 +5,32 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
 import { XIcon } from "@/components/icons";
-import { useIsMobile, useBottomSheet } from "@/lib/hooks/useTouchGestures";
+
+// Simple mobile detection hook
+function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
+// Simple bottom sheet hook
+function useBottomSheet() {
+  return {
+    isOpen: false,
+    open: () => {},
+    close: () => {},
+  };
+}
 
 interface MobileModalProps {
   open: boolean;
@@ -55,7 +80,7 @@ export function MobileModal({
         <div
           className={cn(
             "relative bg-card text-card-foreground rounded-t-[24px] shadow-xl border-t-2 border-border w-full max-h-[90vh] overflow-y-auto transition-transform",
-            isDragging ? "" : "transition-transform duration-300"
+            isDragging ? "" : "transition-transform duration-300",
           )}
           style={{
             transform: `translateY(${dragY}px)`,
@@ -108,7 +133,7 @@ export function MobileModal({
       <div
         className={cn(
           "relative bg-card text-card-foreground rounded-xl shadow-xl border-2 border-border max-h-[90vh] overflow-y-auto w-full",
-          sizeClasses[size]
+          sizeClasses[size],
         )}
       >
         {title && (

@@ -129,6 +129,8 @@ async def handle_paystack_webhook(request: Request) -> Dict[str, Any]:
             await _handle_charge_success(payment, extracted_data, tenant_id, webhook_data)
         elif event == "charge.failed":
             await _handle_charge_failed(payment, extracted_data, tenant_id, webhook_data)
+        elif event in ("charge.cancelled", "charge.abandoned"):
+            await _handle_charge_cancelled(payment, extracted_data, tenant_id, webhook_data)
         elif event == "refund.success":
             await _handle_refund_success(extracted_data, tenant_id, webhook_data)
         else:
@@ -304,7 +306,7 @@ async def _send_booking_confirmation_email(
             "current_year": datetime.utcnow().year,
         }
         
-        send_email.delay(
+        run_in_background(send_email,
             to=customer_email,
             subject=f"Booking Confirmation - {service.name} at {tenant.name}",
             template="booking_confirmation",
@@ -536,6 +538,53 @@ async def _handle_charge_failed(
         raise
 
 
+async def _handle_charge_cancelled(
+    payment: Payment,
+    extracted_data: Dict[str, Any],
+    tenant_id: str,
+    webhook_data: Dict[str, Any],
+) -> None:
+    """Handle cancelled/abandoned charge event."""
+    try:
+        logger.info(f"Processing charge.cancelled for payment {payment.id}")
+
+        payment.status = "cancelled"
+        cancel_reason = extracted_data.get("gateway_response") or extracted_data.get("failure_reason") or "Payment cancelled by user"
+        payment.metadata.update({
+            "cancel_reason": cancel_reason,
+            "paystack_transaction_id": extracted_data.get("transaction_id"),
+            "webhook_processed_at": str(extracted_data.get("paid_at")),
+        })
+        payment.save()
+        logger.info(f"Payment {payment.id} marked as cancelled. Reason: {cancel_reason}")
+
+        await get_audit_service().log_event(
+            event_type="webhook",
+            resource="/webhooks/paystack",
+            tenant_id=tenant_id,
+            status_code=200,
+            request_body=webhook_data,
+            tags=["webhook", "paystack", "charge_cancelled", "payment_cancelled"],
+        )
+
+        queue_notification(
+            tenant_id=tenant_id,
+            notification_type="payment_cancelled",
+            recipient_id=str(payment.customer_id),
+            data={
+                "payment_id": str(payment.id),
+                "amount": str(payment.amount),
+                "reference": payment.reference,
+                "reason": cancel_reason,
+            }
+        )
+        logger.info(f"Notification queued for customer {payment.customer_id}")
+
+    except Exception as e:
+        logger.error(f"Error handling charge.cancelled: {e}", exc_info=True)
+        raise
+
+
 async def _handle_refund_success(
     extracted_data: Dict[str, Any],
     tenant_id: str,
@@ -623,3 +672,5 @@ async def _handle_refund_success(
     except Exception as e:
         logger.error(f"Error handling refund.success: {e}", exc_info=True)
         raise
+
+

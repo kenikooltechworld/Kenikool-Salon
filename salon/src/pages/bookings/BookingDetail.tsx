@@ -150,7 +150,7 @@ export function BookingDetail({
     );
   }
 
-  if (!booking) {
+  if (!booking || !booking.startTime) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <Card className="w-full max-w-md p-6">
@@ -174,7 +174,7 @@ export function BookingDetail({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="cursor-pointer flex-shrink-0 ml-2"
+            className="cursor-pointer shrink-0 ml-2"
           >
             <XIcon size={20} />
           </Button>
@@ -189,39 +189,33 @@ export function BookingDetail({
 
           <div>
             <span className="text-muted-foreground">Customer</span>
-            <p className="text-foreground">
-              {isLoadingCustomer ? (
-                <Skeleton className="h-5 w-32 mt-1" />
-              ) : customerData?.first_name && customerData?.last_name ? (
-                `${customerData.first_name} ${customerData.last_name}`
-              ) : (
-                "N/A"
-              )}
-            </p>
+            {isLoadingCustomer ? (
+              <Skeleton className="h-5 w-32 mt-1" />
+            ) : customerData?.first_name && customerData?.last_name ? (
+              <p className="text-foreground">{customerData.first_name} {customerData.last_name}</p>
+            ) : (
+              <p className="text-foreground">N/A</p>
+            )}
           </div>
 
           <div>
             <span className="text-muted-foreground">Service</span>
-            <p className="text-foreground">
-              {isLoadingService ? (
-                <Skeleton className="h-5 w-40 mt-1" />
-              ) : (
-                serviceData?.name || "N/A"
-              )}
-            </p>
+            {isLoadingService ? (
+              <Skeleton className="h-5 w-40 mt-1" />
+            ) : (
+              <p className="text-foreground">{serviceData?.name || "N/A"}</p>
+            )}
           </div>
 
           <div>
             <span className="text-muted-foreground">Staff</span>
-            <p className="text-foreground">
-              {isLoadingStaff ? (
-                <Skeleton className="h-5 w-36 mt-1" />
-              ) : staffData?.firstName && staffData?.lastName ? (
-                `${staffData.firstName} ${staffData.lastName}`
-              ) : (
-                "N/A"
-              )}
-            </p>
+            {isLoadingStaff ? (
+              <Skeleton className="h-5 w-36 mt-1" />
+            ) : staffData?.firstName && staffData?.lastName ? (
+              <p className="text-foreground">{staffData.firstName} {staffData.lastName}</p>
+            ) : (
+              <p className="text-foreground">N/A</p>
+            )}
           </div>
 
           <div>

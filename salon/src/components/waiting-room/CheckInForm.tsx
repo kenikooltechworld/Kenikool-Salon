@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useCheckIn, useQueuePosition } from "@/hooks/useWaitingRoom";
-import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
+import { AlertCircle, CheckCircle } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
 
 export default function CheckInForm() {
@@ -73,11 +73,11 @@ export default function CheckInForm() {
             <option value="">Choose an appointment...</option>
             {appointments.map((appointment) => (
               <option key={appointment.id} value={appointment.id}>
-                {new Date(appointment.start_time).toLocaleTimeString([], {
+                {new Date(appointment.startTime).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}{" "}
-                - {appointment.service_name}
+                - Service ID: {appointment.serviceId}
               </option>
             ))}
           </select>
@@ -91,17 +91,17 @@ export default function CheckInForm() {
             </h3>
             <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
               <p>
-                <span className="font-medium">Service:</span>{" "}
-                {selectedAppointment.service_name}
+                <span className="font-medium">Service:</span> Service ID:{" "}
+                {selectedAppointment.serviceId}
               </p>
               <p>
                 <span className="font-medium">Time:</span>{" "}
-                {new Date(selectedAppointment.start_time).toLocaleString()}
+                {new Date(selectedAppointment.startTime).toLocaleString()}
               </p>
-              {selectedAppointment.staff_name && (
+              {selectedAppointment.staffId && (
                 <p>
-                  <span className="font-medium">Staff:</span>{" "}
-                  {selectedAppointment.staff_name}
+                  <span className="font-medium">Staff ID:</span>{" "}
+                  {selectedAppointment.staffId}
                 </p>
               )}
             </div>

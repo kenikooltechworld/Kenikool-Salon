@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +19,7 @@ import {
   LockIcon,
 } from "@/components/icons";
 import { apiClient } from "@/lib/utils/api";
+import { generateSalonReference } from "@/lib/utils/reference";
 
 interface BookingPaymentState {
   bookingData: {
@@ -36,14 +37,32 @@ interface BookingPaymentState {
   description: string;
 }
 
+const PAYMENT_POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+type PaymentPageState =
+  | { status: "form" }
+  | { status: "processing" }
+  | { status: "cancelled"; reason?: string }
+  | { status: "failed"; reason?: string }
+  | { status: "success" }
+  | { status: "timeout" };
+
 export function BookingPayment() {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const state = location.state as BookingPaymentState;
 
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: state?.bookingData?.customerEmail || "",
+    amount: state?.amount || 0,
+  });
   const [error, setError] = useState<string | null>(null);
+  const [pageState, setPageState] = useState<PaymentPageState>({ status: "form" });
+  const [timeoutMessage, setTimeoutMessage] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+  const reference = searchParams.get("reference");
 
   // Restore booking data from localStorage if returning from Paystack
   const savedBookingData = (() => {
@@ -51,34 +70,168 @@ export function BookingPayment() {
     return saved ? JSON.parse(saved) : null;
   })();
 
-  const bookingDataForForm = state?.bookingData || savedBookingData;
+  const bookingData = state?.bookingData || savedBookingData;
 
-  const [formData, setFormData] = useState({
-    email: bookingDataForForm?.customerEmail || "",
-    amount: state?.amount || 0,
+  // Cancel payment mutation
+  const cancelMutation = useMutation({
+    mutationFn: async (paymentReference: string) => {
+      // First get the payment ID from reference via booking-status
+      const statusRes = await apiClient.get<{
+        payment_id?: string;
+        status?: string;
+      }>(`/payments/${paymentReference}/booking-status`);
+      const paymentId = statusRes.data?.payment_id;
+
+      if (!paymentId) {
+        throw new Error("Payment reference not found");
+      }
+
+      const response = await apiClient.post<{
+        success: boolean;
+        data: {
+          payment_id: string;
+          reference: string;
+          status: string;
+          amount: number;
+        };
+        error?: string;
+      }>(`/payments/${paymentId}/cancel`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookingStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setPageState({
+        status: "cancelled",
+        reason: "Payment was cancelled by user",
+      });
+    },
+    onError: (err: any) => {
+      const message =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to cancel payment";
+      setError(message);
+    },
   });
 
-  // Get reference from URL params
-  const reference = searchParams.get("reference");
+  // Manual verify mutation
+  const verifyMutation = useMutation({
+    mutationFn: async (paymentReference: string) => {
+      const response = await apiClient.get<{
+        success: boolean;
+        data: {
+          payment_id: string;
+          reference: string;
+          status: string;
+          amount: number;
+          customer_id?: string;
+          invoice_id?: string;
+          gateway?: string;
+          payment_method?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        error?: string;
+      }>(`/payments/${paymentReference}/verify`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["bookingStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
 
-  // Use booking data from state or localStorage
-  const bookingData = bookingDataForForm;
+      if (data?.data?.status === "success") {
+        setPageState({ status: "success" });
+      } else if (data?.data?.status === "cancelled") {
+        setPageState({
+          status: "cancelled",
+          reason: "Payment was cancelled or expired",
+        });
+      } else if (data?.data?.status === "failed") {
+        setPageState({
+          status: "failed",
+          reason: "Payment could not be verified",
+        });
+      } else {
+        setError(`Payment status: ${data?.data?.status || "unknown"}`);
+      }
+    },
+    onError: (err: any) => {
+      const message =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to verify payment";
+      setError(message);
+    },
+  });
 
   // Query for booking status - only runs if we have a reference
   const { data: bookingStatus, isLoading: isVerifying } = useQuery({
     queryKey: ["bookingStatus", reference],
     queryFn: async () => {
-      const response = await apiClient.get(
-        `/payments/${reference}/booking-status`,
-      );
+      const response = await apiClient.get<{
+        payment_id?: string;
+        reference?: string;
+        status?: string;
+        appointment_id?: string;
+        booking_created?: boolean;
+      }>(`/payments/${reference}/booking-status`);
       return response.data;
     },
-    enabled: !!reference, // Only run if reference exists
-    refetchInterval: 1000, // Poll every 1 second
+    enabled: !!reference,
+    refetchInterval: 1000,
     refetchIntervalInBackground: true,
-    retry: false, // Don't retry on 404, just keep polling
-    staleTime: 0, // Always consider data stale
+    retry: false,
+    staleTime: 0,
   });
+
+  // Timeout handler: if we've been polling too long with no terminal state,
+  // surface a timeout state while keeping polling available via manual verify.
+  useEffect(() => {
+    if (!reference) return;
+
+    const startedAt = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const status = bookingStatus?.status;
+
+      if (
+        elapsed > PAYMENT_POLL_TIMEOUT_MS &&
+        status !== "success" &&
+        status !== "cancelled" &&
+        status !== "failed"
+      ) {
+        setTimeoutMessage(
+          "This payment session is taking longer than expected. You can cancel it or verify manually.",
+        );
+      } else {
+        setTimeoutMessage(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [reference, bookingStatus?.status]);
+
+  // Determine derived page state from backend status
+  useEffect(() => {
+    if (!bookingStatus) return;
+
+    const status = bookingStatus.status;
+
+    if (status === "cancelled") {
+      setPageState({
+        status: "cancelled",
+        reason: bookingStatus?.metadata?.cancel_reason,
+      });
+    } else if (status === "failed") {
+      setPageState({
+        status: "failed",
+        reason: bookingStatus?.metadata?.failure_reason,
+      });
+    } else if (status === "success") {
+      setPageState({ status: "success" });
+    }
+  }, [bookingStatus]);
 
   // Query for appointment details - only runs if booking was created
   const { data: appointmentData } = useQuery({
@@ -139,25 +292,18 @@ export function BookingPayment() {
   });
 
   const handleInitializePayment = async (e: FormEvent<HTMLFormElement>) => {
-    console.log("[BookingPayment] Form submitted");
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      console.log("[BookingPayment] Initializing payment with:", {
-        amount: formData.amount,
-        email: formData.email,
-      });
-
-      // Get the callback URL - where Paystack should redirect after payment
       const callbackUrl = `${window.location.origin}/payments/booking-payment`;
 
-      // Initialize payment with Paystack using booking payment endpoint
       const response = await apiClient.post("/payments/booking/initialize", {
         amount: formData.amount,
         email: formData.email,
         callback_url: callbackUrl,
+        reference: generateSalonReference(),
         metadata: {
           booking_data: bookingData,
           customer_name: bookingData.customerName,
@@ -166,24 +312,12 @@ export function BookingPayment() {
         },
       });
 
-      console.log(
-        "[BookingPayment] Payment initialized successfully:",
-        response.data,
-      );
+      const { authorizationUrl } = response.data;
 
-      const { authorization_url } = response.data;
-
-      // Save booking data to localStorage before redirecting to Paystack
       localStorage.setItem("bookingPaymentData", JSON.stringify(bookingData));
-      console.log("[BookingPayment] Saved booking data to localStorage");
 
-      // Redirect to Paystack payment page
-      if (authorization_url) {
-        console.log(
-          "[BookingPayment] Redirecting to Paystack:",
-          authorization_url,
-        );
-        window.location.href = authorization_url;
+      if (authorizationUrl) {
+        window.location.href = authorizationUrl;
       } else {
         setError("No payment authorization URL received from server");
       }
@@ -193,45 +327,55 @@ export function BookingPayment() {
         err?.message ||
         "Failed to initialize payment. Please try again.";
       setError(errorMessage);
-      console.error("[BookingPayment] Error:", {
-        message: errorMessage,
-        status: err?.response?.status,
-        data: err?.response?.data,
-      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCancelPayment = () => {
+    if (!reference) return;
+    setError(null);
+    cancelMutation.mutate(reference);
+  };
+
+  const handleManualVerify = () => {
+    if (!reference) return;
+    setError(null);
+    verifyMutation.mutate(reference);
+  };
+
   const handleRetry = () => {
     setError(null);
+    setPageState({ status: "form" });
   };
 
   const handleConfirmBooking = () => {
     if (booking) {
-      console.log(
-        "[BookingPayment] User confirmed booking, clearing localStorage and navigating",
-      );
-      // Clear localStorage now that user has confirmed
       localStorage.removeItem("bookingPaymentData");
-      // Navigate to confirmation page
       navigate("/bookings/confirmation", {
         state: { booking },
       });
     }
   };
 
+  const handleGoToBookings = () => {
+    localStorage.removeItem("bookingPaymentData");
+    navigate("/bookings");
+  };
+
+  const handleTryAgain = () => {
+    localStorage.removeItem("bookingPaymentData");
+    navigate("/bookings/create");
+  };
+
   // Redirect if no booking data found
   if (!bookingData) {
-    console.warn(
-      "[BookingPayment] No booking data found, redirecting to create booking",
-    );
     navigate("/bookings/create");
     return null;
   }
 
-  // Show loading state while verifying payment
-  if (isVerifying) {
+  // Processing state
+  if (pageState.status === "processing" || (isVerifying && pageState.status === "form")) {
     return (
       <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -246,13 +390,127 @@ export function BookingPayment() {
             <p className="text-sm text-muted-foreground">
               Verifying payment and creating booking...
             </p>
+            {timeoutMessage && (
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertDescription className="text-amber-800">
+                  {timeoutMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+            {reference && (
+              <div className="flex flex-col gap-2 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleManualVerify}
+                  disabled={verifyMutation.isPending}
+                  className="w-full"
+                >
+                  {verifyMutation.isPending ? (
+                    <>
+                      <Loader2Icon size={16} className="mr-2 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Payment Manually"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleCancelPayment}
+                  disabled={cancelMutation.isPending}
+                  className="w-full"
+                >
+                  {cancelMutation.isPending ? "Cancelling..." : "Cancel Payment"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Show booking confirmation on same page after successful payment
+  // Cancelled state
+  if (pageState.status === "cancelled") {
+    return (
+      <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Payment Cancelled</CardTitle>
+            <CardDescription>
+              Your payment was cancelled and no booking was created.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800">
+                {pageState.reason ||
+                  "You cancelled the payment or the payment session expired. Your booking has not been created and no charges were made."}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleTryAgain}
+                className="w-full cursor-pointer"
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleGoToBookings}
+                className="w-full cursor-pointer"
+              >
+                Back to Bookings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Failed state
+  if (pageState.status === "failed") {
+    return (
+      <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Payment Failed</CardTitle>
+            <CardDescription>
+              We could not process your payment.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-800">
+                {pageState.reason ||
+                  "Your payment could not be completed. Please try again or use a different payment method."}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleTryAgain}
+                className="w-full cursor-pointer"
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleGoToBookings}
+                className="w-full cursor-pointer"
+              >
+                Back to Bookings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Success / booking confirmation state
   if (booking && bookingStatus?.booking_created) {
     const bookingDate = new Date(booking.startTime);
     const bookingRef = booking.id.slice(-8).toUpperCase();
@@ -261,7 +519,6 @@ export function BookingPayment() {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
           <div className="p-8 text-center space-y-6">
-            {/* Success Icon */}
             <div className="flex justify-center">
               <div className="relative">
                 <div className="absolute inset-0 bg-green-100 rounded-full animate-pulse" />
@@ -272,7 +529,6 @@ export function BookingPayment() {
               </div>
             </div>
 
-            {/* Success Message */}
             <div>
               <h1 className="text-2xl font-bold text-foreground mb-2">
                 Booking Confirmed!
@@ -282,7 +538,6 @@ export function BookingPayment() {
               </p>
             </div>
 
-            {/* Booking Reference */}
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <p className="text-xs text-muted-foreground mb-1">
                 Booking Reference
@@ -292,7 +547,6 @@ export function BookingPayment() {
               </p>
             </div>
 
-            {/* Booking Details */}
             <div className="space-y-3 text-left bg-gray-50 rounded-lg p-4">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Customer</span>
@@ -359,7 +613,6 @@ export function BookingPayment() {
               </div>
             </div>
 
-            {/* Next Steps */}
             <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
               <p className="text-xs font-semibold text-amber-900 mb-2">
                 Next Steps
@@ -371,7 +624,6 @@ export function BookingPayment() {
               </ul>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col gap-3 pt-4">
               <Button
                 onClick={handleConfirmBooking}
@@ -381,7 +633,7 @@ export function BookingPayment() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => navigate("/bookings")}
+                onClick={handleGoToBookings}
                 className="w-full cursor-pointer"
               >
                 Back to Bookings
@@ -393,6 +645,7 @@ export function BookingPayment() {
     );
   }
 
+  // Payment form / main page
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">

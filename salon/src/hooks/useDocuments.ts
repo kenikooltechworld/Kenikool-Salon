@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 
 export interface Document {
@@ -71,7 +71,13 @@ export function useDocuments() {
 
   // Upload document mutation
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, name }: { file: File; name: string }) => {
+    mutationFn: async ({
+      file,
+      name,
+    }: {
+      file: File;
+      name: string;
+    }): Promise<{ url: string; name: string }> => {
       if (!user?.id) throw new Error("User not authenticated");
 
       // Convert file to base64

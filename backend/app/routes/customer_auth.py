@@ -24,7 +24,7 @@ async def register_customer(
     customer_data: CustomerRegister
 ):
     """Register a new customer account"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         customer = CustomerAuthService.register_customer(
@@ -56,7 +56,7 @@ async def login_customer(
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """Customer login"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     customer = CustomerAuthService.authenticate_customer(
         tenant_id=tenant_id,
@@ -162,7 +162,7 @@ async def setup_customer_password(
     This endpoint allows customers who were created by business owners
     to set up their password and access the customer portal.
     """
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     token = data.get("token")
     password = data.get("password")
@@ -225,7 +225,7 @@ async def resend_setup_invitation(
     This endpoint allows business owners to resend the setup invitation
     if the customer didn't receive it or the token expired.
     """
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         customer = Customer.objects(id=ObjectId(customer_id), tenant_id=tenant_id).first()
@@ -280,7 +280,7 @@ async def resend_setup_invitation(
             )
             
             if rendered_html:
-                send_email.delay(
+                run_in_background(send_email,
                     to=customer.email,
                     subject=f"Set up your {tenant.name} customer portal access",
                     template="custom",
@@ -294,3 +294,5 @@ async def resend_setup_invitation(
     except Exception as e:
         logger.error(f"Failed to resend setup invitation: {str(e)}")
         raise HTTPException(status_code=400, detail="Failed to resend setup invitation")
+
+

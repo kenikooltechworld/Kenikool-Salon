@@ -89,6 +89,7 @@ class PaystackService:
         email: str,
         callback_url: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        reference: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Initialize a Paystack transaction.
@@ -98,6 +99,7 @@ class PaystackService:
             email: Customer email address
             callback_url: URL to redirect to after payment
             metadata: Optional metadata dictionary
+            reference: Optional custom transaction reference
 
         Returns:
             Dictionary with transaction data including authorization_url
@@ -122,6 +124,9 @@ class PaystackService:
 
         if callback_url:
             request_data["callback_url"] = callback_url
+
+        if reference:
+            request_data["reference"] = reference
 
         if metadata:
             request_data["metadata"] = metadata
@@ -413,6 +418,18 @@ class PaystackService:
                 "customer_email": data.get("customer", {}).get("email"),
                 "transaction_id": data.get("id"),
                 "failure_reason": data.get("gateway_response"),
+                "paid_at": data.get("paid_at"),
+            }
+
+        elif event in ("charge.cancelled", "charge.abandoned"):
+            return {
+                "event": event,
+                "status": "cancelled",
+                "reference": data.get("reference"),
+                "amount": data.get("amount"),
+                "customer_email": data.get("customer", {}).get("email"),
+                "transaction_id": data.get("id"),
+                "gateway_response": data.get("gateway_response"),
                 "paid_at": data.get("paid_at"),
             }
 

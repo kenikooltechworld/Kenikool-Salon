@@ -23,21 +23,36 @@ async def purchase_gift_card(
     purchase_data: GiftCardPurchaseRequest
 ):
     """Purchase a gift card (public endpoint)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
-        gift_card = await GiftCardService.purchase_gift_card(
+        gift_card = GiftCardService.purchase_gift_card(
             tenant_id=tenant_id,
             purchase_data=purchase_data
         )
         
-        # TODO: If payment_method is paystack, create payment and return payment_url
+        # If payment_method is paystack, create payment and return payment_url
         payment_url = None
         if purchase_data.payment_method == "paystack":
-            # Integrate with PaystackService to create payment
-            # payment_url = await PaystackService.initialize_payment(...)
-            pass
-        
+            try:
+                from decimal import Decimal
+                import uuid
+                from app.services.paystack_service import PaystackService
+                reference = f"salon_gift_{uuid.uuid4().hex[:12]}"
+                result = PaystackService().initialize_transaction(
+                    amount=Decimal(str(gift_card.initial_amount)),
+                    email=purchase_data.purchased_by_email,
+                    callback_url="/public/gift-cards/verify",
+                    metadata={"gift_card_id": str(gift_card.id)},
+                    reference=reference,
+                )
+                payment_url = result.get("authorization_url")
+            except Exception as paystack_err:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Payment initialization failed: {paystack_err}",
+                )
+
         return GiftCardPurchaseResponse(
             gift_card=GiftCardResponse(
                 id=str(gift_card.id),
@@ -73,9 +88,9 @@ async def check_gift_card_balance(
     balance_check: GiftCardBalanceCheck
 ):
     """Check gift card balance (public endpoint)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
-    gift_card = await GiftCardService.check_balance(
+    gift_card = GiftCardService.check_balance(
         tenant_id=tenant_id,
         code=balance_check.code
     )
@@ -99,12 +114,12 @@ async def redeem_gift_card(
     redemption_data: GiftCardRedemptionRequest
 ):
     """Redeem a gift card (public endpoint)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         booking_id = ObjectId(redemption_data.booking_id) if redemption_data.booking_id else None
         
-        result = await GiftCardService.redeem_gift_card(
+        result = GiftCardService.redeem_gift_card(
             tenant_id=tenant_id,
             redemption_data=redemption_data,
             booking_id=booking_id

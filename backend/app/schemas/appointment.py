@@ -62,6 +62,7 @@ class AppointmentResponse(BaseModel):
     price: Optional[Decimal]
     cancellation_reason: Optional[str]
     cancelled_at: Optional[str]
+    cancelled_by: Optional[str]
     no_show_reason: Optional[str]
     marked_no_show_at: Optional[str]
     confirmed_at: Optional[str]

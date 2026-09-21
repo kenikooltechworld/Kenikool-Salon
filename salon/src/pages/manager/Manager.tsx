@@ -148,8 +148,8 @@ export default function ManagerPage() {
                         {appointment.service_name || "N/A"}
                       </td>
                       <td className="px-4 lg:px-6 py-4 text-sm text-muted-foreground">
-                        {appointment.start_time
-                          ? new Date(appointment.start_time).toLocaleString()
+                        {appointment.startTime
+                          ? new Date(appointment.startTime).toLocaleString()
                           : "N/A"}
                       </td>
                       <td className="px-4 lg:px-6 py-4 text-sm">

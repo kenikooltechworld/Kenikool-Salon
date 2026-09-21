@@ -364,13 +364,13 @@ export default function AppointmentDetail() {
           )}
 
           {/* Cancellation Reason */}
-          {appointment.cancellation_reason && (
+          {appointment.cancellationReason && (
             <div className="border-t border-border pt-4">
               <p className="text-sm text-muted-foreground font-medium mb-2">
                 Cancellation Reason
               </p>
               <p className="text-sm text-foreground bg-destructive/10 p-3 rounded">
-                {appointment.cancellation_reason}
+                {appointment.cancellationReason}
               </p>
             </div>
           )}

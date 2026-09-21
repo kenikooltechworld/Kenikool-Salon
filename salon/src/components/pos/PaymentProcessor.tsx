@@ -13,6 +13,7 @@ import { Alert } from "@/components/ui/alert";
 import TipHandler from "./TipHandler";
 import SplitPayment from "./SplitPayment";
 import QuickCheckout from "./QuickCheckout";
+import { generateSalonReference } from "@/lib/utils/reference";
 
 interface PaymentProcessorProps {
   customerId: string;
@@ -156,10 +157,11 @@ export default function PaymentProcessor({
                   transactionId,
                   email: "staff@salon.local",
                   callbackUrl: `${window.location.origin}/pos`,
+                  reference: generateSalonReference(),
                 },
                 {
                   onSuccess: (paymentData: any) => {
-                    if (paymentData.authorization_url) {
+                    if (paymentData.authorizationUrl) {
                       // Save transaction data to localStorage before redirecting
                       localStorage.setItem(
                         "posPaymentData",
@@ -178,7 +180,7 @@ export default function PaymentProcessor({
                         variant: "default",
                       });
                       // Redirect to Paystack
-                      window.location.href = paymentData.authorization_url;
+                      window.location.href = paymentData.authorizationUrl;
                     } else {
                       setError("Failed to get payment authorization URL");
                       showToast({

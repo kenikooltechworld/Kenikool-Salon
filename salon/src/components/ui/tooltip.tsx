@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
+import { useDropdownPosition } from "@/hooks/useDropdownPosition";
 
 interface TooltipProps {
   children: React.ReactNode;
@@ -9,17 +10,33 @@ interface TooltipProps {
 
 export function Tooltip({ children, content, position = "top" }: TooltipProps) {
   const [isVisible, setIsVisible] = React.useState(false);
+  const triggerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
-  const positionClasses = {
-    top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
-    bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
-    left: "right-full top-1/2 -translate-y-1/2 mr-2",
-    right: "left-full top-1/2 -translate-y-1/2 ml-2",
+  const alignMap: Record<string, "left" | "center" | "right"> = {
+    top: "center",
+    bottom: "center",
+    left: "left",
+    right: "right",
+  };
+
+  const { style } = useDropdownPosition(triggerRef, contentRef, {
+    align: alignMap[position] || "center",
+    offset: position === "top" || position === "left" ? -8 : 8,
+  });
+
+  const baseStyle: React.CSSProperties = {
+    ...style,
+    ...(position === "top" ? { bottom: "auto" } : {}),
+    ...(position === "bottom" ? { top: "auto" } : {}),
+    ...(position === "left" ? { right: "auto" } : {}),
+    ...(position === "right" ? { left: "auto" } : {}),
   };
 
   return (
     <div className="relative inline-block">
       <div
+        ref={triggerRef}
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
       >
@@ -27,10 +44,12 @@ export function Tooltip({ children, content, position = "top" }: TooltipProps) {
       </div>
       {isVisible && (
         <div
+          ref={contentRef}
           className={cn(
-            "absolute z-50 px-3 py-2 text-sm text-[var(--popover-foreground)] bg-[var(--popover)] border-2 border-[var(--border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] whitespace-nowrap animate-in fade-in-0 zoom-in-95",
-            positionClasses[position]
+            "px-3 py-2 text-sm text-[var(--popover-foreground)] bg-[var(--popover)] border-2 border-[var(--border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] whitespace-nowrap animate-in fade-in-0 zoom-in-95",
+            "max-w-[calc(100vw-1rem)]"
           )}
+          style={baseStyle}
         >
           {content}
         </div>

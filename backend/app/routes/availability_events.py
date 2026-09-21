@@ -23,7 +23,7 @@ def get_recent_events(
     minutes: int = 30,
 ):
     """Get recent availability events for a service on a specific date."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         date_obj = datetime.fromisoformat(date)
@@ -59,7 +59,7 @@ def update_slot_viewers(
     update: SlotViewerUpdate,
 ):
     """Update viewer count for a specific time slot."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     staff_id = ObjectId(update.staff_id) if update.staff_id else None
     
@@ -100,7 +100,7 @@ def get_slot_viewer_count(
     staff_id: str = None,
 ):
     """Get current viewer count for a specific time slot."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         date_obj = datetime.fromisoformat(date)

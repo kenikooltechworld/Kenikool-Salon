@@ -1,6 +1,7 @@
 """Payment service for managing payment operations."""
 
 import logging
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Any, Optional
@@ -21,6 +22,11 @@ class PaymentService:
         """Initialize payment service."""
         self.paystack_service = PaystackService()
 
+    @staticmethod
+    def generate_reference(prefix: str = "salon_") -> str:
+        """Generate a unique payment reference with the given prefix."""
+        return f"{prefix}{uuid.uuid4().hex[:12]}"
+
     def _calculate_retry_delay(self, retry_count: int) -> int:
         """
         Calculate exponential backoff delay in seconds.
@@ -40,8 +46,10 @@ class PaymentService:
         customer_id: str,
         invoice_id: str,
         email: str,
+        payment_method: str = "paystack",
         metadata: Optional[Dict[str, Any]] = None,
         idempotency_key: Optional[str] = None,
+        reference: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Initialize a payment transaction with Paystack.
@@ -53,6 +61,7 @@ class PaymentService:
             email: Customer email for payment
             metadata: Additional metadata
             idempotency_key: Unique key for idempotency (prevents duplicate payments)
+            reference: Optional custom transaction reference
 
         Returns:
             Dictionary with payment_id, authorization_url, access_code, reference
@@ -135,12 +144,17 @@ class PaymentService:
             "customer_name": f"{customer.first_name} {customer.last_name}",
         })
 
+        # Generate salon-prefixed reference for router routing if not provided
+        if not reference:
+            reference = self.generate_reference("salon_")
+
         # Call Paystack to initialize transaction
         try:
             paystack_response = self.paystack_service.initialize_transaction(
                 amount=float(amount),
                 email=email,
                 metadata=metadata,
+                reference=reference,
             )
         except Exception as e:
             logger.error(f"Paystack initialization failed: {e}")
@@ -163,6 +177,7 @@ class PaymentService:
                 amount=amount,
                 reference=reference,
                 gateway="paystack",
+                payment_method=payment_method,
                 status="pending",
                 idempotency_key=idempotency_key,
                 metadata=metadata,
@@ -188,7 +203,9 @@ class PaymentService:
         amount: Decimal,
         email: str,
         callback_url: Optional[str] = None,
+        payment_method: str = "paystack",
         metadata: Optional[Dict[str, Any]] = None,
+        reference: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Initialize a payment transaction for a booking (without invoice).
@@ -201,6 +218,7 @@ class PaymentService:
             email: Customer email for payment
             callback_url: URL to redirect to after payment
             metadata: Additional metadata (should contain booking_data)
+            reference: Optional custom transaction reference
 
         Returns:
             Dictionary with payment_id, authorization_url, access_code, reference
@@ -238,6 +256,10 @@ class PaymentService:
         # Generate unique idempotency key for booking payments
         # This prevents duplicate key errors when retrying payment initialization
         idempotency_key = str(uuid.uuid4())
+        
+        # Generate salon-prefixed reference for router routing if not provided
+        if not reference:
+            reference = self.generate_reference("salon_")
 
         # Call Paystack to initialize transaction
         try:
@@ -246,6 +268,7 @@ class PaymentService:
                 email=email,
                 callback_url=callback_url,
                 metadata=metadata,
+                reference=reference,
             )
         except Exception as e:
             logger.error(f"Paystack initialization failed: {e}")
@@ -266,6 +289,7 @@ class PaymentService:
                 amount=amount,
                 reference=reference,
                 gateway="paystack",
+                payment_method=payment_method,
                 status="pending",
                 idempotency_key=idempotency_key,
                 metadata=metadata,
@@ -369,7 +393,8 @@ class PaymentService:
             "success": "success",
             "pending": "pending",
             "failed": "failed",
-            "abandoned": "failed",
+            "abandoned": "cancelled",
+            "cancelled": "cancelled",
         }
         
         new_status = status_mapping.get(paystack_status, "failed")
@@ -407,6 +432,7 @@ class PaymentService:
             "customer_id": str(payment.customer_id),
             "invoice_id": str(payment.invoice_id),
             "gateway": payment.gateway,
+            "payment_method": payment.payment_method,
             "created_at": payment.created_at,
             "updated_at": payment.updated_at,
         }
@@ -541,12 +567,66 @@ class PaymentService:
             "amount": float(payment.amount),
         }
 
+    def cancel_payment(self, payment_id: str) -> Dict[str, Any]:
+        """
+        Cancel a pending payment.
+
+        Args:
+            payment_id: Payment ID to cancel
+
+        Returns:
+            Dictionary with cancelled payment details
+
+        Raises:
+            ValueError: If payment cannot be cancelled
+        """
+        tenant_id = get_tenant_id()
+
+        # Get payment record
+        try:
+            payment = Payment.objects(
+                id=ObjectId(payment_id),
+                tenant_id=ObjectId(tenant_id)
+            ).first()
+            if not payment:
+                raise ValueError(f"Payment {payment_id} not found")
+        except Exception as e:
+            logger.error(f"Error retrieving payment: {e}")
+            raise ValueError(f"Invalid payment ID: {payment_id}")
+
+        # Validate payment can be cancelled
+        if payment.status == "success":
+            raise ValueError("Cannot cancel a successful payment")
+
+        if payment.status == "cancelled":
+            raise ValueError("Payment is already cancelled")
+
+        if payment.status == "failed":
+            raise ValueError("Cannot cancel a failed payment")
+
+        # Cancel the payment
+        payment.status = "cancelled"
+        payment.metadata["cancel_reason"] = "Payment cancelled by user"
+        payment.metadata["cancelled_at"] = datetime.utcnow().isoformat()
+        payment.save()
+
+        logger.info(f"Payment {payment_id} cancelled by user")
+
+        return {
+            "payment_id": str(payment.id),
+            "reference": payment.reference,
+            "status": payment.status,
+            "amount": float(payment.amount),
+        }
+
     def initialize_pos_payment(
         self,
         amount: Decimal,
         email: str,
         callback_url: Optional[str] = None,
+        payment_method: str = "paystack",
         metadata: Optional[Dict[str, Any]] = None,
+        reference: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Initialize a payment transaction for POS (without invoice).
@@ -559,6 +639,7 @@ class PaymentService:
             email: Staff/customer email for payment
             callback_url: URL to redirect to after payment
             metadata: Additional metadata (should contain transaction_id)
+            reference: Optional custom transaction reference
 
         Returns:
             Dictionary with payment_id, authorization_url, access_code, reference
@@ -595,6 +676,10 @@ class PaymentService:
         
         # Generate unique idempotency key for POS payments
         idempotency_key = str(uuid.uuid4())
+        
+        # Generate salon-prefixed reference for router routing if not provided
+        if not reference:
+            reference = self.generate_reference("salon_")
 
         # Call Paystack to initialize transaction
         try:
@@ -603,6 +688,7 @@ class PaymentService:
                 email=email,
                 callback_url=callback_url,
                 metadata=metadata,
+                reference=reference,
             )
         except Exception as e:
             logger.error(f"Paystack initialization failed: {e}")
@@ -623,6 +709,7 @@ class PaymentService:
                 amount=amount,
                 reference=reference,
                 gateway="paystack",
+                payment_method=payment_method,
                 status="pending",
                 idempotency_key=idempotency_key,
                 metadata=metadata,

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 
 export interface AppointmentHistory {
   id: string;

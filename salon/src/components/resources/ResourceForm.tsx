@@ -4,7 +4,7 @@ import {
   useUpdateResource,
   useResource,
 } from "@/hooks/useResources";
-import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
+import { AlertCircle, CheckCircle } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
 
 interface ResourceFormProps {
@@ -16,9 +16,16 @@ export default function ResourceForm({
   resourceId,
   onSuccess,
 }: ResourceFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    type: "room" | "chair" | "equipment" | "tool" | "supply";
+    description: string;
+    quantity: number;
+    tags: string;
+    notes: string;
+  }>({
     name: "",
-    type: "room" as const,
+    type: "room",
     description: "",
     quantity: 1,
     tags: "",
@@ -135,7 +142,7 @@ export default function ResourceForm({
 
       {showSuccess && (
         <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
           <p className="text-sm text-green-800 dark:text-green-200">
             Resource {resourceId ? "updated" : "created"} successfully!
           </p>
@@ -144,7 +151,7 @@ export default function ResourceForm({
 
       {error && (
         <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
         </div>
       )}

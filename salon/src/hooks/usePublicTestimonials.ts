@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { get } from "@/lib/utils/api";
 
 interface Testimonial {
-  id: string;
-  customerName: string;
+  id?: string;
+  customer_name: string;
   rating: number;
-  reviewText: string;
-  createdAt: string;
+  review: string;
+  created_at: string;
 }
 
 export function usePublicTestimonials(limit: number = 5) {

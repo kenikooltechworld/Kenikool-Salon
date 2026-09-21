@@ -69,7 +69,12 @@ class TenantSettingsService:
             
             default_integration_config = {
                 "termii": {"apiKey": "", "senderId": "", "enabled": False},
-                "paystack": {"publicKey": "", "secretKey": "", "webhookUrl": "", "enabled": False},
+                "paystack": {
+                    "publicKey": "",
+                    "secretKey": "",
+                    "webhookUrl": config.paystack_webhook_router_url,
+                    "enabled": False,
+                },
             }
             
             default_financial_config = {

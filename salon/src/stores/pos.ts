@@ -102,12 +102,15 @@ export const usePOSStore = create<POSState>((set) => ({
         newItems = [...state.cartItems, item];
       }
 
-      const newState = { cartItems: newItems };
-      // Recalculate totals
       const subtotal = newItems.reduce((sum, i) => sum + i.lineTotal, 0);
+      const taxAmount = subtotal * 0.1;
+      const total = subtotal + taxAmount - state.cartDiscountAmount;
+
       return {
-        ...newState,
+        cartItems: newItems,
         cartSubtotal: subtotal,
+        cartTaxAmount: taxAmount,
+        cartTotal: total,
       };
     }),
 
@@ -115,9 +118,14 @@ export const usePOSStore = create<POSState>((set) => ({
     set((state) => {
       const newItems = state.cartItems.filter((i) => i.itemId !== itemId);
       const subtotal = newItems.reduce((sum, i) => sum + i.lineTotal, 0);
+      const taxAmount = subtotal * 0.1;
+      const total = subtotal + taxAmount - state.cartDiscountAmount;
+
       return {
         cartItems: newItems,
         cartSubtotal: subtotal,
+        cartTaxAmount: taxAmount,
+        cartTotal: total,
       };
     }),
 
@@ -133,9 +141,14 @@ export const usePOSStore = create<POSState>((set) => ({
           : i,
       );
       const subtotal = newItems.reduce((sum, i) => sum + i.lineTotal, 0);
+      const taxAmount = subtotal * 0.1;
+      const total = subtotal + taxAmount - state.cartDiscountAmount;
+
       return {
         cartItems: newItems,
         cartSubtotal: subtotal,
+        cartTaxAmount: taxAmount,
+        cartTotal: total,
       };
     }),
 

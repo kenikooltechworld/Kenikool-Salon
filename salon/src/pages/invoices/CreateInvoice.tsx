@@ -18,14 +18,14 @@ export default function CreateInvoice() {
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    customer_id: "",
-    line_items: [
-      { id: "1", service_id: "", service_name: "", quantity: 1, unit_price: 0 },
+    customerId: "",
+    lineItems: [
+      { id: "1", serviceId: "", serviceName: "", quantity: 1, unitPrice: 0 },
     ],
     tax: 0,
     discount: 0,
     notes: "",
-    due_date: "",
+    dueDate: "",
   });
 
   const { data: customersData, isLoading: isLoadingCustomers } = useCustomers();
@@ -35,8 +35,8 @@ export default function CreateInvoice() {
   const createInvoice = useCreateInvoice();
 
   const calculateTotals = () => {
-    const subtotal = formData.line_items.reduce(
-      (sum, item) => sum + item.quantity * item.unit_price,
+    const subtotal = formData.lineItems.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
       0,
     );
     const total = subtotal + formData.tax - formData.discount;
@@ -47,38 +47,38 @@ export default function CreateInvoice() {
 
   const handleAddLineItem = () => {
     const newId = String(
-      Math.max(...formData.line_items.map((i) => parseInt(i.id) || 0)) + 1,
+      Math.max(...formData.lineItems.map((i) => parseInt(i.id) || 0)) + 1,
     );
     setFormData((prev) => ({
       ...prev,
-      line_items: [
-        ...prev.line_items,
+      lineItems: [
+        ...prev.lineItems,
         {
           id: newId,
-          service_id: "",
-          service_name: "",
+          serviceId: "",
+          serviceName: "",
           quantity: 1,
-          unit_price: 0,
+          unitPrice: 0,
         },
       ],
     }));
   };
 
   const handleRemoveLineItem = (id: string) => {
-    if (formData.line_items.length === 1) {
+    if (formData.lineItems.length === 1) {
       setError("Invoice must have at least one line item");
       return;
     }
     setFormData((prev) => ({
       ...prev,
-      line_items: prev.line_items.filter((item) => item.id !== id),
+      lineItems: prev.lineItems.filter((item) => item.id !== id),
     }));
   };
 
   const handleLineItemChange = (id: string, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
-      line_items: prev.line_items.map((item) =>
+      lineItems: prev.lineItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item,
       ),
     }));
@@ -88,38 +88,38 @@ export default function CreateInvoice() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.customer_id) {
+    if (!formData.customerId) {
       setError("Please select a customer");
       return;
     }
 
     if (
-      formData.line_items.some(
-        (item) => !item.service_name || item.unit_price <= 0,
+      formData.lineItems.some(
+        (item) => !item.serviceName || item.unitPrice <= 0,
       )
     ) {
       setError("All line items must have description and rate");
       return;
     }
 
-    if (!formData.due_date) {
+    if (!formData.dueDate) {
       setError("Please set a due date");
       return;
     }
 
     try {
       await createInvoice.mutateAsync({
-        customer_id: formData.customer_id,
-        line_items: formData.line_items.map((item) => ({
-          service_id: item.service_id || item.service_name,
-          service_name: item.service_name,
+        customerId: formData.customerId,
+        lineItems: formData.lineItems.map((item) => ({
+          serviceId: item.serviceId || item.serviceName,
+          serviceName: item.serviceName,
           quantity: item.quantity,
-          unit_price: item.unit_price,
+          unitPrice: item.unitPrice,
         })),
         tax: formData.tax,
         discount: formData.discount,
         notes: formData.notes,
-        due_date: formData.due_date,
+        dueDate: formData.dueDate,
       });
 
       showToast({
@@ -153,7 +153,7 @@ export default function CreateInvoice() {
         <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
           <CheckCircleIcon
             size={20}
-            className="text-green-600 flex-shrink-0 mt-0.5"
+            className="text-green-600 shrink-0 mt-0.5"
           />
           <p className="text-sm text-green-800 dark:text-green-200">
             Invoice created successfully!
@@ -163,10 +163,7 @@ export default function CreateInvoice() {
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircleIcon
-            size={20}
-            className="text-red-600 flex-shrink-0 mt-0.5"
-          />
+          <AlertCircleIcon size={20} className="text-red-600 shrink-0 mt-0.5" />
           <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
         </div>
       )}
@@ -178,9 +175,9 @@ export default function CreateInvoice() {
             Customer *
           </label>
           <select
-            value={formData.customer_id}
+            value={formData.customerId}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, customer_id: e.target.value }))
+              setFormData((prev) => ({ ...prev, customerId: e.target.value }))
             }
             disabled={isLoadingCustomers}
             className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -237,16 +234,16 @@ export default function CreateInvoice() {
                 </tr>
               </thead>
               <tbody>
-                {formData.line_items.map((item) => (
+                {formData.lineItems.map((item) => (
                   <tr key={item.id} className="border-b border-border">
                     <td className="px-4 md:px-6 py-4">
                       <input
                         type="text"
-                        value={item.service_name}
+                        value={item.serviceName}
                         onChange={(e) =>
                           handleLineItemChange(
                             item.id,
-                            "service_name",
+                            "serviceName",
                             e.target.value,
                           )
                         }
@@ -272,11 +269,11 @@ export default function CreateInvoice() {
                     <td className="px-4 md:px-6 py-4">
                       <input
                         type="number"
-                        value={item.unit_price}
+                        value={item.unitPrice}
                         onChange={(e) =>
                           handleLineItemChange(
                             item.id,
-                            "unit_price",
+                            "unitPrice",
                             parseFloat(e.target.value) || 0,
                           )
                         }
@@ -286,7 +283,7 @@ export default function CreateInvoice() {
                       />
                     </td>
                     <td className="px-4 md:px-6 py-4 text-right text-sm font-medium text-foreground">
-                      {(item.quantity * item.unit_price).toFixed(2)}
+                      {(item.quantity * item.unitPrice).toFixed(2)}
                     </td>
                     <td className="px-4 md:px-6 py-4 text-center">
                       <button
@@ -368,9 +365,9 @@ export default function CreateInvoice() {
           </label>
           <input
             type="date"
-            value={formData.due_date}
+            value={formData.dueDate}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, due_date: e.target.value }))
+              setFormData((prev) => ({ ...prev, dueDate: e.target.value }))
             }
             className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />

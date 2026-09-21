@@ -32,6 +32,10 @@ class PublicBookingMiddleware(BaseHTTPMiddleware):
         - Rate limiting (10 bookings per minute per IP)
         - Logs all public booking requests
         """
+        # Skip CORS preflight requests
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Only apply to public booking endpoints
         # Check if "/public" is anywhere in the path (e.g., /api/v1/public/...)
         if "/public" not in request.url.path:

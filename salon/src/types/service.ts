@@ -13,6 +13,7 @@ export interface Service {
   public_image_url?: string;
   allow_public_booking?: boolean;
   tags?: string[];
+  staff_ids?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +32,7 @@ export interface CreateServiceInput {
   public_image_url?: string;
   allow_public_booking?: boolean;
   tags?: string[];
+  staff_ids?: string[];
 }
 
 export interface UpdateServiceInput {
@@ -47,6 +49,7 @@ export interface UpdateServiceInput {
   public_image_url?: string;
   allow_public_booking?: boolean;
   tags?: string[];
+  staff_ids?: string[];
 }
 
 export interface ServiceFilters {

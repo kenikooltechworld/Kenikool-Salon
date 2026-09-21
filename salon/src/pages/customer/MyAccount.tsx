@@ -123,10 +123,8 @@ export default function MyAccountPage() {
                             Date & Time
                           </p>
                           <p className="text-foreground font-medium">
-                            {appointment.start_time
-                              ? new Date(
-                                  appointment.start_time,
-                                ).toLocaleString()
+                            {appointment.startTime
+                              ? new Date(appointment.startTime).toLocaleString()
                               : "N/A"}
                           </p>
                         </div>
@@ -188,9 +186,9 @@ export default function MyAccountPage() {
                           {appointment.service_name || "Service"}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {appointment.start_time
+                          {appointment.startTime
                             ? new Date(
-                                appointment.start_time,
+                                appointment.startTime,
                               ).toLocaleDateString()
                             : "N/A"}
                         </p>

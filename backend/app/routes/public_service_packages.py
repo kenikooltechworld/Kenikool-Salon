@@ -32,7 +32,7 @@ async def list_public_service_packages(
     """
     skip = (page - 1) * page_size
     
-    packages, total = await ServicePackageService.list_packages(
+    packages, total = ServicePackageService.list_packages(
         tenant_id=tenant_id,
         skip=skip,
         limit=page_size,
@@ -41,14 +41,13 @@ async def list_public_service_packages(
         include_expired=False
     )
     
-    # Filter out packages that have reached booking limit
     available_packages = [
         pkg for pkg in packages
         if pkg.is_valid()
     ]
     
     package_responses = [
-        await ServicePackageService.format_package_response(pkg)
+        ServicePackageService.format_package_response(pkg)
         for pkg in available_packages
     ]
     
@@ -81,7 +80,7 @@ async def get_public_service_package(
     - Validity information
     - Total duration
     """
-    package = await ServicePackageService.get_package(package_id, tenant_id)
+    package = ServicePackageService.get_package(package_id, tenant_id)
     
     # Verify package is available for public booking
     if not package.is_active or not package.is_valid():
@@ -91,4 +90,4 @@ async def get_public_service_package(
             detail="Service package not available"
         )
     
-    return await ServicePackageService.format_package_response(package)
+    return ServicePackageService.format_package_response(package)

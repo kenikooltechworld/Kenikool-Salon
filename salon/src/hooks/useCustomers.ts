@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { get, post, put, del } from "@/lib/utils/api";
+import { get, post, put, del } from "@/lib/utils";
 
 export interface Customer {
   id: string;
@@ -51,7 +51,7 @@ export function useCustomers(filters?: CustomerFilters) {
         })),
         total: data.total,
         page: data.page,
-        page_size: data.page_size,
+        pageSize: data.page_size,
       };
     },
   });

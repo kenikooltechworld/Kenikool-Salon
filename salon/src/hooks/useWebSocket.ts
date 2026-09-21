@@ -89,7 +89,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     // Delay socket initialization to avoid blocking initial HTTP requests
     const initTimer = setTimeout(() => {
       try {
-        const socket = initializeSocket(user.id);
+        const socket = initializeSocket();
 
         // Set up event listeners
         socket.on("connect", () => {

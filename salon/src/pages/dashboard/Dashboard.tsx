@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useOwnerMetrics,
   useUpcomingAppointments,
@@ -16,7 +17,7 @@ import { RevenueChart } from "@/components/owner/RevenueChart";
 import { StaffPerformance } from "@/components/owner/StaffPerformance";
 import { formatCurrency } from "@/lib/utils/format";
 import {
-  DollarSignIcon,
+  BarChartIcon,
   CalendarIcon,
   StarIcon,
   TrendingUpIcon,
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [revenuePeriod, setRevenuePeriod] = useState<
     "daily" | "weekly" | "monthly"
   >("daily");
+  const navigate = useNavigate();
 
   // Fetch tenant settings for currency
   const { data: tenantSettings } = useTenantSettings();
@@ -55,8 +57,36 @@ export default function Dashboard() {
 
   // Handle metric card clicks for drill-down
   const handleMetricClick = (metricType: string) => {
-    console.log(`Clicked metric: ${metricType}`);
-    // Navigate to detailed view
+    switch (metricType) {
+      case "revenue":
+        navigate("/payments");
+        break;
+      case "appointments":
+        navigate("/bookings");
+        break;
+      case "satisfaction":
+        navigate("/customers");
+        break;
+      case "utilization":
+        navigate("/staff");
+        break;
+      case "payments":
+        navigate("/payments");
+        break;
+      case "inventory":
+        navigate("/inventory");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleAppointmentClick = (appointment: UpcomingAppointment) => {
+    if (appointment.isPublicBooking) {
+      navigate(`/public-bookings/${appointment.id}`);
+    } else {
+      navigate(`/appointments/${appointment.id}`);
+    }
   };
 
   return (
@@ -75,7 +105,7 @@ export default function Dashboard() {
           trend={metricsQuery.data?.revenue.trend}
           trendPercentage={metricsQuery.data?.revenue.trendPercentage}
           comparison={`vs ${formatCurrency(metricsQuery.data?.revenue.previous || 0, currency)} last month`}
-          icon={<DollarSignIcon size={20} />}
+          icon={<BarChartIcon size={20} />}
           isLoading={metricsQuery.isLoading}
           error={metricsQuery.error?.message}
           onRetry={() => metricsQuery.refetch()}
@@ -148,6 +178,7 @@ export default function Dashboard() {
         isLoading={appointmentsQuery.isLoading}
         error={appointmentsQuery.error?.message}
         onRetry={() => appointmentsQuery.refetch()}
+        onAppointmentClick={handleAppointmentClick}
       />
 
       {/* Pending Actions */}
@@ -177,6 +208,7 @@ export default function Dashboard() {
           isLoading={staffQuery.isLoading}
           error={staffQuery.error?.message}
           onRetry={() => staffQuery.refetch()}
+          onViewAllStaff={() => navigate("/staff")}
           currency={currency}
         />
       </div>

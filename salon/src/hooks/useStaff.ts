@@ -14,7 +14,7 @@ export interface StaffFilters {
  */
 export function useStaff(filters?: StaffFilters) {
   return useQuery({
-    queryKey: ["staff", filters],
+    queryKey: ["staff", "list", filters || {}],
     queryFn: async () => {
       const response = await get<{
         staff: Staff[];
@@ -24,7 +24,6 @@ export function useStaff(filters?: StaffFilters) {
       }>("/staff", {
         params: filters,
       });
-      // get() helper returns response.data which contains { staff: [...], total, page, page_size }
       return response.staff || [];
     },
   });
@@ -35,10 +34,9 @@ export function useStaff(filters?: StaffFilters) {
  */
 export function useStaffMember(id: string) {
   return useQuery({
-    queryKey: ["staff", id],
+    queryKey: ["staff", "detail", id],
     queryFn: async () => {
       const response = await get<Staff>(`/staff/${id}`);
-      // get() helper returns response.data which is the staff object
       return response || null;
     },
     enabled: !!id,
@@ -56,11 +54,10 @@ export function useCreateStaff() {
       staff: Omit<Staff, "id" | "createdAt" | "updatedAt">,
     ) => {
       const response = await post<Staff>("/staff", staff);
-      // post() helper returns response.data which is the staff object
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
     },
   });
 }
@@ -74,13 +71,12 @@ export function useUpdateStaff() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Staff> & { id: string }) => {
       const response = await put<Staff>(`/staff/${id}`, updates);
-      // put() helper returns response.data which is the staff object
       return response;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
       queryClient.invalidateQueries({
-        queryKey: ["staff", (data as any).id],
+        queryKey: ["staff", "detail", (data as any).id],
       });
     },
   });
@@ -97,7 +93,7 @@ export function useDeleteStaff() {
       await del(`/staff/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
     },
   });
 }

@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CustomerPreference } from "@/hooks/useCustomerPreferences";
+import type { CustomerPreference } from "@/hooks/useCustomerPreferences";
 
 interface CustomerPreferencesProps {
   customerId: string;

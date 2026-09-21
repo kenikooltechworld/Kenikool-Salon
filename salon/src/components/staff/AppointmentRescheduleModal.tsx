@@ -53,9 +53,7 @@ export default function AppointmentRescheduleModal({
     data: availableSlots,
     isLoading: slotsLoading,
     error: slotsError,
-  } = useAvailableSlots(staffId, serviceId, selectedDate, {
-    enabled: open && !!selectedDate,
-  });
+  } = useAvailableSlots(staffId, serviceId, selectedDate || "");
 
   const handleConfirm = () => {
     if (selectedSlot) {
@@ -144,7 +142,7 @@ export default function AppointmentRescheduleModal({
                   availableSlots &&
                   availableSlots.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {availableSlots.map((slot, index) => {
+                      {availableSlots?.map((slot: any, index: number) => {
                         const slotStart = new Date(slot.startTime);
                         const slotEnd = new Date(slot.endTime);
                         const isSelected =
@@ -153,7 +151,7 @@ export default function AppointmentRescheduleModal({
                         return (
                           <Button
                             key={index}
-                            variant={isSelected ? "default" : "outline"}
+                            variant={isSelected ? "primary" : "outline"}
                             size="sm"
                             onClick={() =>
                               handleSlotSelect(slot.startTime, slot.endTime)

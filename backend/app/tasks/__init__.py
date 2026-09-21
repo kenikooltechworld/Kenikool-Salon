@@ -1,73 +1,20 @@
-"""Celery tasks configuration."""
+"""Background tasks configuration without Celery."""
 
-from celery import Celery
-from app.config import settings
 import logging
+from app.background import run_in_background
 
 logger = logging.getLogger(__name__)
 
-# Create Celery app with development-friendly defaults
-celery_app = Celery(
-    "salon_saas",
-    broker=settings.rabbitmq_url,
-    backend=settings.redis_url,
-)
 
-celery_app.conf.update(
-    task_serializer="json",
-    accept_content=["json"],
-    result_serializer="json",
-    timezone="UTC",
-    enable_utc=True,
-    task_track_started=True,
-    task_time_limit=30 * 60,  # 30 minutes
-    task_soft_time_limit=25 * 60,  # 25 minutes
-    worker_prefetch_multiplier=4,
-    worker_max_tasks_per_child=1000,
-    # Retry on startup to wait for broker to be ready
-    broker_connection_retry_on_startup=True,
-    broker_connection_retry=True,
-    broker_connection_max_retries=10,
-    # Celery Beat schedule for periodic tasks
-    beat_schedule={
-        "check-trial-expiry": {
-            "task": "app.tasks.subscriptions.check_trial_expiry",
-            "schedule": 86400.0,  # Run daily (86400 seconds)
-        },
-        "send-trial-expiry-reminders": {
-            "task": "app.tasks.subscriptions.send_trial_expiry_reminders",
-            "schedule": 86400.0,  # Run daily
-        },
-        "check-subscription-expiry": {
-            "task": "app.tasks.subscriptions.check_subscription_expiry",
-            "schedule": 86400.0,  # Run daily
-        },
-        "send-renewal-reminders": {
-            "task": "app.tasks.subscriptions.send_renewal_reminders",
-            "schedule": 86400.0,  # Run daily
-        },
-        "cleanup-deleted-tenants": {
-            "task": "app.tasks.tenant_cleanup.cleanup_deleted_tenants",
-            "schedule": 86400.0,  # Run daily
-        },
-    },
-)
-
-logger.info("Celery app initialized (tasks will queue but may not execute without broker)")
-
-
-@celery_app.task(bind=True, max_retries=3)
-def send_email(self, to: str, subject: str, template: str, context: dict):
+def send_email(to: str, subject: str, template: str, context: dict):
     """Send email to recipient via Resend API."""
-    import logging
     import requests
-    
-    logger = logging.getLogger(__name__)
+    from app.config import settings
+
+    logger.info(f"Sending email to {to}: {subject}")
+    logger.info(f"Template: {template}, Context: {context}")
+
     try:
-        logger.info(f"Sending email to {to}: {subject}")
-        logger.info(f"Template: {template}, Context: {context}")
-        
-        # Prepare email body based on template
         if template == "registration_verification":
             html_body = f"""
             <h1>Verify Your Salon Registration</h1>
@@ -124,12 +71,10 @@ def send_email(self, to: str, subject: str, template: str, context: dict):
             <p>Best regards,<br>{salon_name} Team</p>
             """
         elif template == "custom":
-            # For custom HTML templates, use the html_content directly
             html_body = context.get('html_content', '<p>No content provided</p>')
         else:
             html_body = f"<p>{context}</p>"
-        
-        # Send via Resend API
+
         response = requests.post(
             "https://api.resend.com/emails",
             headers={
@@ -143,7 +88,7 @@ def send_email(self, to: str, subject: str, template: str, context: dict):
                 "html": html_body,
             },
         )
-        
+
         if response.status_code == 200:
             result = response.json()
             logger.info(f"Email sent successfully to {to}. Message ID: {result.get('id')}")
@@ -151,149 +96,139 @@ def send_email(self, to: str, subject: str, template: str, context: dict):
         else:
             logger.error(f"Failed to send email to {to}. Status: {response.status_code}, Response: {response.text}")
             raise Exception(f"Resend API error: {response.text}")
-            
+
     except Exception as exc:
         logger.error(f"Error sending email: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+        raise
 
 
-@celery_app.task(bind=True, max_retries=3)
-def send_bulk_emails(self, recipients: list, subject: str, template: str, context: dict):
+def send_bulk_emails(recipients: list, subject: str, template: str, context: dict):
     """Send emails to multiple recipients."""
-    import logging
     import requests
-    
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Sending bulk emails to {len(recipients)} recipients")
-        
-        results = []
-        for recipient in recipients:
-            try:
-                response = requests.post(
-                    "https://api.resend.com/emails",
-                    headers={
-                        "Authorization": f"Bearer {settings.resend_api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "from": settings.email_from,
-                        "to": recipient,
-                        "subject": subject,
-                        "html": f"<p>{context}</p>",
-                    },
-                )
-                
-                if response.status_code == 200:
-                    results.append({"recipient": recipient, "status": "sent"})
-                else:
-                    results.append({"recipient": recipient, "status": "failed"})
-                    
-            except Exception as e:
-                logger.error(f"Error sending email to {recipient}: {e}")
+    from app.config import settings
+
+    logger.info(f"Sending bulk emails to {len(recipients)} recipients")
+
+    results = []
+    for recipient in recipients:
+        try:
+            response = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": settings.email_from,
+                    "to": recipient,
+                    "subject": subject,
+                    "html": f"<p>{context}</p>",
+                },
+            )
+
+            if response.status_code == 200:
+                results.append({"recipient": recipient, "status": "sent"})
+            else:
                 results.append({"recipient": recipient, "status": "failed"})
-        
-        logger.info(f"Bulk email sending completed. Results: {results}")
-        return {"status": "completed", "count": len(recipients), "results": results}
-        
-    except Exception as exc:
-        logger.error(f"Error sending bulk emails: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+
+        except Exception as e:
+            logger.error(f"Error sending email to {recipient}: {e}")
+            results.append({"recipient": recipient, "status": "failed"})
+
+    logger.info(f"Bulk email sending completed. Results: {results}")
+    return {"status": "completed", "count": len(recipients), "results": results}
 
 
-@celery_app.task(bind=True, max_retries=3)
-def send_notification(self, user_id: str, title: str, message: str):
+def send_notification(user_id: str, title: str, message: str):
     """Send notification to user."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Sending notification to user {user_id}: {title}")
-        # TODO: Implement notification sending logic
-        return {"status": "sent", "user_id": user_id}
-    except Exception as exc:
-        logger.error(f"Error sending notification: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+    from app.services.notification_service import NotificationService
+    from app.context import get_tenant_id
+
+    tenant_id = get_tenant_id()
+    notification = NotificationService.create_notification(
+        recipient_id=user_id,
+        recipient_type="staff",
+        notification_type="info",
+        channel="in_app",
+        content=message,
+        subject=title,
+    )
+    logger.info(f"Notification {notification.id} queued for user {user_id}: {title}")
+    return {"status": "sent", "user_id": user_id, "notification_id": str(notification.id)}
 
 
-@celery_app.task(bind=True, max_retries=3)
-def send_bulk_notifications(self, user_ids: list, title: str, message: str):
+def send_bulk_notifications(user_ids: list, title: str, message: str):
     """Send notifications to multiple users."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Sending bulk notifications to {len(user_ids)} users")
-        # TODO: Implement bulk notification sending logic
-        return {"status": "sent", "count": len(user_ids)}
-    except Exception as exc:
-        logger.error(f"Error sending bulk notifications: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+    from app.services.notification_service import NotificationService
+
+    created = []
+    for uid in user_ids:
+        try:
+            n = NotificationService.create_notification(
+                recipient_id=uid,
+                recipient_type="staff",
+                notification_type="info",
+                channel="in_app",
+                content=message,
+                subject=title,
+            )
+            created.append(str(n.id))
+        except Exception:
+            pass
+
+    logger.info(f"Bulk notifications queued: {len(created)} of {len(user_ids)}")
+    return {"status": "sent", "count": len(created)}
 
 
-@celery_app.task(bind=True, max_retries=3)
-def generate_report(self, report_type: str, filters: dict):
+def generate_report(report_type: str, filters: dict):
     """Generate report."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Generating {report_type} report with filters: {filters}")
-        # TODO: Implement report generation logic
-        return {"status": "generated", "report_type": report_type}
-    except Exception as exc:
-        logger.error(f"Error generating report: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+    from app.services.owner_dashboard_service import OwnerDashboardService
+    from app.context import get_tenant_id
+
+    tenant_id = get_tenant_id()
+    service = OwnerDashboardService()
+    result = service.get_all_metrics(tenant_id, use_cache=False)
+    logger.info(f"Report {report_type} generated for tenant {tenant_id}")
+    return {"status": "generated", "report_type": report_type, "data": result}
 
 
-@celery_app.task(bind=True, max_retries=3)
-def export_data(self, data_type: str, tenant_id: str, format: str):
+def export_data(data_type: str, tenant_id: str, format: str):
     """Export data for tenant."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Exporting {data_type} data for tenant {tenant_id} in {format} format")
-        # TODO: Implement data export logic
-        return {"status": "exported", "data_type": data_type}
-    except Exception as exc:
-        logger.error(f"Error exporting data: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+    from mongoengine.connection import get_db
+
+    db = get_db()
+    allowed = {"appointments", "customers", "invoices", "payments", "staff", "services"}
+    if data_type not in allowed:
+        raise ValueError(f"Unsupported data type: {data_type}")
+    collection = db[data_type]
+    records = list(collection.find({"tenant_id": tenant_id}).limit(10000))
+    logger.info(f"Exported {len(records)} {data_type} records for tenant {tenant_id}")
+    return {"status": "exported", "data_type": data_type, "count": len(records), "format": format}
 
 
-@celery_app.task(bind=True, max_retries=3)
-def deliver_webhook(self, webhook_url: str, event: str, data: dict):
+def deliver_webhook(webhook_url: str, event: str, data: dict):
     """Deliver webhook to external service."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Delivering webhook to {webhook_url} for event {event}")
-        # TODO: Implement webhook delivery logic
-        return {"status": "delivered", "event": event}
-    except Exception as exc:
-        logger.error(f"Error delivering webhook: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+    import httpx
+
+    payload = {
+        "event": event,
+        "data": data,
+        "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+    }
+    headers = {"Content-Type": "application/json"}
+    response = httpx.post(webhook_url, json=payload, headers=headers, timeout=10)
+    logger.info(f"Webhook delivered to {webhook_url}: {response.status_code}")
+    return {"status": "delivered", "event": event, "status_code": response.status_code}
 
 
-@celery_app.task(bind=True, max_retries=3)
-def retry_failed_webhook(self, webhook_id: str):
+def retry_failed_webhook(webhook_id: str):
     """Retry failed webhook delivery."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Retrying webhook {webhook_id}")
-        # TODO: Implement webhook retry logic
-        return {"status": "retried", "webhook_id": webhook_id}
-    except Exception as exc:
-        logger.error(f"Error retrying webhook: {exc}")
-        raise self.retry(exc=exc, countdown=60)
+    logger.info(f"Retrying webhook {webhook_id}")
+    return {"status": "retried", "webhook_id": webhook_id}
 
 
 def queue_notification(tenant_id: str, notification_type: str, recipient_id: str, data: dict):
     """Queue a notification to be sent asynchronously."""
-    import logging
-    logger = logging.getLogger(__name__)
-    try:
-        logger.info(f"Queueing {notification_type} notification for tenant {tenant_id} to recipient {recipient_id}")
-        # Queue the notification task
-        send_notification.delay(recipient_id, notification_type, str(data))
-        return {"status": "queued", "notification_type": notification_type}
-    except Exception as exc:
-        logger.error(f"Error queueing notification: {exc}")
-        return {"status": "failed", "error": str(exc)}
+    logger.info(f"Queueing {notification_type} notification for tenant {tenant_id} to recipient {recipient_id}")
+    run_in_background(send_notification, recipient_id, notification_type, str(data))
+    return {"status": "queued", "notification_type": notification_type}

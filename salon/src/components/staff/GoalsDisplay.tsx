@@ -211,17 +211,19 @@ export function GoalsDisplay({
                     <div className="flex items-center gap-2">
                       {getStatusBadge(goal.status)}
                       {on_track ? (
-                        <CheckCircleIcon
-                          size={16}
-                          className="text-green-500"
-                          title="On track"
-                        />
+                        <div title="On track">
+                          <CheckCircleIcon
+                            size={16}
+                            className="text-green-500"
+                          />
+                        </div>
                       ) : (
-                        <AlertCircleIcon
-                          size={16}
-                          className="text-yellow-500"
-                          title="Behind target"
-                        />
+                        <div title="Behind target">
+                          <AlertCircleIcon
+                            size={16}
+                            className="text-yellow-500"
+                          />
+                        </div>
                       )}
                     </div>
                   </div>

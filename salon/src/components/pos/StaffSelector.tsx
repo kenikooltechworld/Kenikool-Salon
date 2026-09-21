@@ -18,9 +18,9 @@ export default function StaffSelector({
   selectedStaffName,
 }: StaffSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: staffData, isLoading } = useStaff({ pageSize: 50 });
+  const { data: staffData, isLoading } = useStaff({ page_size: 50 });
 
-  const staff = staffData?.staff || [];
+  const staff = Array.isArray(staffData) ? staffData : [];
 
   const handleSelect = (staffId: string, staffName: string) => {
     onSelect(staffId, staffName);
@@ -54,7 +54,7 @@ export default function StaffSelector({
         )}
       </div>
 
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
+      <Modal open={isOpen} onClose={() => setIsOpen(false)}>
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Select Staff Member</h2>
 
@@ -68,7 +68,7 @@ export default function StaffSelector({
                 No staff members found
               </Card>
             ) : (
-              staff.map((member) => (
+              staff.map((member: any) => (
                 <Card
                   key={member.id}
                   className="p-3 cursor-pointer hover:bg-muted transition"

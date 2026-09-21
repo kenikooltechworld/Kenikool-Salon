@@ -1,11 +1,14 @@
 import { usePOSStore } from "@/stores/pos";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import { useState } from "react";
 
 export default function CartItems() {
   const { cartItems, removeFromCart, updateCartItem } = usePOSStore();
   const { showToast } = useToast();
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -25,13 +28,20 @@ export default function CartItems() {
   };
 
   const handleRemoveItem = (itemId: string, itemName: string) => {
+    setRemovingItemId(itemId);
+  };
+
+  const confirmRemoveItem = (itemId: string, itemName: string) => {
     removeFromCart(itemId);
     showToast({
       title: "Item Removed",
       description: `${itemName} removed from cart`,
       variant: "default",
     });
+    setRemovingItemId(null);
   };
+
+  const removingItem = cartItems.find((i) => i.itemId === removingItemId);
 
   return (
     <div className="space-y-2 md:space-y-3">
@@ -79,6 +89,21 @@ export default function CartItems() {
           </div>
         </div>
       ))}
+
+      <ConfirmationModal
+        isOpen={removingItemId !== null}
+        onClose={() => setRemovingItemId(null)}
+        onConfirm={() => removingItem && confirmRemoveItem(removingItem.itemId, removingItem.itemName)}
+        title="Remove Item"
+        description={
+          removingItem
+            ? `Are you sure you want to remove "${removingItem.itemName}" from the cart?`
+            : ""
+        }
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }

@@ -65,7 +65,7 @@ export default function PublicBookingStatistics() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Card className="p-8 text-center">
             <div className="text-4xl font-bold mb-2">
-              <AnimatedCounter value={statistics.totalBookings} />
+              <AnimatedCounter value={statistics.total_bookings} />
             </div>
             <p className="text-muted-foreground">Happy Customers</p>
           </Card>
@@ -73,7 +73,7 @@ export default function PublicBookingStatistics() {
           <Card className="p-8 text-center">
             <div className="text-4xl font-bold mb-2">
               <AnimatedCounter
-                value={Math.round(statistics.averageRating * 10)}
+                value={Math.round(statistics.average_rating * 10)}
                 suffix="/10"
               />
             </div>
@@ -83,7 +83,7 @@ export default function PublicBookingStatistics() {
           <Card className="p-8 text-center">
             <div className="text-4xl font-bold mb-2">
               <AnimatedCounter
-                value={statistics.responseTimeMinutes}
+                value={statistics.average_response_time}
                 suffix=" min"
               />
             </div>

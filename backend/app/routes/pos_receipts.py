@@ -179,3 +179,114 @@ async def email_receipt(
         return {"status": "success", "message": "Receipt marked as emailed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{receipt_id}/pdf")
+async def download_receipt_pdf(
+    receipt_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id),
+):
+    """Download receipt as PDF."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+
+    try:
+        receipt = ReceiptService.get_receipt(
+            tenant_id=tenant_id,
+            receipt_id=ObjectId(receipt_id),
+        )
+
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found")
+
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib import colors
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from io import BytesIO
+
+            output = BytesIO()
+            doc = SimpleDocTemplate(output, pagesize=letter)
+            elements = []
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                "CustomReceipt",
+                parent=styles["Heading1"],
+                fontSize=20,
+                textColor=colors.HexColor("#1a1a1a"),
+                spaceAfter=20,
+            )
+
+            elements.append(Paragraph(f"Receipt #{receipt.receipt_number}", title_style))
+            elements.append(Paragraph(f"Date: {receipt.receipt_date.strftime('%Y-%m-%d %H:%M')}", styles["Normal"]))
+            elements.append(Paragraph(f"Customer: {receipt.customer_name}", styles["Normal"]))
+            if receipt.customer_email:
+                elements.append(Paragraph(f"Email: {receipt.customer_email}", styles["Normal"]))
+            if receipt.customer_phone:
+                elements.append(Paragraph(f"Phone: {receipt.customer_phone}", styles["Normal"]))
+            elements.append(Spacer(1, 0.2 * inch))
+
+            data_list = [
+                ["Item", "Qty", "Unit Price", "Line Total"],
+            ]
+            for item in receipt.items:
+                data_list.append([
+                    item.item_name,
+                    str(item.quantity),
+                    f"₦{float(item.unit_price):,.2f}",
+                    f"₦{float(item.line_total):,.2f}",
+                ])
+
+            table = Table(data_list, colWidths=[2.5 * inch, 0.8 * inch, 1.2 * inch, 1.2 * inch])
+            table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+                ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 0.3 * inch))
+
+            totals = [
+                ["Subtotal", f"₦{float(receipt.subtotal):,.2f}"],
+                ["Tax", f"₦{float(receipt.tax_amount):,.2f}"],
+            ]
+            if receipt.discount_amount > 0:
+                totals.append(["Discount", f"-₦{float(receipt.discount_amount):,.2f}"])
+            totals.append(["Total", f"₦{float(receipt.total):,.2f}"])
+
+            totals_table = Table(totals, colWidths=[3 * inch, 2 * inch])
+            totals_table.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, -1), (-1, -1), 12),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]))
+            elements.append(totals_table)
+            elements.append(Spacer(1, 0.2 * inch))
+            elements.append(Paragraph(f"Payment Method: {receipt.payment_method}", styles["Normal"]))
+            elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles["Normal"]))
+
+            doc.build(elements)
+            output.seek(0)
+
+            ReceiptService.mark_receipt_printed(tenant_id, ObjectId(receipt_id))
+
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=receipt-{receipt.receipt_number}.pdf"},
+            )
+        except ImportError:
+            raise HTTPException(status_code=500, detail="PDF generation library not available")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

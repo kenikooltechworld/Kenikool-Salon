@@ -15,7 +15,7 @@ import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 interface InvoiceFilters {
   status?: string;
-  customer_id?: string;
+  customerId?: string;
 }
 
 export default function Invoices() {
@@ -31,8 +31,8 @@ export default function Invoices() {
     (invoice) =>
       !searchTerm ||
       invoice.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.customer_id &&
-        invoice.customer_id.toLowerCase().includes(searchTerm.toLowerCase())),
+      (invoice.customerId &&
+        invoice.customerId.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
   const handleDelete = async (id: string) => {
@@ -196,16 +196,16 @@ export default function Invoices() {
                       {invoice.id}
                     </td>
                     <td className="px-4 md:px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
-                      {invoice.customer_id}
+                      {invoice.customerId}
                     </td>
                     <td className="px-4 md:px-6 py-4 text-sm text-foreground whitespace-nowrap">
                       {formatCurrency(invoice.total)}
                     </td>
                     <td className="px-4 md:px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
-                      {formatDate(new Date(invoice.created_at))}
+                      {formatDate(new Date(invoice.createdAt))}
                     </td>
                     <td className="px-4 md:px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
-                      {formatDate(new Date(invoice.due_date))}
+                      {formatDate(new Date(invoice.dueDate))}
                     </td>
                     <td className="px-4 md:px-6 py-4 text-sm whitespace-nowrap">
                       <span

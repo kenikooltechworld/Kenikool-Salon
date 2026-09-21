@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Shift } from "@/hooks/useShifts";
+import type { Shift } from "@/hooks/useShifts";
 
 interface ShiftFormProps {
   staffId: string;
@@ -14,9 +14,9 @@ interface ShiftFormProps {
 }
 
 export interface ShiftFormData {
-  staff_id: string;
-  start_time: string;
-  end_time: string;
+  staffId: string;
+  startTime: string;
+  endTime: string;
   status?: "scheduled" | "in_progress" | "completed" | "cancelled";
 }
 
@@ -28,9 +28,9 @@ export function ShiftForm({
   isLoading = false,
 }: ShiftFormProps) {
   const [formData, setFormData] = useState<ShiftFormData>({
-    staff_id: staffId,
-    start_time: shift?.start_time || "",
-    end_time: shift?.end_time || "",
+    staffId: staffId,
+    startTime: shift?.startTime || "",
+    endTime: shift?.endTime || "",
     status: shift?.status || "scheduled",
   });
 
@@ -57,9 +57,9 @@ export function ShiftForm({
         <Input
           id="start-time"
           type="datetime-local"
-          value={formData.start_time}
+          value={formData.startTime}
           onChange={(e) =>
-            setFormData({ ...formData, start_time: e.target.value })
+            setFormData({ ...formData, startTime: e.target.value })
           }
           required
         />
@@ -70,9 +70,9 @@ export function ShiftForm({
         <Input
           id="end-time"
           type="datetime-local"
-          value={formData.end_time}
+          value={formData.endTime}
           onChange={(e) =>
-            setFormData({ ...formData, end_time: e.target.value })
+            setFormData({ ...formData, endTime: e.target.value })
           }
           required
         />

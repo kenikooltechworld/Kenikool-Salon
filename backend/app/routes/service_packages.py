@@ -33,13 +33,13 @@ async def create_service_package(
     - All services must belong to the tenant
     """
     tenant_id = current_user.get("tenant_id")
-    package = await ServicePackageService.create_package(
+    package = ServicePackageService.create_package(
         tenant_id=tenant_id,
         package_data=package_data,
         user_id=current_user["id"]
     )
     
-    return await ServicePackageService.format_package_response(package)
+    return ServicePackageService.format_package_response(package)
 
 
 @router.get(
@@ -66,7 +66,7 @@ async def list_service_packages(
     tenant_id = current_user.get("tenant_id")
     skip = (page - 1) * page_size
     
-    packages, total = await ServicePackageService.list_packages(
+    packages, total = ServicePackageService.list_packages(
         tenant_id=tenant_id,
         skip=skip,
         limit=page_size,
@@ -76,7 +76,7 @@ async def list_service_packages(
     )
     
     package_responses = [
-        await ServicePackageService.format_package_response(pkg)
+        ServicePackageService.format_package_response(pkg)
         for pkg in packages
     ]
     
@@ -104,8 +104,8 @@ async def get_service_package(
     Get a specific service package by ID.
     """
     tenant_id = current_user.get("tenant_id")
-    package = await ServicePackageService.get_package(package_id, tenant_id)
-    return await ServicePackageService.format_package_response(package)
+    package = ServicePackageService.get_package(package_id, tenant_id)
+    return ServicePackageService.format_package_response(package)
 
 
 @router.put(
@@ -129,14 +129,14 @@ async def update_service_package(
     - Availability settings
     """
     tenant_id = current_user.get("tenant_id")
-    package = await ServicePackageService.update_package(
+    package = ServicePackageService.update_package(
         package_id=package_id,
         tenant_id=tenant_id,
         package_data=package_data,
         user_id=current_user["id"]
     )
     
-    return await ServicePackageService.format_package_response(package)
+    return ServicePackageService.format_package_response(package)
 
 
 @router.delete(
@@ -154,7 +154,7 @@ async def delete_service_package(
     This will also delete all associated service items.
     """
     tenant_id = current_user.get("tenant_id")
-    await ServicePackageService.delete_package(package_id, tenant_id)
+    ServicePackageService.delete_package(package_id, tenant_id)
     return JSONResponse(
         status_code=status.HTTP_204_NO_CONTENT,
         content={"message": "Service package deleted successfully"}
@@ -174,18 +174,18 @@ async def toggle_package_active(
     Toggle the active status of a service package.
     """
     tenant_id = current_user.get("tenant_id")
-    package = await ServicePackageService.get_package(package_id, tenant_id)
+    package = ServicePackageService.get_package(package_id, tenant_id)
     
     update_data = ServicePackageUpdate(is_active=not package.is_active)
     
-    package = await ServicePackageService.update_package(
+    package = ServicePackageService.update_package(
         package_id=package_id,
         tenant_id=tenant_id,
         package_data=update_data,
         user_id=current_user["id"]
     )
     
-    return await ServicePackageService.format_package_response(package)
+    return ServicePackageService.format_package_response(package)
 
 
 @router.post(
@@ -201,15 +201,15 @@ async def toggle_package_featured(
     Toggle the featured status of a service package.
     """
     tenant_id = current_user.get("tenant_id")
-    package = await ServicePackageService.get_package(package_id, tenant_id)
+    package = ServicePackageService.get_package(package_id, tenant_id)
     
     update_data = ServicePackageUpdate(is_featured=not package.is_featured)
     
-    package = await ServicePackageService.update_package(
+    package = ServicePackageService.update_package(
         package_id=package_id,
         tenant_id=tenant_id,
         package_data=update_data,
         user_id=current_user["id"]
     )
     
-    return await ServicePackageService.format_package_response(package)
+    return ServicePackageService.format_package_response(package)

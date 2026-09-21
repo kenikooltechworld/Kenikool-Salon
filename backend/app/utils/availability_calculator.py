@@ -78,8 +78,8 @@ class AvailabilityCalculator:
             tenant_id, staff_id, booking_date
         )
         
-        logger.info(f"Found {len(availability_records)} availability records for staff {staff_id} on {booking_date}")
-        logger.debug(f"Availability records: {availability_records}")
+        logger.info(f"[SlotsDebug] staff={staff_id} date={booking_date} service={service_id} service_duration={service_duration} availability_records={len(availability_records)}")
+        logger.debug(f"[SlotsDebug] availability_records={availability_records}")
 
         if not availability_records:
             logger.warning(f"No availability records found for staff {staff_id} on {booking_date}")
@@ -92,10 +92,12 @@ class AvailabilityCalculator:
             slot_interval = avail.slot_interval_minutes or AvailabilityCalculator.DEFAULT_SLOT_INTERVAL_MINUTES
             buffer_time = avail.buffer_time_minutes or AvailabilityCalculator.DEFAULT_BUFFER_TIME_MINUTES
             
+            logger.info(f"[SlotsDebug] availability={avail.id} start={avail.start_time} end={avail.end_time} slot_interval={slot_interval} buffer_time={buffer_time}")
+            
             generated_slots = AvailabilityCalculator._generate_slots_for_availability(
                 avail, service_duration, slot_interval, buffer_time
             )
-            logger.info(f"Generated {len(generated_slots)} slots for availability {avail.id}")
+            logger.info(f"[SlotsDebug] generated {len(generated_slots)} slots for availability={avail.id}")
             slots.extend(generated_slots)
 
         # Remove booked slots (with concurrent booking limit)
@@ -127,7 +129,7 @@ class AvailabilityCalculator:
             ):
                 available_slots.append(slot)
         
-        logger.info(f"Final available slots: {len(available_slots)} out of {len(slots)}")
+        logger.info(f"[SlotsDebug] final available_slots={len(available_slots)} out of total_generated={len(slots)} booked_slots={len(booked_slots)}")
 
         # Cache for short duration (30 seconds for real-time accuracy)
         # Convert to serializable format for caching
@@ -158,7 +160,8 @@ class AvailabilityCalculator:
             Q(effective_from__lte=booking_date) &
             (Q(effective_to__gte=booking_date) | Q(effective_to=None))
         ))
-        logger.debug(f"Found {len(recurring)} recurring availability records")
+        logger.info(f"[SlotsDebug] recurring_availability={len(recurring)} for staff={staff_id} date={booking_date} day_of_week={day_of_week}")
+        logger.debug(f"[SlotsDebug] recurring={recurring}")
 
         # Get specific date availability (non-recurring)
         specific = list(Availability.objects(
@@ -169,7 +172,8 @@ class AvailabilityCalculator:
             Q(effective_from__lte=booking_date) &
             (Q(effective_to__gte=booking_date) | Q(effective_to=None))
         ))
-        logger.debug(f"Found {len(specific)} specific date availability records")
+        logger.info(f"[SlotsDebug] specific_availability={len(specific)} for staff={staff_id} date={booking_date}")
+        logger.debug(f"[SlotsDebug] specific={specific}")
 
         return recurring + specific
 
@@ -185,9 +189,12 @@ class AvailabilityCalculator:
             
         slots = []
 
-        # Parse start and end times
-        start_time = datetime.strptime(availability.start_time, "%H:%M:%S").time()
-        end_time = datetime.strptime(availability.end_time, "%H:%M:%S").time()
+        try:
+            start_time = datetime.strptime(availability.start_time, "%H:%M:%S").time()
+            end_time = datetime.strptime(availability.end_time, "%H:%M:%S").time()
+        except (ValueError, TypeError) as e:
+            logger.warning(f"[SlotsDebug] Invalid time format in availability {availability.id}: start={availability.start_time}, end={availability.end_time}, error={e}")
+            return []
 
         # Convert to minutes since midnight for easier calculation
         start_minutes = start_time.hour * 60 + start_time.minute
@@ -216,8 +223,12 @@ class AvailabilityCalculator:
         slot_end_minutes = slot_minutes + service_duration
 
         for break_period in breaks:
-            break_start = datetime.strptime(break_period["start_time"], "%H:%M:%S")
-            break_end = datetime.strptime(break_period["end_time"], "%H:%M:%S")
+            try:
+                break_start = datetime.strptime(break_period["start_time"], "%H:%M:%S")
+                break_end = datetime.strptime(break_period["end_time"], "%H:%M:%S")
+            except (ValueError, TypeError, KeyError) as e:
+                logger.warning(f"[SlotsDebug] Invalid break format: {break_period}, error={e}")
+                continue
 
             break_start_minutes = break_start.hour * 60 + break_start.minute
             break_end_minutes = break_end.hour * 60 + break_end.minute

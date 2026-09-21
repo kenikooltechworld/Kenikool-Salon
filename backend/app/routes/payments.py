@@ -49,8 +49,10 @@ async def initialize_payment(request: PaymentInitializeRequest):
             customer_id=request.customer_id,
             invoice_id=request.invoice_id,
             email=request.email,
+            payment_method=request.payment_method,
             metadata=request.metadata,
             idempotency_key=request.idempotency_key,
+            reference=getattr(request, "reference", None),
         )
 
         return PaymentInitializeResponse(**result)
@@ -84,7 +86,9 @@ async def initialize_booking_payment(request: dict):
         amount = request.get("amount")
         email = request.get("email")
         callback_url = request.get("callback_url")
+        payment_method = request.get("payment_method", "paystack")
         metadata = request.get("metadata", {})
+        reference = request.get("reference")
 
         # Convert amount to float for validation
         try:
@@ -103,7 +107,9 @@ async def initialize_booking_payment(request: dict):
             amount=Decimal(str(amount_float)),
             email=email,
             callback_url=callback_url,
+            payment_method=payment_method,
             metadata=metadata,
+            reference=reference,
         )
 
         return PaymentInitializeResponse(**result)
@@ -147,6 +153,7 @@ async def get_payment(payment_id: str):
             reference=payment.reference,
             status=payment.status,
             gateway=payment.gateway,
+            payment_method=payment.payment_method,
             metadata=payment.metadata,
             created_at=payment.created_at,
             updated_at=payment.updated_at,
@@ -192,6 +199,7 @@ async def verify_payment(reference: str):
             reference=result["reference"],
             status=result["status"],
             gateway=result["gateway"],
+            payment_method=result.get("payment_method", "paystack"),
             metadata={},
             created_at=result["created_at"],
             updated_at=result["updated_at"],
@@ -238,6 +246,7 @@ async def retry_payment(payment_id: str):
             reference=result["reference"],
             status=result["status"],
             gateway="paystack",
+            payment_method="paystack",
             metadata={
                 "retry_count": result["retry_count"],
                 "max_retries": result["max_retries"],
@@ -253,6 +262,54 @@ async def retry_payment(payment_id: str):
     except Exception as e:
         logger.error(f"Error retrying payment: {e}")
         raise HTTPException(status_code=500, detail="Failed to retry payment")
+
+
+@router.post("/{payment_id}/cancel", response_model=PaymentResponse)
+async def cancel_payment(payment_id: str):
+    """
+    Cancel a pending payment.
+
+    This endpoint allows users to cancel a pending payment before it completes.
+    The payment status will be updated to 'cancelled'.
+
+    Args:
+        payment_id: Payment ID to cancel
+
+    Returns:
+        PaymentResponse with updated payment status
+
+    Raises:
+        HTTPException: If payment cannot be cancelled
+    """
+    try:
+        tenant_id = get_tenant_id()
+        if not tenant_id:
+            raise HTTPException(status_code=401, detail="Tenant context not found")
+
+        result = payment_service.cancel_payment(payment_id)
+
+        return PaymentResponse(
+            id=result["payment_id"],
+            amount=result["amount"],
+            customer_id="",
+            invoice_id="",
+            reference=result["reference"],
+            status=result["status"],
+            gateway="paystack",
+            payment_method="paystack",
+            metadata={
+                "cancel_reason": "Payment cancelled by user",
+            },
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error cancelling payment: {e}")
+        raise HTTPException(status_code=500, detail="Failed to cancel payment")
 
 
 @router.get("", response_model=PaymentListResponse)
@@ -301,6 +358,7 @@ async def list_payments(
                 reference=p.reference,
                 status=p.status,
                 gateway=p.gateway,
+                payment_method=p.payment_method,
                 metadata=p.metadata,
                 created_at=p.created_at,
                 updated_at=p.updated_at,
@@ -390,7 +448,9 @@ async def initialize_pos_payment(request: dict):
         amount = request.get("amount")
         email = request.get("email")
         callback_url = request.get("callback_url")
+        payment_method = request.get("payment_method", "paystack")
         metadata = request.get("metadata", {})
+        reference = request.get("reference")
 
         # Convert amount to float for validation
         try:
@@ -408,7 +468,9 @@ async def initialize_pos_payment(request: dict):
             amount=Decimal(str(amount_float)),
             email=email,
             callback_url=callback_url,
+            payment_method=payment_method,
             metadata=metadata,
+            reference=reference,
         )
 
         return PaymentInitializeResponse(**result)

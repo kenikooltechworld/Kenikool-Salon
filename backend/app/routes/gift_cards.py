@@ -23,10 +23,10 @@ async def list_gift_cards(
     page_size: int = Query(50, ge=1, le=100)
 ):
     """List all gift cards (admin only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     skip = (page - 1) * page_size
-    gift_cards, total = await GiftCardService.list_gift_cards(
+    gift_cards, total = GiftCardService.list_gift_cards(
         tenant_id=tenant_id,
         status=status,
         skip=skip,
@@ -70,13 +70,10 @@ async def get_gift_card(
     gift_card_id: str
 ):
     """Get gift card details (admin only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     from app.models.gift_card import GiftCard
-    gift_card = await GiftCard.find_one({
-        "tenant_id": tenant_id,
-        "_id": ObjectId(gift_card_id)
-    })
+    gift_card = GiftCard.objects(tenant_id=tenant_id, id=ObjectId(gift_card_id)).first()
     
     if not gift_card:
         raise HTTPException(status_code=404, detail="Gift card not found")
@@ -110,9 +107,9 @@ async def get_gift_card_transactions(
     gift_card_id: str
 ):
     """Get transaction history for a gift card (admin only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
-    transactions = await GiftCardService.get_gift_card_transactions(
+    transactions = GiftCardService.get_gift_card_transactions(
         tenant_id=tenant_id,
         gift_card_id=ObjectId(gift_card_id)
     )
@@ -139,10 +136,10 @@ async def cancel_gift_card(
     reason: str = Query(..., min_length=10, max_length=500)
 ):
     """Cancel a gift card (admin only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
-        gift_card = await GiftCardService.cancel_gift_card(
+        gift_card = GiftCardService.cancel_gift_card(
             tenant_id=tenant_id,
             gift_card_id=ObjectId(gift_card_id),
             reason=reason

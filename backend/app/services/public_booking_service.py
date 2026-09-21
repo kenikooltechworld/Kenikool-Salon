@@ -11,6 +11,7 @@ from app.models.appointment import Appointment
 from app.models.customer import Customer
 from app.models.service import Service
 from app.models.staff import Staff
+from app.models.user import User
 from app.utils.availability_calculator import AvailabilityCalculator
 from app.services.notification_service import NotificationService
 
@@ -552,7 +553,8 @@ class PublicBookingService:
             raise ValueError("Missing tenant, service, or staff information")
 
         # Get staff user details
-        staff_name = f"{staff.user_id.first_name} {staff.user_id.last_name}".strip()
+        user = User.objects(id=staff.user_id).first()
+        staff_name = f"{user.first_name} {user.last_name}".strip() if user else "Staff"
 
         # Format booking details
         booking_date_str = booking.booking_date.strftime("%B %d, %Y")
@@ -578,7 +580,7 @@ class PublicBookingService:
             "current_year": datetime.utcnow().year,
         }
 
-        send_email.delay(
+        run_in_background(send_email,
             to=booking.customer_email,
             subject=f"Booking Confirmation - {service.name} at {tenant.name}",
             template="booking_confirmation",
@@ -623,7 +625,8 @@ class PublicBookingService:
             raise ValueError("Missing tenant, service, or staff information")
 
         # Get staff user details
-        staff_name = f"{staff.user_id.first_name} {staff.user_id.last_name}".strip()
+        user = User.objects(id=staff.user_id).first()
+        staff_name = f"{user.first_name} {user.last_name}".strip() if user else "Staff"
 
         # Format booking details
         booking_date_str = booking.booking_date.strftime("%B %d, %Y")
@@ -645,7 +648,7 @@ class PublicBookingService:
             "current_year": datetime.utcnow().year,
         }
 
-        send_email.delay(
+        run_in_background(send_email,
             to=booking.customer_email,
             subject=f"Booking Cancelled - {service.name} at {tenant.name}",
             template="booking_cancellation",
@@ -653,3 +656,5 @@ class PublicBookingService:
         )
 
         return {"status": "queued", "email": booking.customer_email}
+
+

@@ -1,8 +1,11 @@
 """Application configuration management."""
 
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
-from pydantic import field_validator
+from pydantic import field_validator, Field
+
+_env_path = Path("/app/.env")
 
 
 class Settings(BaseSettings):
@@ -25,15 +28,6 @@ class Settings(BaseSettings):
     database_url: str = ""
     database_name: str = ""
 
-    # Redis
-    redis_url: str = "redis://localhost:6379/0"
-    redis_session_db: int = 0
-    redis_cache_db: int = 1
-    redis_lock_db: int = 2
-
-    # RabbitMQ
-    rabbitmq_url: str = "amqp://guest:guest@localhost:5672//"
-
     # JWT
     jwt_secret_key: str = "dev-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
@@ -41,10 +35,10 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = 30
 
     # CORS - keep as strings in model, parse in validators
-    cors_origins_str: str = "http://localhost:3000,http://localhost:8000"
-    cors_credentials: bool = True
-    cors_methods_str: str = "*"
-    cors_headers_str: str = "*"
+    cors_origins_str: str = Field(default="http://localhost:3000,http://localhost:8000", alias="CORS_ORIGINS")
+    cors_credentials: bool = Field(default=True, alias="CORS_CREDENTIALS")
+    cors_methods_str: str = Field(default="*", alias="CORS_METHODS")
+    cors_headers_str: str = Field(default="*", alias="CORS_HEADERS")
 
     # Frontend
     frontend_url: str = "http://localhost:3000"
@@ -64,6 +58,7 @@ class Settings(BaseSettings):
     paystack_live_secret_key: str = ""
     paystack_live_public_key: str = ""
     paystack_webhook_secret: str = ""
+    paystack_webhook_router_url: str = "https://paystack-webhook-router.kenikool.workers.dev"
     resend_api_key: str = ""
     email_from: str = ""
     
@@ -73,10 +68,10 @@ class Settings(BaseSettings):
     cloudinary_api_secret: str = ""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_env_path),
+        env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        json_schema_extra={"env_ignore_empty": True}
     )
 
     @property

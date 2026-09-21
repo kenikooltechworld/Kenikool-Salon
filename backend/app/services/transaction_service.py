@@ -161,7 +161,7 @@ class TransactionService:
             transaction_fee=transaction_fee,
             total=total,
             payment_method=payment_method,
-            payment_status="pending",
+            payment_status="completed" if payment_method == "cash" else "pending",
             reference_number=TransactionService.generate_reference_number(tenant_id),
             notes=notes,
         )
@@ -336,7 +336,6 @@ class TransactionService:
         return transaction
 
     @staticmethod
-    @staticmethod
     def validate_transaction_data(data: dict) -> bool:
         """
         Validate transaction data.
@@ -361,7 +360,6 @@ class TransactionService:
 
         return True
 
-    @staticmethod
     @staticmethod
     def calculate_totals(
         items_data: List[dict],

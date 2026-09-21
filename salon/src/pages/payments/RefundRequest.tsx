@@ -109,10 +109,7 @@ export default function RefundRequest() {
 
       {!canRefund && (
         <div className="bg-destructive/10 border border-destructive rounded-lg p-6 flex gap-4">
-          <AlertCircleIcon
-            size={24}
-            className="text-destructive flex-shrink-0"
-          />
+          <AlertCircleIcon size={24} className="text-destructive shrink-0" />
           <div>
             <h3 className="font-semibold text-destructive mb-1">
               Cannot Refund

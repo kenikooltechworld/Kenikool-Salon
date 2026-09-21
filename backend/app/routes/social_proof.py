@@ -27,7 +27,7 @@ async def get_recent_bookings(
     hours: int = 24
 ):
     """Get recent booking activities for social proof display"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     activities = BookingActivityService.get_recent_activities(
         tenant_id=tenant_id,
@@ -45,7 +45,7 @@ async def get_social_feed(
     limit: int = 12
 ):
     """Get social media feed posts"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     if platform and platform not in ['instagram', 'facebook', 'twitter']:
         raise HTTPException(status_code=400, detail="Invalid platform")
@@ -65,7 +65,7 @@ async def sync_instagram_feed(
     sync_data: InstagramFeedSync
 ):
     """Sync Instagram feed (Owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     feeds = SocialMediaService.sync_instagram_feed(
         tenant_id=tenant_id,
@@ -87,7 +87,7 @@ async def toggle_post_visibility(
     is_active: bool
 ):
     """Toggle visibility of a social media post (Owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     feed = SocialMediaService.toggle_post_visibility(
         post_id=ObjectId(post_id),
@@ -110,7 +110,7 @@ async def delete_social_post(
     post_id: str
 ):
     """Delete a social media post (Owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     # Verify post belongs to tenant before deleting
     feed = SocialMediaService.get_feed_posts(tenant_id=tenant_id, limit=1000)
@@ -136,7 +136,7 @@ async def get_video_testimonials(
     limit: int = 10
 ):
     """Get video testimonials for public display"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     testimonials = VideoTestimonialService.get_testimonials(
         tenant_id=tenant_id,
@@ -153,7 +153,7 @@ async def create_video_testimonial(
     testimonial_data: VideoTestimonialCreate
 ):
     """Create a new video testimonial (Owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     testimonial = VideoTestimonialService.create_testimonial(
         tenant_id=tenant_id,
@@ -175,7 +175,7 @@ async def update_video_testimonial(
     testimonial_data: VideoTestimonialUpdate
 ):
     """Update a video testimonial (Owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     # Verify testimonial belongs to tenant
     testimonial = VideoTestimonialService.get_testimonial(ObjectId(testimonial_id))
@@ -205,7 +205,7 @@ async def delete_video_testimonial(
     testimonial_id: str
 ):
     """Delete a video testimonial (Owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     # Verify testimonial belongs to tenant
     testimonial = VideoTestimonialService.get_testimonial(ObjectId(testimonial_id))

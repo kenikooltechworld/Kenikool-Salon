@@ -79,7 +79,11 @@ export default function Waitlist() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          defaultValue="join"
+        >
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="join">Join Waitlist</TabsTrigger>
             <TabsTrigger value="status">Check Status</TabsTrigger>

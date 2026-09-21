@@ -5,10 +5,12 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useStaff } from "@/hooks/useStaff";
 import { useInventory } from "@/hooks/useInventory";
 import { usePOSStore } from "@/stores/pos";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import type { Service } from "@/types/service";
 import type { Staff } from "@/types/staff";
 import type { Customer } from "@/hooks/useCustomers";
@@ -19,6 +21,7 @@ import PaymentProcessor from "./PaymentProcessor";
 
 export default function TransactionEntry() {
   const [showPayment, setShowPayment] = useState(false);
+  const [showClearCartConfirm, setShowClearCartConfirm] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [staffId, setStaffId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<
@@ -40,6 +43,7 @@ export default function TransactionEntry() {
     clearCart,
     calculateCartTotals,
   } = usePOSStore();
+  const { showToast } = useToast();
 
   // Extract data from queries
   const services = (servicesData as Service[]) || [];
@@ -53,7 +57,11 @@ export default function TransactionEntry() {
 
   const handleCheckout = async () => {
     if (!customerId || !staffId || cartItems.length === 0) {
-      alert("Please fill in all required fields and add items to cart");
+      showToast({
+        title: "Missing Information",
+        description: "Please select a customer, staff member, and add items to cart",
+        variant: "error",
+      });
       return;
     }
 
@@ -90,9 +98,13 @@ export default function TransactionEntry() {
   };
 
   const handleClearCart = () => {
-    if (confirm("Clear cart?")) {
-      clearCart();
-    }
+    clearCart();
+    setShowClearCartConfirm(false);
+    showToast({
+      title: "Cart Cleared",
+      description: "All items have been removed from the cart",
+      variant: "default",
+    });
   };
 
   return (
@@ -380,7 +392,7 @@ export default function TransactionEntry() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={handleClearCart}
+                    onClick={() => setShowClearCartConfirm(true)}
                     className="flex-1"
                   >
                     Clear
@@ -410,6 +422,17 @@ export default function TransactionEntry() {
             onClose={() => setShowPayment(false)}
           />
         )}
+
+        <ConfirmationModal
+          isOpen={showClearCartConfirm}
+          onClose={() => setShowClearCartConfirm(false)}
+          onConfirm={handleClearCart}
+          title="Clear Cart"
+          description="Are you sure you want to remove all items from the cart? This action cannot be undone."
+          confirmText="Clear Cart"
+          cancelText="Cancel"
+          variant="destructive"
+        />
       </div>
     </div>
   );

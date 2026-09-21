@@ -157,7 +157,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
+    transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] },
   },
 };
 
@@ -341,7 +341,7 @@ export default function Pricing() {
                       </Link>
 
                       <div className="space-y-4 flex-1">
-                        {plan.features.map((feature, fidx) => (
+                        {plan.features.map((feature: any, fidx: number) => (
                           <motion.div
                             key={fidx}
                             initial={{ opacity: 0, x: -10 }}

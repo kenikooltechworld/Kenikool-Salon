@@ -20,6 +20,7 @@ export interface PaymentInitializeRequest {
   email: string;
   metadata?: Record<string, any>;
   idempotencyKey?: string;
+  reference?: string;
 }
 
 export interface PaymentInitializeResponse {
@@ -44,10 +45,20 @@ export function usePayments(filters?: PaymentFilters) {
   return useQuery({
     queryKey: ["payments", filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Payment[] }>("/payments", {
+      const { data } = await apiClient.get<{ payments: any[] }>("/payments", {
         params: filters,
       });
-      return data.data;
+      return (data.payments || []).map((p: any) => ({
+        id: p.id,
+        invoiceId: p.invoiceId,
+        customerId: p.customerId,
+        amount: p.amount,
+        method: p.paymentMethod || p.method || "paystack",
+        status: p.status,
+        transactionId: p.transactionId,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }));
     },
   });
 }
@@ -59,10 +70,18 @@ export function usePayment(id: string) {
   return useQuery({
     queryKey: ["payments", id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Payment }>(
-        `/payments/${id}`,
-      );
-      return data.data;
+      const { data } = await apiClient.get<any>(`/payments/${id}`);
+      return {
+        id: data.id,
+        invoiceId: data.invoiceId,
+        customerId: data.customerId,
+        amount: data.amount,
+        method: data.paymentMethod || data.method || "paystack",
+        status: data.status,
+        transactionId: data.transactionId,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
     },
     enabled: !!id,
   });
@@ -78,9 +97,12 @@ export function useCreatePayment() {
     mutationFn: async (
       payment: Omit<Payment, "id" | "createdAt" | "updatedAt">,
     ) => {
-      const { data } = await apiClient.post<{ data: Payment }>(
+      const { data } = await apiClient.post<{ data: any }>(
         "/payments",
-        payment,
+        {
+          ...payment,
+          paymentMethod: payment.method,
+        },
       );
       return data.data;
     },
@@ -102,9 +124,12 @@ export function useUpdatePayment() {
       id,
       ...updates
     }: Partial<Payment> & { id: string }) => {
-      const { data } = await apiClient.put<{ data: Payment }>(
+      const { data } = await apiClient.post<{ data: any }>(
         `/payments/${id}`,
-        updates,
+        {
+          ...updates,
+          paymentMethod: updates.method,
+        },
       );
       return data.data;
     },
@@ -154,6 +179,7 @@ export function useInitializePayment() {
           email: request.email,
           metadata: request.metadata,
           idempotency_key: request.idempotencyKey,
+          reference: request.reference,
         },
       );
       return data;
@@ -181,10 +207,38 @@ export function useVerifyPayment() {
 
   return useMutation({
     mutationFn: async (reference: string) => {
-      const { data } = await apiClient.get<{ data: Payment }>(
-        `/payments/${reference}/verify`,
-      );
-      return data.data;
+      const payment = await apiClient.get<{
+        id: string;
+        invoiceId: string;
+        customerId: string;
+        amount: number;
+        paymentMethod?: string;
+        method?: string;
+        status: string;
+        transactionId?: string;
+        createdAt?: string;
+        updatedAt?: string;
+      }>(`/payments/${reference}/verify`);
+
+      if (payment.status === "cancelled") {
+        throw new Error("Payment was cancelled by the user");
+      }
+
+      if (payment.status === "failed") {
+        throw new Error("Payment failed. Please try again.");
+      }
+
+      return {
+        id: payment.id,
+        invoiceId: payment.invoiceId,
+        customerId: payment.customerId,
+        amount: payment.amount,
+        method: payment.paymentMethod || payment.method || "paystack",
+        status: payment.status,
+        transactionId: payment.transactionId,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -201,10 +255,30 @@ export function useRetryPayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      const { data } = await apiClient.post<{ data: Payment }>(
-        `/payments/${paymentId}/retry`,
-      );
-      return data.data;
+      const payment = await apiClient.post<{
+        id: string;
+        invoiceId: string;
+        customerId: string;
+        amount: number;
+        paymentMethod?: string;
+        method?: string;
+        status: string;
+        transactionId?: string;
+        createdAt?: string;
+        updatedAt?: string;
+      }>(`/payments/${paymentId}/retry`);
+
+      return {
+        id: payment.id,
+        invoiceId: payment.invoiceId,
+        customerId: payment.customerId,
+        amount: payment.amount,
+        method: payment.paymentMethod || payment.method || "paystack",
+        status: payment.status,
+        transactionId: payment.transactionId,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });

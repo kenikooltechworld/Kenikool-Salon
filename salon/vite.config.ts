@@ -29,8 +29,8 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
         rewrite: (path) => path,
-        configure: (proxy, options) => {
-          proxy.on("proxyReq", (proxyReq, req, res) => {
+        configure: (proxy, _options) => {
+          proxy.on("proxyReq", (proxyReq, req, _res) => {
             // Ensure X-Forwarded-Host is set to preserve subdomain
             const host = req.headers.host || "localhost:3000";
             proxyReq.setHeader("X-Forwarded-Host", host);
@@ -42,7 +42,7 @@ export default defineConfig({
             }
           });
 
-          proxy.on("proxyRes", (proxyRes, req, res) => {
+          proxy.on("proxyRes", (proxyRes, _req, res) => {
             // Forward Set-Cookie headers from backend to client
             const setCookieHeaders = proxyRes.headers["set-cookie"];
             if (setCookieHeaders) {

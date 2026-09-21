@@ -73,7 +73,7 @@ export interface StaffSchedule {
  */
 export function useStaffWithShifts(staffId: string) {
   const { data: staff } = useStaffMember(staffId);
-  const { data: shifts } = useShifts({ staff_id: staffId });
+  const { data: shifts } = useShifts({ staffId: staffId });
 
   return {
     data: staff && shifts ? { ...staff, shifts } : null,
@@ -102,8 +102,8 @@ export function useStaffSchedule(
   dateRange?: { start: string; end: string },
 ) {
   const { data: staff } = useStaffMember(staffId);
-  const { data: shifts } = useShifts({ staff_id: staffId });
-  const { data: timeOffRequests } = useTimeOffRequests({ staff_id: staffId });
+  const { data: shifts } = useShifts({ staffId: staffId });
+  const { data: timeOffRequests } = useTimeOffRequests({ staffId: staffId });
 
   return {
     data:

@@ -11,6 +11,7 @@ from app.context import get_tenant_id
 from app.models.public_booking import PublicBooking, PublicBookingStatus
 from app.models.service import Service
 from app.models.staff import Staff
+from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.appointment import Appointment
 from app.schemas.public_booking import (
@@ -103,7 +104,7 @@ async def list_public_services(request: Request):
 
     # Get published services
     services = Service.objects(
-        tenant_id=tenant_id_obj, is_published=True, allow_public_booking=True
+        tenant_id=tenant_id_obj, is_published=True
     ).order_by("name")
     
     logger.info(f"[PublicBooking] services - Found {services.count()} services")
@@ -156,7 +157,6 @@ async def list_public_staff(request: Request, service_id: str = None):
     # Build query
     query = {
         "tenant_id": tenant_id_obj,
-        "is_available_for_public_booking": True,
         "status": "active",
     }
 
@@ -177,8 +177,8 @@ async def list_public_staff(request: Request, service_id: str = None):
     return [
         PublicStaffResponse(
             id=str(staff.id),
-            first_name=staff.user_id.first_name if staff.user_id else "Staff",
-            last_name=staff.user_id.last_name if staff.user_id else "",
+            first_name=user.first_name if (user := User.objects(id=staff.user_id).first()) else "Staff",
+            last_name=user.last_name if user else "",
             is_available_for_public_booking=staff.is_available_for_public_booking,
             bio=staff.bio,
             profile_image_url=staff.profile_image_url,
@@ -235,7 +235,6 @@ async def get_availability(
     staff = Staff.objects(
         tenant_id=tenant_id_obj,
         id=staff_id_obj,
-        is_available_for_public_booking=True,
     ).first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found")
@@ -424,7 +423,6 @@ async def create_public_booking(
     staff = Staff.objects(
         tenant_id=tenant_id_obj,
         id=staff_id_obj,
-        is_available_for_public_booking=True,
     ).first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found")

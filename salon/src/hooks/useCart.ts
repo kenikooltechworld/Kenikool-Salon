@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 
 export interface CartItem {
   itemType: "service" | "product" | "package";

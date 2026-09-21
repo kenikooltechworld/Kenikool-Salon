@@ -12,7 +12,7 @@ export function securityHeadersPlugin(): Plugin {
       order: "pre",
       handler(html) {
         // Add CSP meta tag - allow localhost and Docker internal network for development
-        const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:* http://127.0.0.1:* http://api:*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:* http://api:* ws://localhost:* ws://127.0.0.1:* ws://api:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">`;
+        const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:* http://127.0.0.1:* http://api:*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:* http://api:* ws://localhost:* ws://127.0.0.1:* ws://api:*; base-uri 'self'; form-action 'self'">`;
 
         // Add X-UA-Compatible meta tag
         const uaCompatMeta = `<meta http-equiv="X-UA-Compatible" content="IE=edge">`;

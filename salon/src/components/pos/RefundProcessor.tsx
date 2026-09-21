@@ -116,7 +116,7 @@ export default function RefundProcessor() {
                         {new Date(transaction.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <p className="font-bold text-sm md:text-base text-foreground flex-shrink-0">
+                    <p className="font-bold text-sm md:text-base text-foreground shrink-0">
                       ₦
                       {transaction.total.toLocaleString("en-NG", {
                         maximumFractionDigits: 2,

@@ -88,7 +88,7 @@ export default function CustomerAppointments() {
           </div>
         ) : history && history.length > 0 ? (
           <div className="space-y-4">
-            {history.map((appointment) => (
+            {history.map((appointment: any) => (
               <div
                 key={appointment.id}
                 className="border-b border-border pb-4 last:border-0 cursor-pointer hover:bg-muted/50 p-3 rounded transition-colors"

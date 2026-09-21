@@ -2,41 +2,50 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
 
 export interface RevenueReport {
-  total_revenue: number;
-  total_refunds: number;
-  net_revenue: number;
-  payment_count: number;
-  refund_count: number;
+  totalRevenue: number;
+  totalRefunds: number;
+  netRevenue: number;
+  paymentCount: number;
+  refundCount: number;
 }
 
 export interface PaymentReport {
-  total_payments: number;
-  successful_payments: number;
-  failed_payments: number;
-  pending_payments: number;
-  cancelled_payments: number;
-  success_rate: number;
-  status_breakdown: Record<string, number>;
+  totalPayments: number;
+  successfulPayments: number;
+  failedPayments: number;
+  pendingPayments: number;
+  cancelledPayments: number;
+  successRate: number;
+  statusBreakdown: Record<string, number>;
+  totalAmount?: number;
+  highestPayment?: number;
+  byMethod?: Array<{ method: string; count: number }>;
+  byStatus?: Array<{ status: string; count: number }>;
+  topCustomers?: Array<{
+    name: string;
+    paymentCount: number;
+    totalAmount: number;
+  }>;
 }
 
 export interface RefundReport {
-  total_refunds: number;
-  successful_refunds: number;
-  failed_refunds: number;
-  pending_refunds: number;
-  success_rate: number;
-  total_refunded_amount: number;
-  status_breakdown: Record<string, number>;
+  totalRefunds: number;
+  successfulRefunds: number;
+  failedRefunds: number;
+  pendingRefunds: number;
+  successRate: number;
+  totalRefundedAmount: number;
+  statusBreakdown: Record<string, number>;
 }
 
 export interface OutstandingBalanceReport {
-  total_outstanding: number;
-  customers_with_balance: number;
+  totalOutstanding: number;
+  customersWithBalance: number;
   customers: Array<{
     id: string;
     name: string;
     email: string;
-    outstanding_balance: number;
+    outstandingBalance: number;
   }>;
 }
 
@@ -77,7 +86,7 @@ export function usePaymentReport(startDate: string, endDate: string) {
   return useQuery({
     queryKey: ["financial-reports", "payments", startDate, endDate],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: PaymentReport }>(
+      const { data } = await apiClient.get<{ data: any }>(
         "/financial-reports/payments",
         {
           params: {
@@ -87,7 +96,26 @@ export function usePaymentReport(startDate: string, endDate: string) {
           },
         },
       );
-      return data.data;
+      // Transform snake_case to camelCase
+      const report = data.data;
+      return {
+        totalPayments: report.total_payments,
+        successfulPayments: report.successful_payments,
+        failedPayments: report.failed_payments,
+        pendingPayments: report.pending_payments,
+        cancelledPayments: report.cancelled_payments,
+        successRate: report.success_rate,
+        statusBreakdown: report.status_breakdown,
+        totalAmount: report.total_amount,
+        highestPayment: report.highest_payment,
+        byMethod: report.by_method,
+        byStatus: report.by_status,
+        topCustomers: report.top_customers?.map((c: any) => ({
+          name: c.name,
+          paymentCount: c.payment_count,
+          totalAmount: c.total_amount,
+        })),
+      } as PaymentReport;
     },
     enabled: !!startDate && !!endDate,
   });

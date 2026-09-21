@@ -19,11 +19,11 @@ import { useToast } from "@/components/ui/toast";
 import { MultiSelect } from "@/components/ui/multi-select";
 
 const CUSTOMER_TYPES = [
-  { value: "walk-in", label: "Walk-in" },
-  { value: "regular", label: "Regular" },
-  { value: "vip", label: "VIP" },
-  { value: "new", label: "New Customer" },
-  { value: "returning", label: "Returning Customer" },
+  { id: "walk-in", value: "walk-in", label: "Walk-in" },
+  { id: "regular", value: "regular", label: "Regular" },
+  { id: "vip", value: "vip", label: "VIP" },
+  { id: "new", value: "new", label: "New Customer" },
+  { id: "returning", value: "returning", label: "Returning Customer" },
 ];
 
 export default function StaffPreferencesForm() {
@@ -128,6 +128,7 @@ export default function StaffPreferencesForm() {
 
   // Convert services to options for MultiSelect
   const serviceOptions = services.map((service) => ({
+    id: service.id,
     value: service.id,
     label: service.name,
   }));
@@ -149,7 +150,7 @@ export default function StaffPreferencesForm() {
             </Label>
             <MultiSelect
               options={serviceOptions}
-              selected={serviceSpecializations}
+              selectedIds={serviceSpecializations}
               onChange={setServiceSpecializations}
               placeholder="Select services you specialize in"
             />
@@ -165,7 +166,7 @@ export default function StaffPreferencesForm() {
             </Label>
             <MultiSelect
               options={CUSTOMER_TYPES}
-              selected={preferredCustomerTypes}
+              selectedIds={preferredCustomerTypes}
               onChange={setPreferredCustomerTypes}
               placeholder="Select preferred customer types"
             />

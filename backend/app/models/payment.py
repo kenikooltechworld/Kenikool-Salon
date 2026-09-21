@@ -34,6 +34,11 @@ class Payment(BaseDocument):
     # Payment gateway information
     reference = StringField(required=True, unique_with="tenant_id")  # Paystack reference
     gateway = StringField(required=True, default="paystack")  # paystack, stripe, etc.
+    payment_method = StringField(
+        required=True,
+        choices=["paystack", "cash", "card", "mobile_money", "check", "bank_transfer"],
+        default="paystack",
+    )
 
     # Idempotency
     idempotency_key = StringField(unique_with="tenant_id", sparse=True)  # For duplicate detection

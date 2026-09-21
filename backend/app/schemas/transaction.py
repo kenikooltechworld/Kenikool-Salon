@@ -1,9 +1,14 @@
 """Pydantic schemas for POS transactions."""
 
 from typing import Optional, List, Union
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from decimal import Decimal
 from datetime import datetime
+
+
+def _to_camel(s: str) -> str:
+    parts = s.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
 
 
 class TransactionItemRequest(BaseModel):
@@ -48,10 +53,11 @@ class TransactionItemResponse(BaseModel):
     discount_rate: Decimal
     discount_amount: Decimal
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )
 
 
 class TransactionCreateRequest(BaseModel):
@@ -111,10 +117,11 @@ class TransactionResponse(BaseModel):
     created_at: str
     updated_at: str
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )
 
 
 class TransactionListResponse(BaseModel):
@@ -124,3 +131,9 @@ class TransactionListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )

@@ -18,6 +18,7 @@ from app.schemas.availability import (
 )
 from app.context import get_tenant_id
 from app.decorators.tenant_isolated import tenant_isolated
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -278,8 +279,8 @@ async def update_availability(
                         detail="Break start_time must be before end_time"
                     )
                 breaks.append({
-                    "start_time": brk.start_time,
-                    "end_time": brk.end_time,
+                    "start_time": brk.start_time.isoformat(),
+                    "end_time": brk.end_time.isoformat(),
                 })
             update_data["breaks"] = breaks
         
@@ -341,7 +342,7 @@ async def get_available_slots(
     try:
         from app.utils.availability_calculator import AvailabilityCalculator
         
-        logger.info(f"Getting available slots for staff={staff_id}, service={service_id}, date={target_date}")
+        logger.info(f"[SlotsAPI] Getting available slots for staff={staff_id}, service={service_id}, date={target_date}")
         
         # Parse target date
         try:
@@ -368,10 +369,10 @@ async def get_available_slots(
             tenant_id=tenant_id
         ).first()
         if not service:
-            logger.error(f"Service not found: {service_id}")
+            logger.error(f"[SlotsAPI] Service not found: {service_id}")
             raise HTTPException(status_code=404, detail="Service not found")
         
-        logger.info(f"Service found: {service.name}, duration={service.duration_minutes} minutes")
+        logger.info(f"[SlotsAPI] Service found: {service.name}, duration={service.duration_minutes} minutes")
         
         # Use AvailabilityCalculator to get slots
         calculator = AvailabilityCalculator()
@@ -382,7 +383,7 @@ async def get_available_slots(
             booking_date=target_date_obj,
         )
         
-        logger.info(f"Got {len(availability_slots)} available slots")
+        logger.info(f"[SlotsAPI] calculator returned {len(availability_slots)} slots")
         
         # Convert AvailabilitySlot objects to response format
         slots = []
@@ -395,7 +396,7 @@ async def get_available_slots(
                 isAvailable=slot.available,
             ))
         
-        logger.info(f"Returning {len(slots)} slots in response")
+        logger.info(f"[SlotsAPI] Returning {len(slots)} slots in response")
         
         return AvailableSlotsResponse(
             date=target_date,
@@ -406,5 +407,8 @@ async def get_available_slots(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get available slots: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=400, detail="Failed to get available slots")
+        logger.error(f"[SlotsAPI] Failed to get available slots: {str(e)}", exc_info=True)
+        detail = "Failed to get available slots"
+        if settings.debug:
+            detail = f"Failed to get available slots: {str(e)}"
+        raise HTTPException(status_code=400, detail=detail)

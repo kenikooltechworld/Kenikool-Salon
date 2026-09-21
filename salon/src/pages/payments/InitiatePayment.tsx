@@ -7,7 +7,7 @@ import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { v4 as uuidv4 } from "uuid";
+import { generateSalonReference } from "@/lib/utils/reference";
 
 export default function InitiatePayment() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
@@ -19,7 +19,8 @@ export default function InitiatePayment() {
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(
     invoiceId || "",
   );
-  const { data: customers = [] } = useCustomers();
+  const { data: customersData } = useCustomers();
+  const customers = customersData?.customers || [];
   const initializePayment = useInitializePayment();
 
   if (invoiceLoading) {
@@ -71,7 +72,7 @@ export default function InitiatePayment() {
     );
   }
 
-  const customer = customers.find((c) => c.id === invoice.customerId);
+  const customer = customers.find((c: any) => c.id === invoice.customerId);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,13 +84,14 @@ export default function InitiatePayment() {
     }
 
     try {
-      const idempotencyKey = uuidv4();
+      const idempotencyKey = crypto.randomUUID();
       await initializePayment.mutateAsync({
         amount: invoice.total,
         customerId: invoice.customerId,
         invoiceId: invoice.id,
         email,
         idempotencyKey,
+        reference: generateSalonReference(),
         metadata: {
           invoiceId: invoice.id,
           customerId: invoice.customerId,

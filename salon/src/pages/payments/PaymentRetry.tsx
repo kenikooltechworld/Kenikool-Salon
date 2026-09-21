@@ -83,7 +83,7 @@ export default function PaymentRetry() {
         <div className="flex items-start gap-4">
           <AlertCircleIcon
             size={24}
-            className="text-yellow-600 flex-shrink-0 mt-1"
+            className="text-yellow-600 shrink-0 mt-1"
           />
           <div className="flex-1">
             <h3 className="font-semibold mb-2">Retry Attempts</h3>

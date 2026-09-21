@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { EditIcon, TrashIcon } from "@/components/icons";
+import { EditIcon, TrashIcon, UsersIcon } from "@/components/icons";
 import type { Service } from "@/types/service";
 
 interface ServiceCardProps {
@@ -9,6 +9,7 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ service, onEdit, onDelete }: ServiceCardProps) {
+  const assignedCount = service.staff_ids?.length || 0;
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-3 hover:shadow-md transition">
       <div className="flex items-start justify-between">
@@ -57,6 +58,12 @@ export function ServiceCard({ service, onEdit, onDelete }: ServiceCardProps) {
           </p>
         </div>
       </div>
+      {assignedCount > 0 && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <UsersIcon size={13} />
+          <span>{assignedCount} staff assigned</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,13 @@
 """Pydantic schemas for POS receipts."""
 
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from decimal import Decimal
+
+
+def _to_camel(s: str) -> str:
+    parts = s.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
 
 
 class ReceiptItemResponse(BaseModel):
@@ -17,10 +22,11 @@ class ReceiptItemResponse(BaseModel):
     tax_amount: Decimal
     discount_amount: Decimal
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )
 
 
 class ReceiptResponse(BaseModel):
@@ -46,10 +52,11 @@ class ReceiptResponse(BaseModel):
     emailed_at: Optional[str]
     created_at: str
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )
 
 
 class ReceiptPrintRequest(BaseModel):
@@ -71,3 +78,9 @@ class ReceiptListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth";
 import { useTenantStore } from "@/stores/tenant";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 
 /**
  * Hook to fetch current user data from /auth/me endpoint using react-query

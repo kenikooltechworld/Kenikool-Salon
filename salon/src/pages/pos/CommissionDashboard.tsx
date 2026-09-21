@@ -5,17 +5,21 @@ import {
   useCreateCommissionPayout,
 } from "@/hooks/useCommissions";
 import { useStaff } from "@/hooks/useStaff";
+import { useTenantSettings } from "@/hooks/owner/useTenantSettings";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function CommissionDashboard() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
   const [page, setPage] = useState(1);
   const [payoutPeriod, setPayoutPeriod] = useState("monthly");
   const { data: staffData, isLoading: staffLoading } = useStaff();
+  const { data: tenantSettings } = useTenantSettings();
+  const currency = tenantSettings?.currency || "USD";
   const { data: commissionsData, isLoading: commissionsLoading } =
     useCommissions(selectedStaffId, { page, pageSize: 20 });
   const { data: payoutsData, isLoading: payoutsLoading } = useCommissionPayouts(
@@ -28,7 +32,7 @@ export default function CommissionDashboard() {
   const createPayout = useCreateCommissionPayout();
   const { showToast } = useToast();
 
-  const staff = staffData?.staff || [];
+  const staff = staffData || [];
   const commissions = commissionsData?.commissions || [];
   const payouts = payoutsData?.payouts || [];
   const totalCommissions = commissionsData?.total || 0;
@@ -78,7 +82,7 @@ export default function CommissionDashboard() {
             Total Commissions
           </p>
           <p className="text-2xl md:text-3xl font-bold text-foreground">
-            ₦{totalEarned.toLocaleString("en-NG", { maximumFractionDigits: 2 })}
+            {formatCurrency(totalEarned, currency)}
           </p>
         </Card>
         <Card className="p-4 md:p-6">
@@ -86,10 +90,7 @@ export default function CommissionDashboard() {
             Average Commission
           </p>
           <p className="text-2xl md:text-3xl font-bold text-foreground">
-            ₦
-            {avgCommission.toLocaleString("en-NG", {
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(avgCommission, currency)}
           </p>
         </Card>
         <Card className="p-4 md:p-6">
@@ -162,10 +163,7 @@ export default function CommissionDashboard() {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-bold text-sm md:text-base text-foreground">
-                        ₦
-                        {commission.commissionAmount.toLocaleString("en-NG", {
-                          maximumFractionDigits: 2,
-                        })}
+                        {formatCurrency(commission.commissionAmount, currency)}
                       </p>
                       <Badge variant="secondary" className="text-xs mt-1">
                         {commission.commissionRate}% {commission.commissionType}
@@ -232,10 +230,7 @@ export default function CommissionDashboard() {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-bold text-sm md:text-base text-foreground">
-                        ₦
-                        {payout.payoutAmount.toLocaleString("en-NG", {
-                          maximumFractionDigits: 2,
-                        })}
+                        {formatCurrency(payout.payoutAmount, currency)}
                       </p>
                       <Badge
                         variant={

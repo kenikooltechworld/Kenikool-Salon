@@ -28,8 +28,8 @@ const statusLabels: Record<Shift["status"], string> = {
 };
 
 export function StaffShiftCard({ shift, onViewDetails }: StaffShiftCardProps) {
-  const startDate = new Date(shift.start_time);
-  const endDate = new Date(shift.end_time);
+  const startDate = new Date(shift.startTime);
+  const endDate = new Date(shift.endTime);
 
   return (
     <Card hover>
@@ -56,12 +56,10 @@ export function StaffShiftCard({ shift, onViewDetails }: StaffShiftCardProps) {
           </div>
         </div>
 
-        {shift.labor_cost > 0 && (
+        {shift.laborCost > 0 && (
           <div className="pt-2 border-t border-border">
             <p className="text-sm text-muted-foreground mb-1">Labor Cost</p>
-            <p className="text-sm font-medium">
-              ${shift.labor_cost.toFixed(2)}
-            </p>
+            <p className="text-sm font-medium">${shift.laborCost.toFixed(2)}</p>
           </div>
         )}
 

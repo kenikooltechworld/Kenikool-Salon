@@ -100,10 +100,12 @@ export function useInitializePOSPayment() {
       transactionId,
       email,
       callbackUrl,
+      reference,
     }: {
       transactionId: string;
       email: string;
       callbackUrl?: string;
+      reference?: string;
     }) => {
       const response = await apiClient.post<{
         success: boolean;
@@ -114,6 +116,7 @@ export function useInitializePOSPayment() {
       }>(`/transactions/${transactionId}/initialize-payment`, {
         email,
         callback_url: callbackUrl,
+        reference,
       });
       return response.data;
     },

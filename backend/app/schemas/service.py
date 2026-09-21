@@ -21,6 +21,7 @@ class ServiceCreateRequest(BaseModel):
     public_image_url: Optional[str] = Field(None, max_length=500)
     allow_public_booking: bool = Field(default=False)
     tags: List[str] = Field(default=[])
+    staff_ids: List[str] = Field(default=[])
 
 
 class ServiceUpdateRequest(BaseModel):
@@ -39,6 +40,7 @@ class ServiceUpdateRequest(BaseModel):
     public_image_url: Optional[str] = Field(None, max_length=500)
     allow_public_booking: Optional[bool] = None
     tags: Optional[List[str]] = None
+    staff_ids: Optional[List[str]] = None
 
 
 class ServiceResponse(BaseModel):
@@ -58,6 +60,7 @@ class ServiceResponse(BaseModel):
     public_image_url: Optional[str]
     allow_public_booking: bool
     tags: List[str]
+    staff_ids: List[str] = []
     created_at: str
     updated_at: str
 

@@ -6,22 +6,20 @@ export interface PerformanceMetrics {
   averageRating: number;
   totalReviews: number;
   appointmentsCompleted: number;
-  customerSatisfaction: number; // percentage
+  customerSatisfaction: number;
   totalEarnings?: number;
   topService?: string;
-  ratingDistribution?: {
-    "1": number;
-    "2": number;
-    "3": number;
-    "4": number;
-    "5": number;
-  };
+  ratingDistribution?: Record<string, number>;
   recentReviews?: Array<{
     id: string;
+    customerId: string;
     customerName: string;
+    appointmentId: string;
+    serviceName: string;
     rating: number;
     feedback: string;
-    date: string;
+    appointmentDate: string;
+    createdAt: string;
   }>;
 }
 
@@ -29,104 +27,64 @@ export function usePerformanceMetrics() {
   const user = useAuthStore((state) => state.user);
 
   return useQuery({
-    queryKey: ["performance-metrics"],
+    queryKey: ["performance-metrics", user?.id],
     queryFn: async () => {
-      try {
-        // In a real implementation, this would call an API endpoint
-        // For now, we'll return mock data
-        const mockData: PerformanceMetrics = {
-          averageRating: 4.5,
-          totalReviews: 42,
-          appointmentsCompleted: 156,
-          customerSatisfaction: 92,
-          totalEarnings: 12540.75,
-          topService: "Haircut & Style",
-          ratingDistribution: {
-            "1": 2,
-            "2": 3,
-            "3": 8,
-            "4": 15,
-            "5": 14,
-          },
-          recentReviews: [
-            {
-              id: "1",
-              customerName: "John Doe",
-              rating: 5,
-              feedback: "Excellent service, very professional!",
-              date: "2024-01-15",
-            },
-            {
-              id: "2",
-              customerName: "Jane Smith",
-              rating: 4,
-              feedback: "Good service, but had to wait a bit",
-              date: "2024-01-14",
-            },
-          ],
-        };
-        return mockData;
-      } catch (error) {
-        console.error("Error fetching performance metrics:", error);
-        throw error;
+      const { data } = await apiClient.get<PerformanceMetrics>(
+        `/staff/${user?.id}/performance-metrics`,
+      );
+      if (data && !data.topService && data.recentReviews?.length) {
+        const serviceCounts: Record<string, number> = {};
+        data.recentReviews.forEach((r) => {
+          if (r.serviceName) serviceCounts[r.serviceName] = (serviceCounts[r.serviceName] || 0) + 1;
+        });
+        const top = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1])[0];
+        if (top) data.topService = top[0];
       }
+      return data || {
+        averageRating: 0,
+        totalReviews: 0,
+        appointmentsCompleted: 0,
+        customerSatisfaction: 0,
+        ratingDistribution: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 },
+        recentReviews: [],
+      } as PerformanceMetrics;
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-export function usePerformanceReviews() {
+export function usePerformanceReviews(limit: number = 50) {
   const user = useAuthStore((state) => state.user);
 
   return useQuery({
-    queryKey: ["performance-reviews"],
+    queryKey: ["performance-reviews", user?.id, limit],
     queryFn: async () => {
-      try {
-        // In a real implementation, this would be an API call
-        // For now, return mock data
-        const mockReviews = [
-          {
-            id: "1",
-            customerId: "cust1",
-            customerName: "John Doe",
-            appointmentId: "appt1",
-            serviceName: "Haircut & Style",
-            rating: 5,
-            feedback: "Excellent service, very professional!",
-            appointmentDate: "2024-01-15",
-            createdAt: "2024-01-15T10:30:00Z",
-          },
-          {
-            id: "2",
-            customerId: "cust2",
-            customerName: "Jane Smith",
-            appointmentId: "appt2",
-            serviceName: "Hair Coloring",
-            rating: 4,
-            feedback: "Good service, but had to wait a bit",
-            appointmentDate: "2024-01-14",
-            createdAt: "2024-01-14T14:20:00Z",
-          },
-          {
-            id: "3",
-            customerId: "cust3",
-            customerName: "Bob Johnson",
-            appointmentId: "appt3",
-            serviceName: "Haircut",
-            rating: 5,
-            feedback: "Amazing work! Will definitely come back.",
-            appointmentDate: "2024-01-13",
-            createdAt: "2024-01-13T16:45:00Z",
-          },
-        ];
-        return mockReviews;
-      } catch (error) {
-        console.error("Error fetching reviews:", error);
-        throw error;
-      }
+      const { data } = await apiClient.get<{ reviews: Array<{
+        id: string;
+        customerId: string;
+        customerName: string;
+        appointmentId: string;
+        serviceName: string;
+        rating: number;
+        feedback: string;
+        appointmentDate: string;
+        createdAt: string;
+      }> }>(`/staff/${user?.id}/reviews`, { params: { limit } });
+      return (data?.reviews || []).map((r) => ({
+        id: r.id,
+        customerId: r.customerId,
+        customerName: r.customerName,
+        appointmentId: r.appointmentId,
+        serviceName: r.serviceName,
+        rating: r.rating,
+        feedback: r.feedback,
+        appointmentDate: r.appointmentDate,
+        createdAt: r.createdAt,
+      }));
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
   });
 }

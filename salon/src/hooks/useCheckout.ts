@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient } from "@/lib/utils";
 import { usePOSStore } from "@/stores/pos";
 
 export interface TransactionItem {
@@ -8,7 +8,7 @@ export interface TransactionItem {
   itemName: string;
   quantity: number;
   unitPrice: number;
-  lineTota: number;
+  lineTotal: number;
   taxRate: number;
   discountRate: number;
 }

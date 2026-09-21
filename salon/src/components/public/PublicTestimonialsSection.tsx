@@ -72,9 +72,9 @@ export default function PublicTestimonialsSection() {
                 ))}
               </div>
               <p className="text-muted-foreground mb-4">
-                {testimonial.reviewText}
+                {testimonial.review}
               </p>
-              <p className="font-semibold">{testimonial.customerName}</p>
+              <p className="font-semibold">{testimonial.customer_name}</p>
             </Card>
           ))}
         </div>

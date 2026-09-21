@@ -17,7 +17,7 @@ router = APIRouter(prefix="/public/waitlist", tags=["Public Waitlist"])
 @router.get("/status", response_model=PublicWaitlistStatus)
 async def get_waitlist_status(request: Request):
     """Get current waitlist status."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         status = PublicWaitlistService.get_waitlist_status(tenant_id)
@@ -29,7 +29,7 @@ async def get_waitlist_status(request: Request):
 @router.post("/join")
 async def join_waitlist(request: Request, waitlist_data: PublicWaitlistJoin):
     """Join the public waitlist."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         queue_entry = PublicWaitlistService.join_waitlist(
@@ -61,7 +61,7 @@ async def get_position(
     email: str = Query(..., description="Customer email"),
 ):
     """Get customer's position in waitlist."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         position_data = PublicWaitlistService.get_customer_position(
@@ -82,7 +82,7 @@ async def cancel_waitlist(
     email: str = Query(..., description="Customer email"),
 ):
     """Cancel waitlist entry."""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     try:
         success = PublicWaitlistService.cancel_waitlist_entry(

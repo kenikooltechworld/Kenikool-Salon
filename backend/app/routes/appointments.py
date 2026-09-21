@@ -132,6 +132,7 @@ async def create_appointment(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
@@ -170,6 +171,7 @@ async def get_appointment(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
@@ -220,6 +222,7 @@ async def get_day_view(
                     price=appt.price,
                     cancellation_reason=appt.cancellation_reason,
                     cancelled_at=appt.cancelled_at.isoformat() if appt.cancelled_at else None,
+                    cancelled_by=str(appt.cancelled_by) if appt.cancelled_by else None,
                     no_show_reason=appt.no_show_reason,
                     marked_no_show_at=appt.marked_no_show_at.isoformat() if appt.marked_no_show_at else None,
                     confirmed_at=appt.confirmed_at.isoformat() if appt.confirmed_at else None,
@@ -279,6 +282,7 @@ async def get_week_view(
                     price=appt.price,
                     cancellation_reason=appt.cancellation_reason,
                     cancelled_at=appt.cancelled_at.isoformat() if appt.cancelled_at else None,
+                    cancelled_by=str(appt.cancelled_by) if appt.cancelled_by else None,
                     no_show_reason=appt.no_show_reason,
                     marked_no_show_at=appt.marked_no_show_at.isoformat() if appt.marked_no_show_at else None,
                     confirmed_at=appt.confirmed_at.isoformat() if appt.confirmed_at else None,
@@ -334,6 +338,7 @@ async def get_month_view(
                     price=appt.price,
                     cancellation_reason=appt.cancellation_reason,
                     cancelled_at=appt.cancelled_at.isoformat() if appt.cancelled_at else None,
+                    cancelled_by=str(appt.cancelled_by) if appt.cancelled_by else None,
                     no_show_reason=appt.no_show_reason,
                     marked_no_show_at=appt.marked_no_show_at.isoformat() if appt.marked_no_show_at else None,
                     confirmed_at=appt.confirmed_at.isoformat() if appt.confirmed_at else None,
@@ -378,6 +383,8 @@ async def list_appointments(
         start_date_obj = datetime.fromisoformat(start_date) if start_date else None
         end_date_obj = datetime.fromisoformat(end_date) if end_date else None
         
+        logger.info(f"[Appointments] Listing appointments: customer_id={customer_id}, staff_id={staff_id}, status={status}, page={page}, page_size={page_size}")
+        
         appointments, total = AppointmentService.list_appointments(
             tenant_id=tenant_id,
             customer_id=customer_id_obj,
@@ -388,6 +395,8 @@ async def list_appointments(
             page=page,
             page_size=page_size,
         )
+        
+        logger.info(f"[Appointments] Found {len(appointments)} appointments, total={total}")
         
         return AppointmentListResponse(
             appointments=[
@@ -404,6 +413,7 @@ async def list_appointments(
                     price=appt.price,
                     cancellation_reason=appt.cancellation_reason,
                     cancelled_at=appt.cancelled_at.isoformat() if appt.cancelled_at else None,
+                    cancelled_by=str(appt.cancelled_by) if appt.cancelled_by else None,
                     no_show_reason=appt.no_show_reason,
                     marked_no_show_at=appt.marked_no_show_at.isoformat() if appt.marked_no_show_at else None,
                     confirmed_at=appt.confirmed_at.isoformat() if appt.confirmed_at else None,
@@ -417,7 +427,8 @@ async def list_appointments(
             page_size=page_size,
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"[Appointments] Error listing appointments: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to list appointments: {str(e)}")
 
 
 @router.post("/{appointment_id}/confirm", response_model=AppointmentResponse)
@@ -428,6 +439,8 @@ async def confirm_appointment(
 ):
     """Confirm an appointment."""
     try:
+        logger.info(f"[Appointments] Confirming appointment: {appointment_id}, time_slot_id={request.time_slot_id}")
+        
         from app.services.appointment_history_service import AppointmentHistoryService
         
         appt_id = ObjectId(appointment_id)
@@ -436,6 +449,8 @@ async def confirm_appointment(
         appointment = AppointmentService.confirm_appointment(
             tenant_id, appt_id, time_slot_id=time_slot_id
         )
+        
+        logger.info(f"[Appointments] Appointment confirmed: {appointment_id}")
         
         # Create appointment history entry
         try:
@@ -456,6 +471,7 @@ async def confirm_appointment(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
@@ -465,7 +481,8 @@ async def confirm_appointment(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"[Appointments] Error confirming appointment {appointment_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to confirm appointment: {str(e)}")
 
 
 @router.post("/{appointment_id}/cancel", response_model=AppointmentResponse)
@@ -500,6 +517,7 @@ async def cancel_appointment(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
@@ -618,6 +636,7 @@ async def complete_appointment(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
@@ -710,6 +729,7 @@ async def mark_no_show(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
@@ -769,6 +789,7 @@ async def update_appointment(
             price=appointment.price,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
             no_show_reason=appointment.no_show_reason,
             marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
             confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,

@@ -3,7 +3,12 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+
+
+def _to_camel(s: str) -> str:
+    parts = s.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
 
 
 class PaymentBase(BaseModel):
@@ -13,6 +18,7 @@ class PaymentBase(BaseModel):
     customer_id: str = Field(..., description="Customer ID")
     invoice_id: str = Field(..., description="Invoice ID")
     gateway: str = Field(default="paystack", description="Payment gateway")
+    payment_method: str = Field(default="paystack", description="Payment method: paystack, cash, card, mobile_money, check, bank_transfer")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")
 
 
@@ -38,10 +44,11 @@ class PaymentResponse(PaymentBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )
 
 
 class PaymentListResponse(BaseModel):
@@ -52,6 +59,12 @@ class PaymentListResponse(BaseModel):
     page_size: int = Field(..., description="Page size")
     payments: list[PaymentResponse] = Field(..., description="List of payments")
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )
+
 
 class PaymentInitializeRequest(BaseModel):
     """Schema for payment initialization request."""
@@ -60,8 +73,10 @@ class PaymentInitializeRequest(BaseModel):
     customer_id: str = Field(..., description="Customer ID")
     invoice_id: str = Field(..., description="Invoice ID")
     email: str = Field(..., description="Customer email for payment")
+    payment_method: str = Field(default="paystack", description="Payment method: paystack, cash, card, mobile_money, check, bank_transfer")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")
     idempotency_key: Optional[str] = Field(None, description="Unique key for idempotency (prevents duplicate payments)")
+    reference: Optional[str] = Field(None, description="Custom transaction reference")
 
 
 class PaymentInitializeResponse(BaseModel):
@@ -71,3 +86,9 @@ class PaymentInitializeResponse(BaseModel):
     authorization_url: str = Field(..., description="URL for customer to complete payment")
     access_code: str = Field(..., description="Paystack access code")
     reference: str = Field(..., description="Paystack reference")
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=_to_camel,
+        populate_by_name=True,
+    )

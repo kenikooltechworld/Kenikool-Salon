@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AppointmentHistory } from "@/hooks/useCustomerHistory";
+import type { AppointmentHistory } from "@/hooks/useCustomerHistory";
 import { formatDate, formatTime } from "@/lib/utils/format";
 
 interface CustomerHistoryProps {

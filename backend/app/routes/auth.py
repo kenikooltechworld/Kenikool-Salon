@@ -485,7 +485,7 @@ async def login(
         response.set_cookie(
             key="refresh_token",
             value=refresh_token,
-            max_age=(auth_service.refresh_token_expire_days * 24 * 60 * 60) if not login_request.remember_me else (30 * 24 * 60 * 60),  # 30 days if remember_me
+            max_age=(auth_service.refresh_token_expire_days * 24 * 60 * 60) if not login_request.remember_me else (7 * 24 * 60 * 60),  # 7 days if remember_me
             secure=is_secure,
             httponly=True,
             samesite="Lax" if not is_secure else "Strict",
@@ -753,8 +753,34 @@ async def delete_account(
                 detail="Failed to delete account"
             )
         
-        # TODO: Send recovery email with token
-        # For now, just return success
+        # Send recovery email with token
+        try:
+            from app.tasks import send_email
+            from app.services.email_template_service import EmailTemplateService
+
+            recovery_token = result.get("recovery_token")
+            token_expires = datetime.utcnow() + timedelta(days=settings.grace_period_days)
+
+            recovery_url = f"/auth/recover/{recovery_token}"
+
+            email_context = {
+                "tenant_email": tenant.email,
+                "recovery_url": recovery_url,
+                "grace_period_days": result.get("grace_period_days", 30),
+            }
+
+            rendered_html = EmailTemplateService.render_customer_welcome_email(
+                str(tenant_id), email_context
+            )
+
+            run_in_background(send_email,
+                to=tenant.email,
+                subject="Your account recovery link",
+                template=rendered_html or "<p>Use this link to recover your account.</p>",
+                context=email_context,
+            )
+        except Exception as email_err:
+            logger.warning(f"Failed to send recovery email: {email_err}")
         
         return {
             "success": True,
@@ -929,3 +955,5 @@ async def change_password_required(
             status_code=500,
             detail="Failed to change password"
         )
+
+

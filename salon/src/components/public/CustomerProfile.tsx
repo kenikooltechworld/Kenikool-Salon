@@ -58,7 +58,19 @@ export default function CustomerProfile() {
         date_of_birth: profile.date_of_birth || "",
       });
       setNotificationPrefs(
-        profile.notification_preferences || notificationPrefs,
+        profile.notification_preferences
+          ? {
+              email_reminders:
+                profile.notification_preferences.email_reminders ??
+                notificationPrefs.email_reminders,
+              sms_reminders:
+                profile.notification_preferences.sms_reminders ??
+                notificationPrefs.sms_reminders,
+              marketing_emails:
+                profile.notification_preferences.marketing_emails ??
+                notificationPrefs.marketing_emails,
+            }
+          : notificationPrefs,
       );
     }
   });

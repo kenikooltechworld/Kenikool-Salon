@@ -127,15 +127,56 @@ class CustomerAuthService:
     @staticmethod
     def send_verification_email(customer: Customer):
         """Send email verification link to customer"""
-        # TODO: Implement email sending
-        # For now, just mark as verified (remove in production)
-        customer.email_verified = True
-        customer.save()
+        from app.tasks import send_email
+        from app.services.email_template_service import EmailTemplateService
+        from app.models.tenant import Tenant
+
+        token = jwt.encode(
+            {"sub": str(customer.id), "type": "email_verification", "exp": datetime.utcnow() + timedelta(hours=24)},
+            CustomerAuthService.SECRET_KEY,
+            algorithm=CustomerAuthService.ALGORITHM,
+        )
+
+        tenant = Tenant.objects(id=customer.tenant_id).first()
+        business_email = tenant.settings.get("email", tenant.email) if tenant.settings else tenant.email
+
+        verification_url = f"/public/verify-email/{token}"
+
+        email_context = {
+            "customer_email": customer.email,
+            "business_email": business_email,
+            "verification_url": verification_url,
+        }
+
+        rendered_html = EmailTemplateService.render_customer_welcome_email(
+            str(customer.tenant_id), email_context
+        )
+
+        run_in_background(send_email,
+            to=customer.email,
+            subject="Verify your email address",
+            template=rendered_html or "<p>Please verify your email.</p>",
+            context=email_context,
+        )
     
     @staticmethod
     def verify_email_token(token: str) -> bool:
-        """Verify email verification token"""
-        # TODO: Implement token verification
+        """Verify email verification token and mark customer as verified"""
+        payload = CustomerAuthService.decode_token(token)
+        if not payload or payload.get("type") != "email_verification":
+            return False
+
+        customer_id = payload.get("sub")
+        if not customer_id:
+            return False
+
+        customer = Customer.objects(id=ObjectId(customer_id)).first()
+        if not customer:
+            return False
+
+        customer.email_verified = True
+        customer.updated_at = datetime.utcnow()
+        customer.save()
         return True
     
     @staticmethod
@@ -155,3 +196,5 @@ class CustomerAuthService:
         ).first()
         
         return customer
+
+

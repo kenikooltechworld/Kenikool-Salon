@@ -22,7 +22,7 @@ async def create_group_booking(
     current_user = Depends(get_current_user)
 ):
     """Create a new group booking (staff/owner only)"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     # Get client info
     ip_address = request.client.host if request.client else None
@@ -53,7 +53,7 @@ async def get_group_bookings(
     current_user = Depends(get_current_user)
 ):
     """Get all group bookings with filters"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     bookings = GroupBookingService.get_group_bookings(
         tenant_id=tenant_id,

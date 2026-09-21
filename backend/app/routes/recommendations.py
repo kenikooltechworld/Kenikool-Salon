@@ -11,23 +11,23 @@ from app.schemas.recommendation import (
 )
 from app.services.recommendation_service import RecommendationService
 from app.middleware.tenant_context import get_tenant_id
-from app.middleware.customer_auth import get_current_customer
+from app.middleware.customer_auth import get_current_customer_optional
 from app.models.customer import Customer
 
 router = APIRouter(prefix="/public/recommendations", tags=["Recommendations"])
 
 
-@router.get("/", response_model=List[RecommendationResponse])
+@router.get("", response_model=List[RecommendationResponse])
 async def get_recommendations(
     request: Request,
     limit: int = 5,
-    current_customer: Optional[Customer] = Depends(get_current_customer)
+    current_customer: Optional[Customer] = Depends(get_current_customer_optional)
 ):
     """Get personalized service recommendations"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     customer_id = current_customer.id if current_customer else None
     
-    recommendations = await RecommendationService.generate_recommendations(
+    recommendations = RecommendationService.generate_recommendations(
         tenant_id=tenant_id,
         customer_id=customer_id,
         limit=limit
@@ -41,7 +41,7 @@ async def track_recommendation_feedback(
     feedback: RecommendationFeedback
 ):
     """Track user interaction with recommendation"""
-    await RecommendationService.track_recommendation_interaction(
+    RecommendationService.track_recommendation_interaction(
         recommendation_id=feedback.recommendation_id,
         action=feedback.action
     )
@@ -52,13 +52,13 @@ async def track_recommendation_feedback(
 @router.get("/preferences", response_model=CustomerPreferenceResponse)
 async def get_customer_preferences(
     request: Request,
-    current_customer: Customer = Depends(get_current_customer)
+    current_customer: Optional[Customer] = Depends(get_current_customer_optional)
 ):
     """Get customer preferences"""
-    tenant_id = get_tenant_id(request)
+    tenant_id = get_tenant_id()
     
     # Update preferences based on latest bookings
-    preference = await RecommendationService.update_customer_preferences(
+    preference = RecommendationService.update_customer_preferences(
         tenant_id=tenant_id,
         customer_id=current_customer.id
     )
