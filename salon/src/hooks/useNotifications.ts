@@ -29,8 +29,11 @@ export const useNotifications = (filters?: NotificationFilters) => {
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("skip", filters.offset.toString());
 
-      const { data } = await apiClient.get(`/notifications?${params}`);
-      return (Array.isArray(data) ? data : data.data || []) as Notification[];
+      const response = await apiClient.get(`/notifications?${params}`);
+      const payload = response.data;
+      return (Array.isArray(payload)
+        ? payload
+        : (payload?.notifications || payload?.data?.notifications || [])) as Notification[];
     },
     staleTime: 30000, // 30 seconds
   });
@@ -41,8 +44,8 @@ export const useNotification = (notificationId: string) => {
   return useQuery({
     queryKey: ["notification", notificationId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/notifications/${notificationId}`);
-      return data as Notification;
+      const response = await apiClient.get(`/notifications/${notificationId}`);
+      return response.data as Notification;
     },
   });
 };
@@ -84,8 +87,9 @@ export const useUnreadNotificationCount = () => {
   return useQuery({
     queryKey: ["notifications-unread-count"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/notifications/unread-count");
-      return (data?.unread_count || 0) as number;
+      const response = await apiClient.get("/notifications/unread-count");
+      const payload = response.data;
+      return (payload?.data?.unread_count || payload?.unread_count || 0) as number;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -96,8 +100,9 @@ export const useNotificationPreferences = () => {
   return useQuery({
     queryKey: ["notification-preferences"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/notifications/preferences");
-      return (Array.isArray(data) ? data : []) as NotificationPreference[];
+      const response = await apiClient.get("/notifications/preferences");
+      const payload = response.data;
+      return (Array.isArray(payload) ? payload : []) as NotificationPreference[];
     },
   });
 };
@@ -107,10 +112,10 @@ export const useUpdateNotificationPreferences = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (preferences: Partial<NotificationPreference>[]) => {
-      const { data } = await apiClient.post("/notifications/preferences", {
+      const response = await apiClient.post("/notifications/preferences", {
         preferences,
       });
-      return data;
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });

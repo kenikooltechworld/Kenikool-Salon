@@ -45,6 +45,8 @@ export {
   useCreateInvoice,
   useUpdateInvoice,
   useDeleteInvoice,
+  useIssueInvoice,
+  useMarkInvoicePaid,
   type Invoice,
 } from "./useInvoices";
 

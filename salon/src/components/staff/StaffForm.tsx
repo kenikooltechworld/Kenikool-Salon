@@ -65,19 +65,11 @@ export function StaffForm({
   // Use ref to capture latest state for submission
   const formDataRef = useRef(formData);
   useEffect(() => {
-    console.log("=== UPDATING formDataRef ===");
-    console.log("New formData:", formData);
-    console.log("Specialties:", formData.specialties);
-    console.log("Certifications:", formData.certifications);
     formDataRef.current = formData;
   }, [formData]);
 
-  // Monitor formData changes for debugging
+  // Monitor formData changes
   useEffect(() => {
-    console.log("=== FORMDATA STATE CHANGED ===");
-    console.log("specialties:", formData.specialties);
-    console.log("certifications:", formData.certifications);
-    console.log("Full formData:", formData);
   }, [formData.specialties, formData.certifications]);
 
   // Fetch roles and services on mount
@@ -99,7 +91,6 @@ export function StaffForm({
         const response = await fetch("/api/v1/services?page_size=100");
         if (response.ok) {
           const data = await response.json();
-          console.log("Fetched services:", data);
           setServices(data.services || []);
         } else {
           console.error("Failed to fetch services:", response.status);
@@ -136,36 +127,11 @@ export function StaffForm({
       e.preventDefault();
       const specialty = specialtyInput.trim();
       if (specialty && !formData.specialties.includes(specialty)) {
-        console.log("=== ADDING SPECIALTY ===");
-        console.log(
-          "Current specialties BEFORE setState:",
-          formData.specialties,
-        );
-        console.log("Adding:", specialty);
-
-        setFormData((prev) => {
-          const newSpecialties = [...prev.specialties, specialty];
-          console.log(
-            "Inside setState - Previous specialties:",
-            prev.specialties,
-          );
-          console.log(
-            "Inside setState - New specialties array:",
-            newSpecialties,
-          );
-          return {
-            ...prev,
-            specialties: newSpecialties,
-          };
-        });
+        setFormData((prev) => ({
+          ...prev,
+          specialties: [...prev.specialties, specialty],
+        }));
         setSpecialtyInput("");
-
-        // Log AFTER setState (but state won't be updated yet due to React batching)
-        console.log(
-          "AFTER setState call - formData.specialties:",
-          formData.specialties,
-        );
-        console.log("NOTE: State won't be updated yet due to React batching!");
       }
     }
   };
@@ -182,36 +148,11 @@ export function StaffForm({
       e.preventDefault();
       const cert = certificationInput.trim();
       if (cert && !formData.certifications.includes(cert)) {
-        console.log("=== ADDING CERTIFICATION ===");
-        console.log(
-          "Current certifications BEFORE setState:",
-          formData.certifications,
-        );
-        console.log("Adding:", cert);
-
-        setFormData((prev) => {
-          const newCertifications = [...prev.certifications, cert];
-          console.log(
-            "Inside setState - Previous certifications:",
-            prev.certifications,
-          );
-          console.log(
-            "Inside setState - New certifications array:",
-            newCertifications,
-          );
-          return {
-            ...prev,
-            certifications: newCertifications,
-          };
-        });
+        setFormData((prev) => ({
+          ...prev,
+          certifications: [...prev.certifications, cert],
+        }));
         setCertificationInput("");
-
-        // Log AFTER setState (but state won't be updated yet due to React batching)
-        console.log(
-          "AFTER setState call - formData.certifications:",
-          formData.certifications,
-        );
-        console.log("NOTE: State won't be updated yet due to React batching!");
       }
     }
   };
@@ -342,15 +283,6 @@ export function StaffForm({
     }
 
     try {
-      // Log the current formData state to verify arrays are populated
-      console.log("=== FORM DATA STATE (from ref) ===");
-      console.log("formData.specialties:", currentFormData.specialties);
-      console.log("formData.certifications:", currentFormData.certifications);
-      console.log(
-        "formData.certification_files:",
-        currentFormData.certification_files,
-      );
-
       const submitData = {
         firstName: currentFormData.firstName,
         lastName: currentFormData.lastName,
@@ -358,8 +290,8 @@ export function StaffForm({
         phone: currentFormData.phone,
         role_ids: currentFormData.role_ids,
         service_ids: currentFormData.service_ids,
-        specialties: [...currentFormData.specialties], // Create new array to avoid reference issues
-        certifications: [...currentFormData.certifications], // Create new array to avoid reference issues
+        specialties: [...currentFormData.specialties],
+        certifications: [...currentFormData.certifications],
         certification_files: [...currentFormData.certification_files],
         payment_type: currentFormData.payment_type,
         payment_rate: currentFormData.payment_rate,
@@ -368,11 +300,6 @@ export function StaffForm({
         profile_image_url: currentFormData.profile_image_url,
         status: currentFormData.status,
       };
-
-      console.log("=== SUBMIT DATA ===");
-      console.log("Full submitData:", JSON.stringify(submitData, null, 2));
-      console.log("submitData.specialties:", submitData.specialties);
-      console.log("submitData.certifications:", submitData.certifications);
 
       await onSubmit(submitData as any);
 

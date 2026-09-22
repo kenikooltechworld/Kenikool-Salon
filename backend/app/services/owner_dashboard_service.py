@@ -9,6 +9,7 @@ from app.models.payment import Payment
 from app.models.appointment import Appointment
 from app.models.inventory import Inventory
 from app.models.staff import Staff
+from app.models.time_off_request import TimeOffRequest
 from app.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -692,44 +693,20 @@ class OwnerDashboardService:
                     "actionUrl": f"/staff/time-off/{request.id}",
                 })
 
-            # 3. Low inventory alerts (MEDIUM priority)
-            low_stock_items = [
-                item for item in Inventory.objects(tenant_id=tenant_id, is_active=True)
-                if item.quantity < item.reorder_level
-            ]
+            # 3. Low inventory alerts - excluded from pending actions
+            # Inventory alerts are informational and should be handled in the inventory section
+            # Low stock items:
+            # low_stock_items = [
+            #     item for item in Inventory.objects(tenant_id=tenant_id, is_active=True)
+            #     if item.quantity < item.reorder_level
+            # ]
+            # for item in low_stock_items:
+            #     actions.append({...})
 
-            for item in low_stock_items:
-                actions.append({
-                    "id": str(item.id),
-                    "description": f"Inventory: {item.name} stock below minimum ({item.quantity} remaining)",
-                    "dueDate": now.isoformat(),
-                    "priority": "medium",
-                    "type": "inventory",
-                    "actionUrl": f"/inventory/{item.id}",
-                })
-
-            # 4. Expiring inventory (HIGH priority)
-            thirty_days_from_now = now + timedelta(days=30)
-            expiring_items = Inventory.objects(
-                tenant_id=tenant_id,
-                is_active=True,
-                expiry_date__exists=True,
-                expiry_date__ne=None,
-                expiry_date__gte=now,
-                expiry_date__lte=thirty_days_from_now
-            )
-
-            for item in expiring_items:
-                days_until_expiry = (item.expiry_date - now).days
-                priority = "high" if days_until_expiry <= 7 else "medium"
-                actions.append({
-                    "id": str(item.id),
-                    "description": f"Inventory: {item.name} expires in {days_until_expiry} days",
-                    "dueDate": item.expiry_date.isoformat(),
-                    "priority": priority,
-                    "type": "inventory",
-                    "actionUrl": f"/inventory/{item.id}",
-                })
+            # 4. Expiring inventory - excluded from pending actions
+            # expiring_items = Inventory.objects(...)
+            # for item in expiring_items:
+            #     actions.append({...})
 
             # Sort by priority (high > medium > low) and then by due date
             priority_order = {"high": 0, "medium": 1, "low": 2}
@@ -752,7 +729,7 @@ class OwnerDashboardService:
             }
 
     def get_revenue_analytics(
-        self, tenant_id: ObjectId, start_date: Optional[str] = None, end_date: Optional[str] = None
+        self, tenant_id: ObjectId, period: str = "daily", days: int = 30
     ) -> Dict[str, Any]:
         """
         Get revenue analytics data for charts and reporting.
@@ -773,23 +750,21 @@ class OwnerDashboardService:
             from app.models.service import Service
             from app.models.user import User
 
-            cache_key = f"revenue_analytics:{tenant_id}:{start_date}:{end_date}"
+            cache_key = f"revenue_analytics:{tenant_id}:{period}:{days}"
             cached = cache.get(cache_key)
             if cached:
                 return cached
 
             now = datetime.utcnow()
 
-            # Parse dates or use defaults
-            if end_date:
-                end = datetime.strptime(end_date, "%Y-%m-%d")
-            else:
-                end = now
-
-            if start_date:
-                start = datetime.strptime(start_date, "%Y-%m-%d")
-            else:
-                start = now - timedelta(days=30)
+            # Calculate date range based on period and days
+            end = now
+            if period == "daily":
+                start = now - timedelta(days=min(days, 30))
+            elif period == "weekly":
+                start = now - timedelta(days=min(days, 90))
+            else:  # monthly
+                start = now - timedelta(days=min(days, 365))
 
             # Get payments in date range (single query)
             payments = list(Payment.objects(
@@ -828,14 +803,13 @@ class OwnerDashboardService:
                 date_key = payment.created_at.strftime("%Y-%m-%d")
                 daily_data[date_key] = daily_data.get(date_key, 0.0) + amount
                 
-                # Weekly aggregation
+                # Weekly aggregation - use week start date as key
                 week_start = payment.created_at - timedelta(days=payment.created_at.weekday())
-                week_key = week_start.strftime("%Y-W%U")
-                weekly_data[week_key] = weekly_data.get(week_key, 0.0) + amount
+                weekly_data[week_start] = weekly_data.get(week_start, 0.0) + amount
                 
-                # Monthly aggregation
-                month_key = payment.created_at.strftime("%Y-%m")
-                monthly_data[month_key] = monthly_data.get(month_key, 0.0) + amount
+                # Monthly aggregation - use month start date as key
+                month_start = payment.created_at.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                monthly_data[month_start] = monthly_data.get(month_start, 0.0) + amount
                 
                 # Service aggregation
                 if payment.service_id:
@@ -844,27 +818,28 @@ class OwnerDashboardService:
                     service_data[service_name] = service_data.get(service_name, 0.0) + amount
                 
                 # Staff aggregation
-                if payment.staff_id:
-                    staff = staff_map.get(str(payment.staff_id))
+                staff_id = getattr(payment, 'staff_id', None)
+                if staff_id:
+                    staff = staff_map.get(str(staff_id))
                     if staff and staff.user_id:
                         user = users_map.get(str(staff.user_id))
                         staff_name = f"{user.first_name} {user.last_name}" if user else "Unknown"
                         staff_data[staff_name] = staff_data.get(staff_name, 0.0) + amount
 
-            # Format results
+            # Format results - unified shape with date/revenue for all periods
             daily = [
-                {"date": date, "revenue": revenue}
+                {"date": date, "revenue": revenue, "label": date}
                 for date, revenue in sorted(daily_data.items())
             ]
 
             weekly = [
-                {"week": week, "revenue": revenue}
-                for week, revenue in sorted(weekly_data.items())
+                {"date": week_start.strftime("%Y-%m-%d"), "revenue": revenue, "label": f"Week of {week_start.strftime('%b %d')}"}
+                for week_start, revenue in sorted(weekly_data.items(), key=lambda x: x[0])
             ]
 
             monthly = [
-                {"month": month, "revenue": revenue}
-                for month, revenue in sorted(monthly_data.items())
+                {"date": month_start.strftime("%Y-%m-%d"), "revenue": revenue, "label": month_start.strftime("%B %Y")}
+                for month_start, revenue in sorted(monthly_data.items(), key=lambda x: x[0])
             ]
 
             by_service = [
@@ -912,7 +887,7 @@ class OwnerDashboardService:
                 "totalRevenue": round(total_revenue, 2),
                 "averageDailyRevenue": round(average_daily_revenue, 2),
                 "growthPercentage": round(growth_percentage, 2),
-                "period": "daily",
+                "period": period,
             }
 
             logger.info(f"[RevenueAnalytics] tenant={tenant_id} totalRevenue={analytics['totalRevenue']} payments_count={len(payments)} byStaff_count={len(by_staff)} period={analytics['period']}")
@@ -987,7 +962,10 @@ class OwnerDashboardService:
             current_revenue_map = {}
             prev_revenue_map = {}
             for payment in all_payments:
-                staff_id_str = str(payment.staff_id)
+                staff_id = getattr(payment, 'staff_id', None)
+                if not staff_id:
+                    continue
+                staff_id_str = str(staff_id)
                 amount = Decimal(str(payment.amount))
                 
                 if payment.created_at >= current_month_start:
@@ -1036,8 +1014,9 @@ class OwnerDashboardService:
                 # Get satisfaction score
                 satisfaction = float(staff.rating) if staff.rating else 0.0
 
-                # Get attendance rate (simplified - assume 100% if no data)
-                attendance = 100.0
+                # Get attendance rate
+                # TODO: Implement real attendance tracking from check-in/check-out or schedule adherence
+                attendance = 0.0
 
                 # Calculate revenue change
                 revenue_change = (
@@ -1105,7 +1084,34 @@ class OwnerDashboardService:
             action_id: The action ID to mark as complete
         """
         try:
-            # Invalidate pending actions cache
+            # Try to find and update the underlying record
+            from bson import ObjectId
+            
+            # Try payment first
+            try:
+                payment = Payment.objects(tenant_id=tenant_id, id=ObjectId(action_id)).first()
+                if payment:
+                    payment.status = "success"
+                    payment.save()
+                    logger.info(f"Marked payment {action_id} as complete")
+                    self.invalidate_cache(tenant_id)
+                    return
+            except Exception:
+                pass
+            
+            # Try time-off request
+            try:
+                time_off = TimeOffRequest.objects(tenant_id=tenant_id, id=ObjectId(action_id)).first()
+                if time_off:
+                    time_off.status = "approved"
+                    time_off.save()
+                    logger.info(f"Marked time-off request {action_id} as approved")
+                    self.invalidate_cache(tenant_id)
+                    return
+            except Exception:
+                pass
+            
+            # If no underlying record found, just invalidate cache
             self.invalidate_cache(tenant_id)
             logger.info(f"Marked action {action_id} as complete for tenant {tenant_id}")
         except Exception as e:
@@ -1121,7 +1127,34 @@ class OwnerDashboardService:
             action_id: The action ID to dismiss
         """
         try:
-            # Invalidate pending actions cache
+            # Try to find and update the underlying record
+            from bson import ObjectId
+            
+            # Try payment first
+            try:
+                payment = Payment.objects(tenant_id=tenant_id, id=ObjectId(action_id)).first()
+                if payment:
+                    payment.status = "failed"
+                    payment.save()
+                    logger.info(f"Dismissed payment {action_id} as failed")
+                    self.invalidate_cache(tenant_id)
+                    return
+            except Exception:
+                pass
+            
+            # Try time-off request
+            try:
+                time_off = TimeOffRequest.objects(tenant_id=tenant_id, id=ObjectId(action_id)).first()
+                if time_off:
+                    time_off.status = "denied"
+                    time_off.save()
+                    logger.info(f"Dismissed time-off request {action_id} as denied")
+                    self.invalidate_cache(tenant_id)
+                    return
+            except Exception:
+                pass
+            
+            # If no underlying record found, just invalidate cache
             self.invalidate_cache(tenant_id)
             logger.info(f"Dismissed action {action_id} for tenant {tenant_id}")
         except Exception as e:

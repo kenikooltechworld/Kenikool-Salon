@@ -238,15 +238,27 @@ export default function Customers() {
                       {customer.phone}
                     </td>
                     <td className="px-4 sm:px-6 py-4 sm:py-5 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium ${
-                          customer.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {customer.status === "active" ? "Active" : "Inactive"}
-                      </span>
+                      <div className="flex flex-col gap-2">
+                        <span
+                          className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium ${
+                            customer.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {customer.status === "active" ? "Active" : "Inactive"}
+                        </span>
+                        {customer.outstandingBalance !== undefined && customer.outstandingBalance > 0 && (
+                          <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                            Outstanding Balance
+                          </span>
+                        )}
+                        {customer.isGuest && (
+                          <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                            Guest
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 sm:py-5 text-muted-foreground text-sm sm:text-base whitespace-nowrap">
                       {new Date(customer.createdAt).toLocaleDateString()}

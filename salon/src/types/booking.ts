@@ -16,6 +16,8 @@ export interface Booking {
   notes?: string;
   locationId?: string;
   price?: number;
+  paymentOption?: "now" | "later";
+  paymentStatus?: "pending" | "completed" | "failed";
   cancellationReason?: string;
   cancelledAt?: string;
   cancelledBy?: string;

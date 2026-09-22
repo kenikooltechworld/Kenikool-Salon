@@ -3,6 +3,7 @@ import { AttendanceHistory } from "@/components/staff/AttendanceHistory";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { RefreshCwIcon } from "@/components/icons";
 
 export default function StaffAttendance() {
   const { showToast } = useToast();
@@ -27,7 +28,8 @@ export default function StaffAttendance() {
             Track your work hours and attendance history
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
+        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+          <RefreshCwIcon size={16} />
           Refresh
         </Button>
       </div>

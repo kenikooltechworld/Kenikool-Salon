@@ -29,6 +29,7 @@ class StaffCreate(BaseModel):
 class StaffUpdate(BaseModel):
     """Schema for updating a staff member."""
 
+    role_ids: Optional[List[str]] = Field(None, description="List of role IDs to assign to the staff member")
     service_ids: Optional[List[str]] = Field(None, description="List of service IDs this staff member provides")
     specialties: Optional[List[str]] = Field(None, description="List of specialties")
     certifications: Optional[List[str]] = Field(None, description="List of certifications")

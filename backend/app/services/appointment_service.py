@@ -521,7 +521,8 @@ class AppointmentService:
                 "end_time": appointment.end_time.isoformat(),
                 "staff_id": str(appointment.staff_id),
                 "service_id": str(appointment.service_id),
-            }
+            },
+            recipient_type="customer",
         )
         
         return appointment
@@ -609,7 +610,8 @@ class AppointmentService:
                 "start_time": appointment.start_time.isoformat(),
                 "end_time": appointment.end_time.isoformat(),
                 "cancellation_reason": reason,
-            }
+            },
+            recipient_type="customer",
         )
         
         return appointment

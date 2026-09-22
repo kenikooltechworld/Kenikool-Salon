@@ -4,6 +4,7 @@ import { apiClient } from "@/lib/utils/api";
 export interface RevenueDataPoint {
   date: string;
   revenue: number;
+  label?: string;
 }
 
 export interface ServiceRevenue {

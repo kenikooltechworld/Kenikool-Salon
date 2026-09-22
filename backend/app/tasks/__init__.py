@@ -139,7 +139,16 @@ def send_bulk_emails(recipients: list, subject: str, template: str, context: dic
     return {"status": "completed", "count": len(recipients), "results": results}
 
 
-def send_notification(user_id: str, title: str, message: str):
+def send_notification(
+    user_id: str,
+    title: str,
+    message: str,
+    notification_type: str = "info",
+    channel: str = "in_app",
+    recipient_type: str = "staff",
+    recipient_email: str = None,
+    recipient_phone: str = None,
+):
     """Send notification to user."""
     from app.services.notification_service import NotificationService
     from app.context import get_tenant_id
@@ -147,17 +156,26 @@ def send_notification(user_id: str, title: str, message: str):
     tenant_id = get_tenant_id()
     notification = NotificationService.create_notification(
         recipient_id=user_id,
-        recipient_type="staff",
-        notification_type="info",
-        channel="in_app",
+        recipient_type=recipient_type,
+        notification_type=notification_type,
+        channel=channel,
         content=message,
         subject=title,
+        recipient_email=recipient_email,
+        recipient_phone=recipient_phone,
     )
     logger.info(f"Notification {notification.id} queued for user {user_id}: {title}")
     return {"status": "sent", "user_id": user_id, "notification_id": str(notification.id)}
 
 
-def send_bulk_notifications(user_ids: list, title: str, message: str):
+def send_bulk_notifications(
+    user_ids: list,
+    title: str,
+    message: str,
+    notification_type: str = "info",
+    channel: str = "in_app",
+    recipient_type: str = "staff",
+):
     """Send notifications to multiple users."""
     from app.services.notification_service import NotificationService
 
@@ -166,9 +184,9 @@ def send_bulk_notifications(user_ids: list, title: str, message: str):
         try:
             n = NotificationService.create_notification(
                 recipient_id=uid,
-                recipient_type="staff",
-                notification_type="info",
-                channel="in_app",
+                recipient_type=recipient_type,
+                notification_type=notification_type,
+                channel=channel,
                 content=message,
                 subject=title,
             )
@@ -227,8 +245,92 @@ def retry_failed_webhook(webhook_id: str):
     return {"status": "retried", "webhook_id": webhook_id}
 
 
-def queue_notification(tenant_id: str, notification_type: str, recipient_id: str, data: dict):
+def queue_notification(
+    tenant_id: str,
+    notification_type: str,
+    recipient_id: str,
+    data: dict,
+    recipient_type: str = "customer",
+    recipient_email: str = None,
+    recipient_phone: str = None,
+):
     """Queue a notification to be sent asynchronously."""
+    from app.services.notification_service import NotificationService
+    from app.context import set_tenant_id
+    from bson import ObjectId
+
     logger.info(f"Queueing {notification_type} notification for tenant {tenant_id} to recipient {recipient_id}")
-    run_in_background(send_notification, recipient_id, notification_type, str(data))
+
+    try:
+        set_tenant_id(ObjectId(tenant_id))
+    except Exception:
+        pass
+
+    # Look up recipient contact info if not provided
+    if not recipient_email or not recipient_phone:
+        try:
+            if recipient_type == "customer":
+                from app.models.customer import Customer
+                customer = Customer.objects(
+                    tenant_id=ObjectId(tenant_id), id=ObjectId(recipient_id)
+                ).first()
+                if customer:
+                    recipient_email = recipient_email or getattr(customer, "email", None)
+                    recipient_phone = recipient_phone or getattr(customer, "phone", None)
+            else:
+                from app.models.staff import Staff
+                from app.models.user import User
+                staff = Staff.objects(
+                    tenant_id=ObjectId(tenant_id), id=ObjectId(recipient_id)
+                ).first()
+                if staff and staff.user_id:
+                    user = User.objects(id=staff.user_id).first()
+                    if user:
+                        recipient_email = recipient_email or getattr(user, "email", None)
+                        recipient_phone = recipient_phone or getattr(user, "phone", None)
+        except Exception as e:
+            logger.warning(f"Could not look up recipient contact info: {e}")
+
+    # Determine channels based on notification type
+    channels = []
+    if notification_type in [
+        "appointment_reminder_24h",
+        "appointment_reminder_1h",
+    ]:
+        channels = ["in_app", "email"]
+        if recipient_phone:
+            channels.append("sms")
+    elif notification_type in [
+        "payment_success",
+        "payment_failed",
+        "payment_cancelled",
+        "refund_success",
+        "appointment_confirmed",
+        "appointment_cancelled",
+        "appointment_completed",
+        "shift_assigned",
+        "time_off_approved",
+        "time_off_rejected",
+        "new_appointment",
+    ]:
+        channels = ["in_app", "email"]
+    else:
+        channels = ["in_app"]
+
+    for channel in channels:
+        try:
+            NotificationService.create_notification(
+                recipient_id=recipient_id,
+                recipient_type=recipient_type,
+                notification_type=notification_type,
+                channel=channel,
+                content=str(data),
+                subject=notification_type.replace("_", " ").title(),
+                template_variables=data if isinstance(data, dict) else {},
+                recipient_email=recipient_email if channel == "email" else None,
+                recipient_phone=recipient_phone if channel in ("sms", "push") else None,
+            )
+        except Exception as e:
+            logger.error(f"Error creating {channel} notification: {e}")
+
     return {"status": "queued", "notification_type": notification_type}

@@ -6,7 +6,6 @@ from typing import Dict, Any, Optional
 from bson import ObjectId
 from app.models.customer import Customer
 from app.models.invoice import Invoice
-from app.context import get_tenant_id
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +13,13 @@ logger = logging.getLogger(__name__)
 class BalanceService:
     """Service for managing customer outstanding balances."""
 
-    def calculate_customer_balance(self, customer_id: str) -> Decimal:
+    @staticmethod
+    def calculate_customer_balance(tenant_id: ObjectId, customer_id: str) -> Decimal:
         """
         Calculate outstanding balance for a customer.
 
         Args:
+            tenant_id: Tenant ID
             customer_id: Customer ID
 
         Returns:
@@ -27,11 +28,10 @@ class BalanceService:
         Raises:
             ValueError: If customer not found
         """
-        tenant_id = get_tenant_id()
         
         # Get customer
         customer = Customer.objects(
-            tenant_id=ObjectId(tenant_id),
+            tenant_id=tenant_id,
             id=ObjectId(customer_id)
         ).first()
 
@@ -40,7 +40,7 @@ class BalanceService:
 
         # Get all unpaid invoices for customer
         unpaid_invoices = Invoice.objects(
-            tenant_id=ObjectId(tenant_id),
+            tenant_id=tenant_id,
             customer_id=ObjectId(customer_id),
             status__in=["issued", "overdue"],
         )
@@ -52,11 +52,13 @@ class BalanceService:
 
         return total_outstanding
 
-    def update_customer_balance(self, customer_id: str) -> Decimal:
+    @staticmethod
+    def update_customer_balance(tenant_id: ObjectId, customer_id: str) -> Decimal:
         """
         Update customer's outstanding balance in database.
 
         Args:
+            tenant_id: Tenant ID
             customer_id: Customer ID
 
         Returns:
@@ -65,14 +67,13 @@ class BalanceService:
         Raises:
             ValueError: If customer not found
         """
-        tenant_id = get_tenant_id()
         
         # Calculate current balance
-        balance = self.calculate_customer_balance(customer_id)
+        balance = BalanceService.calculate_customer_balance(tenant_id, customer_id)
 
         # Update customer record
         customer = Customer.objects(
-            tenant_id=ObjectId(tenant_id),
+            tenant_id=tenant_id,
             id=ObjectId(customer_id)
         ).first()
 
@@ -86,11 +87,13 @@ class BalanceService:
 
         return balance
 
-    def check_booking_eligibility(self, customer_id: str) -> Dict[str, Any]:
+    @staticmethod
+    def check_booking_eligibility(tenant_id: ObjectId, customer_id: str) -> Dict[str, Any]:
         """
         Check if customer is eligible to book (no outstanding balance).
 
         Args:
+            tenant_id: Tenant ID
             customer_id: Customer ID
 
         Returns:
@@ -99,11 +102,10 @@ class BalanceService:
         Raises:
             ValueError: If customer not found
         """
-        tenant_id = get_tenant_id()
         
         # Get customer
         customer = Customer.objects(
-            tenant_id=ObjectId(tenant_id),
+            tenant_id=tenant_id,
             id=ObjectId(customer_id)
         ).first()
 
@@ -111,7 +113,7 @@ class BalanceService:
             raise ValueError(f"Customer {customer_id} not found")
 
         # Calculate current balance
-        balance = self.calculate_customer_balance(customer_id)
+        balance = BalanceService.calculate_customer_balance(tenant_id, customer_id)
 
         # Check eligibility
         is_eligible = balance == 0
@@ -124,11 +126,13 @@ class BalanceService:
             "reason": "No outstanding balance" if is_eligible else f"Outstanding balance of {balance} must be paid before booking",
         }
 
-    def get_customer_balance(self, customer_id: str) -> Dict[str, Any]:
+    @staticmethod
+    def get_customer_balance(tenant_id: ObjectId, customer_id: str) -> Dict[str, Any]:
         """
         Get customer's current outstanding balance.
 
         Args:
+            tenant_id: Tenant ID
             customer_id: Customer ID
 
         Returns:
@@ -137,11 +141,10 @@ class BalanceService:
         Raises:
             ValueError: If customer not found
         """
-        tenant_id = get_tenant_id()
         
         # Get customer
         customer = Customer.objects(
-            tenant_id=ObjectId(tenant_id),
+            tenant_id=tenant_id,
             id=ObjectId(customer_id)
         ).first()
 
@@ -149,11 +152,11 @@ class BalanceService:
             raise ValueError(f"Customer {customer_id} not found")
 
         # Calculate current balance
-        balance = self.calculate_customer_balance(customer_id)
+        balance = BalanceService.calculate_customer_balance(tenant_id, customer_id)
 
         # Get unpaid invoices
         unpaid_invoices = Invoice.objects(
-            tenant_id=ObjectId(tenant_id),
+            tenant_id=tenant_id,
             customer_id=ObjectId(customer_id),
             status__in=["issued", "overdue"],
         )

@@ -72,8 +72,9 @@ export default function ShiftDetail() {
             variant="outline"
             size="sm"
             onClick={() => navigate("/staff/shifts")}
-            className="mt-4"
+            className="mt-4 gap-2"
           >
+            <ArrowLeftIcon size={16} />
             Back to Shifts
           </Button>
         </div>
@@ -174,7 +175,8 @@ export default function ShiftDetail() {
 
           {/* Actions */}
           <div className="border-t border-border pt-4 flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/staff/shifts")}>
+            <Button variant="outline" onClick={() => navigate("/staff/shifts")} className="gap-2">
+              <ArrowLeftIcon size={16} />
               Back
             </Button>
           </div>

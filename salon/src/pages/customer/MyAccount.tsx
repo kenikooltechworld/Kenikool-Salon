@@ -1,17 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert } from "@/components/ui/alert";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useAuthStore } from "@/stores/auth";
-import { CalendarIcon, UserIcon, SettingsIcon } from "@/components/icons";
+import { useTenantSettings } from "@/hooks/owner/useTenantSettings";
+import { useCustomerProfile, useUpdateCustomerProfile } from "@/hooks/useCustomerAuth";
+import { CalendarIcon, UserIcon, SettingsIcon, BuildingIcon } from "@/components/icons";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/utils/api";
+import { useToast } from "@/components/ui/toast";
 
 export default function MyAccountPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const { data: appointments = [], isLoading } = useAppointments();
+  const setUser = useAuthStore((state) => state.setUser);
+  const { showToast } = useToast();
+  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
+  const { data: tenantSettings, isLoading: settingsLoading } = useTenantSettings();
+  const { data: customerProfile, isLoading: customerLoading } = useCustomerProfile();
+  const updateCustomerProfile = useUpdateCustomerProfile();
   const [activeTab, setActiveTab] = useState<"bookings" | "profile">(
     "bookings",
   );
+
+  const { data: authData, isLoading: authLoading } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/auth/me");
+      const payload = data.user || data;
+      return payload;
+    },
+  });
+
+  useEffect(() => {
+    if (authData) {
+      setUser({
+        id: authData.id,
+        email: authData.email,
+        firstName: authData.firstName,
+        lastName: authData.lastName,
+        phone: authData.phone,
+        role: authData.role,
+        roleNames: authData.roleNames,
+        tenantId: authData.tenantId,
+      });
+    }
+  }, [authData, setUser]);
+
+  const currentUser = authData || user;
+  const isCustomer = !!customerProfile && !currentUser?.roleNames?.some(r => ["Owner", "Manager", "Staff"].includes(r));
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -41,6 +83,67 @@ export default function MyAccountPage() {
   const pastAppointments = appointments.filter(
     (a: any) => a.status === "completed",
   );
+
+  const handleUpdateCustomerProfile = async (data: { first_name?: string; last_name?: string; phone?: string; address?: string }) => {
+    try {
+      await updateCustomerProfile.mutateAsync(data);
+      showToast({
+        title: "Success",
+        description: "Profile updated successfully",
+        variant: "success",
+      });
+    } catch (error: any) {
+      showToast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update profile",
+        variant: "error",
+      });
+    }
+  };
+
+  if (authLoading || customerLoading) {
+    return (
+      <div className="w-full space-y-6 px-0 sm:px-0">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="flex gap-2 border-b border-border">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-16 h-16 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+            </div>
+            <div className="border-t border-border pt-4 space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentUser && !customerProfile) {
+    return (
+      <Alert variant="error">
+        Failed to load profile. Please refresh the page.
+      </Alert>
+    );
+  }
+
+  const displayUser = isCustomer ? customerProfile : currentUser;
 
   return (
     <div className="w-full space-y-6 px-0 sm:px-0">
@@ -93,9 +196,35 @@ export default function MyAccountPage() {
               </p>
             </div>
 
-            {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading bookings...
+            {appointmentsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                        <Skeleton className="h-6 w-20" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-4 w-full" />
+                        </div>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-4 w-full" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Skeleton className="h-9 flex-1" />
+                        <Skeleton className="h-9 flex-1" />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             ) : upcomingAppointments.length > 0 ? (
               <div className="space-y-3">
@@ -210,68 +339,184 @@ export default function MyAccountPage() {
       {/* Profile Tab */}
       {activeTab === "profile" && (
         <div className="space-y-6">
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <UserIcon size={32} className="text-primary" />
+          {settingsLoading ? (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="w-16 h-16 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-4 w-56" />
+                    </div>
+                  </div>
+                  <div className="border-t border-border pt-4 space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </Card>
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <Skeleton className="h-5 w-24" />
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div className="border-t border-border pt-4 space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Email</p>
-                  <p className="text-foreground">{user?.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Phone</p>
-                  <p className="text-foreground">
-                    {user?.phone || "Not provided"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <Button
-                  variant="outline"
-                  className="w-full cursor-pointer gap-2"
-                >
-                  <SettingsIcon size={16} />
-                  Edit Profile
-                </Button>
-              </div>
+              </Card>
             </div>
-          </Card>
+          ) : (
+            <>
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <UserIcon size={32} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-foreground">
+                        {displayUser?.firstName} {displayUser?.lastName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {displayUser?.email}
+                      </p>
+                    </div>
+                  </div>
 
-          <Card className="p-6">
-            <div className="space-y-4">
-              <h3 className="font-semibold text-foreground">Preferences</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-foreground">Email Notifications</p>
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 cursor-pointer"
-                  />
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Email</p>
+                      <p className="text-foreground">{displayUser?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Phone</p>
+                      <p className="text-foreground">
+                        {displayUser?.phone || "Not provided"}
+                      </p>
+                    </div>
+                    {isCustomer && customerProfile && (
+                      <>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Address</p>
+                          <p className="text-foreground">
+                            {customerProfile.address || "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Outstanding Balance</p>
+                          <p className="text-foreground">
+                            ₦{customerProfile.outstanding_balance?.toLocaleString() || "0"}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    {!isCustomer && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Role</p>
+                        <p className="text-foreground">
+                          {currentUser?.roleNames?.[0] || currentUser?.role || "User"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-foreground">SMS Reminders</p>
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 cursor-pointer"
-                  />
+              </Card>
+
+              {tenantSettings && (
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <BuildingIcon size={16} className="text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Business Profile
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Business Name
+                      </p>
+                      <p className="text-foreground">
+                        {tenantSettings.tenant_name || tenantSettings.salon_name || "Not set"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Subdomain
+                      </p>
+                      <p className="text-foreground">
+                        {tenantSettings.subdomain || "Not set"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Subscription
+                      </p>
+                      <p className="text-foreground capitalize">
+                        {tenantSettings.subscription_tier || "starter"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Status</p>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
+                        {tenantSettings.status || "active"}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-foreground">Preferences</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-foreground">Email Notifications</p>
+                      <input
+                        type="checkbox"
+                        defaultChecked
+                        className="w-4 h-4 cursor-pointer"
+                        onChange={(e) => {
+                          if (isCustomer && customerProfile) {
+                            handleUpdateCustomerProfile({
+                              notification_preferences: {
+                                ...customerProfile.notification_preferences,
+                                email: e.target.checked,
+                              },
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-foreground">SMS Reminders</p>
+                      <input
+                        type="checkbox"
+                        defaultChecked
+                        className="w-4 h-4 cursor-pointer"
+                        onChange={(e) => {
+                          if (isCustomer && customerProfile) {
+                            handleUpdateCustomerProfile({
+                              notification_preferences: {
+                                ...customerProfile.notification_preferences,
+                                sms: e.target.checked,
+                              },
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </Card>
+              </Card>
+            </>
+          )}
         </div>
       )}
     </div>

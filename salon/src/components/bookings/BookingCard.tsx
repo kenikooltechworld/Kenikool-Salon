@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { Booking } from "@/types";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { formatDate, formatTime } from "@/lib/utils/format";
-import { EyeIcon, CheckIcon, TrashIcon } from "@/components/icons";
+import { EyeIcon, CheckIcon, TrashIcon, DollarSignIcon } from "@/components/icons";
 
 interface BookingCardProps {
   booking: Booking;
@@ -12,6 +12,7 @@ interface BookingCardProps {
   onCancel?: (id: string) => void;
   onComplete?: (id: string) => void;
   onMarkNoShow?: (id: string) => void;
+  onCollectPayment?: (booking: Booking) => void;
   isLoading?: boolean;
 }
 
@@ -22,6 +23,7 @@ export function BookingCard({
   onCancel,
   onComplete,
   onMarkNoShow,
+  onCollectPayment,
   isLoading = false,
 }: BookingCardProps) {
   return (
@@ -122,6 +124,21 @@ export function BookingCard({
             <span>No-Show</span>
           </Button>
         )}
+        {booking.status === "completed" &&
+          booking.paymentOption === "later" &&
+          booking.paymentStatus !== "completed" &&
+          onCollectPayment && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => onCollectPayment(booking)}
+              disabled={isLoading}
+              className="gap-1 shrink-0 bg-green-600 hover:bg-green-700"
+            >
+              <DollarSignIcon size={14} />
+              <span>Collect Payment</span>
+            </Button>
+          )}
       </div>
     </Card>
   );

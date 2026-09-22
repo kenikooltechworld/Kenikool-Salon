@@ -62,7 +62,7 @@ export function useGoals() {
     queryKey: ["my-goals"],
     queryFn: async () => {
       const { data } = await apiClient.get<GoalsSummary>(
-        `/staff/${user?.id}/goals`,
+        `/goals/staff/${user?.id}`,
       );
       return (
         data || {
@@ -88,7 +88,8 @@ export function useGoalAchievements() {
     queryKey: ["my-goal-achievements"],
     queryFn: async () => {
       const { data } = await apiClient.get<GoalAchievement[]>(
-        `/staff/${user?.id}/goals/achievements`,
+        `/goals/achievements`,
+        { params: { staff_id: user?.id } },
       );
       return data || [];
     },
@@ -106,7 +107,7 @@ export function useBonusIncentives() {
     queryKey: ["bonus-incentives"],
     queryFn: async () => {
       const { data } = await apiClient.get<BonusIncentive[]>(
-        `/staff/${user?.id}/bonuses`,
+        `/goals/bonuses`,
       );
       return data || [];
     },
@@ -139,7 +140,7 @@ export function usePerformanceVsTargets() {
           actual: number;
           percentage: number;
         };
-      }>(`/staff/${user?.id}/performance-vs-targets`);
+      }>(`/goals/performance-vs-targets`, { params: { staff_id: user?.id } });
       return (
         data || {
           sales_vs_target: { target: 0, actual: 0, percentage: 0 },

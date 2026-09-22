@@ -13,3 +13,8 @@ export {
   useStaffPerformance,
   type StaffPerformanceData,
 } from "./useStaffPerformance";
+export {
+  useDashboardDataStatus,
+  type DashboardDataStatus,
+  type DataAvailability,
+} from "./useDashboardDataStatus";

@@ -11,6 +11,7 @@ import { StaffTimeOffList } from "@/components/staff/StaffTimeOffList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
+import { RefreshCwIcon } from "@/components/icons";
 
 const ALLOCATED_DAYS = 20; // Default allocated days
 
@@ -125,7 +126,8 @@ export default function StaffTimeOff() {
             Submit and manage your time off requests
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
+        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+          <RefreshCwIcon size={16} />
           Refresh
         </Button>
       </div>

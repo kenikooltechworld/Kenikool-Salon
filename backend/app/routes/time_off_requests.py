@@ -184,19 +184,32 @@ async def create_time_off_request(
             staff_user = User.objects(id=staff.user_id).first()
             staff_name = f"{staff_user.first_name} {staff_user.last_name}" if staff_user else "Staff Member"
             
-            queue_notification(
-                tenant_id=str(tenant_id),
-                notification_type="time_off_request_created",
-                recipient_id="manager",  # Will be handled by notification system
-                data={
-                    "request_id": str(new_request.id),
-                    "staff_name": staff_name,
-                    "start_date": start_date.isoformat(),
-                    "end_date": end_date.isoformat(),
-                    "reason": reason,
-                }
-            )
-            logger.info(f"Queued notification for time-off request: {new_request.id}")
+            # Find a manager/owner to notify
+            manager_id = None
+            try:
+                owner_role = Role.objects(tenant_id=tenant_id, name__in=["Owner", "Manager"]).first()
+                if owner_role:
+                    manager = User.objects(tenant_id=tenant_id, role_ids__contains=owner_role.id).first()
+                    if manager:
+                        manager_id = str(manager.id)
+            except Exception:
+                pass
+            
+            if manager_id:
+                queue_notification(
+                    tenant_id=str(tenant_id),
+                    notification_type="time_off_request_created",
+                    recipient_id=manager_id,
+                    data={
+                        "request_id": str(new_request.id),
+                        "staff_name": staff_name,
+                        "start_date": start_date.isoformat(),
+                        "end_date": end_date.isoformat(),
+                        "reason": reason,
+                    },
+                    recipient_type="staff",
+                )
+                logger.info(f"Queued notification for time-off request: {new_request.id}")
         except Exception as e:
             logger.error(f"Failed to queue notification: {str(e)}")
             # Don't fail the request creation if notification fails
@@ -250,7 +263,8 @@ async def approve_time_off_request(
                         "staff_name": staff_name,
                         "start_date": request.start_date.isoformat(),
                         "end_date": request.end_date.isoformat(),
-                    }
+                    },
+                    recipient_type="staff",
                 )
                 logger.info(f"Queued approval notification for time-off request: {request.id}")
         except Exception as e:
@@ -308,7 +322,8 @@ async def deny_time_off_request(
                         "start_date": request.start_date.isoformat(),
                         "end_date": request.end_date.isoformat(),
                         "denial_reason": denial_data.get("denial_reason", ""),
-                    }
+                    },
+                    recipient_type="staff",
                 )
                 logger.info(f"Queued denial notification for time-off request: {request.id}")
         except Exception as e:

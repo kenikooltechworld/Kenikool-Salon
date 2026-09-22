@@ -157,6 +157,7 @@ export function PendingActions({
               </div>
               <div className="flex gap-2 ml-2">
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => onMarkComplete?.(action.id)}
@@ -166,6 +167,7 @@ export function PendingActions({
                   <CheckIcon size={16} />
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => onDismiss?.(action.id)}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ import {
 import { StaffEarningsChart } from "@/components/staff/StaffEarningsChart";
 import { StaffEarningsBreakdown } from "@/components/staff/StaffEarningsBreakdown";
 import { useMyEarnings, useMyEarningsSummary } from "@/hooks/useMyEarnings";
+import { useAuthStore } from "@/stores/auth";
+import { apiClient } from "@/lib/utils/api";
 import { getMonthStart, getMonthEnd, addDays } from "@/lib/utils/date";
 
 interface DateRange {
@@ -159,6 +162,26 @@ export default function Earnings() {
     refetch: refetchSummary,
   } = useMyEarningsSummary();
 
+  const user = useAuthStore((state) => state.user);
+
+  const {
+    data: paymentStructure,
+    isLoading: paymentLoading,
+  } = useQuery({
+    queryKey: ["my-payment-structure"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{
+        payment_type: string;
+        payment_rate: number;
+        staff_name: string;
+        hire_date: string | null;
+        status: string;
+      }>(`/staff/user/${user?.id}/payment-structure`);
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   const handleRefresh = () => {
     refetchEarnings();
     refetchSummary();
@@ -181,7 +204,7 @@ export default function Earnings() {
     }));
   };
 
-  const isLoading = earningsLoading || summaryLoading;
+  const isLoading = earningsLoading || summaryLoading || paymentLoading;
   const commissions = earningsData?.commissions || [];
   const hasEarningsData = commissions.length > 0;
 
@@ -462,69 +485,79 @@ export default function Earnings() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground flex items-center gap-2">
-                <CheckCircleIcon size={16} className="text-green-500" />
-                Commission Structure
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">
-                    Percentage Rate:
-                  </span>
-                  <Badge variant="secondary" className="font-medium">
-                    15%
-                  </Badge>
+          {paymentLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner className="h-6 w-6" />
+            </div>
+          ) : paymentStructure ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <CheckCircleIcon size={16} className="text-green-500" />
+                  Commission Structure
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Payment Type:
+                    </span>
+                    <Badge variant="secondary" className="font-medium capitalize">
+                      {paymentStructure.payment_type || "N/A"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Payment Rate:</span>
+                    <Badge variant="secondary" className="font-medium">
+                      {paymentStructure.payment_rate
+                        ? `${paymentStructure.payment_rate.toLocaleString()}`
+                        : "N/A"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Status:</span>
+                    <Badge
+                      variant={
+                        paymentStructure.status === "active"
+                          ? "default"
+                          : "secondary"
+                      }
+                      className="font-medium capitalize"
+                    >
+                      {paymentStructure.status || "N/A"}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Fixed Rate:</span>
-                  <Badge variant="secondary" className="font-medium">
-                    ₦500 per service
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">
-                    Payment Schedule:
-                  </span>
-                  <Badge variant="default" className="font-medium">
-                    Weekly
-                  </Badge>
+              </div>
+              <div className="space-y-3">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <InfoIcon size={16} className="text-blue-500" />
+                  Personal Information
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Staff Name:</span>
+                    <span className="font-medium">
+                      {paymentStructure.staff_name || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Hire Date:</span>
+                    <span className="font-medium">
+                      {paymentStructure.hire_date
+                        ? new Date(
+                            paymentStructure.hire_date,
+                          ).toLocaleDateString("en-NG")
+                        : "N/A"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground flex items-center gap-2">
-                <InfoIcon size={16} className="text-blue-500" />
-                Payment Information
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Next Payment:</span>
-                  <span className="font-medium">
-                    {new Date(
-                      Date.now() + 7 * 24 * 60 * 60 * 1000,
-                    ).toLocaleDateString("en-NG")}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Payment Method:</span>
-                  <Badge variant="outline" className="font-medium">
-                    Bank Transfer
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge
-                    variant="default"
-                    className="font-medium text-green-700 bg-green-100"
-                  >
-                    Active
-                  </Badge>
-                </div>
-              </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No payment structure information available
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -604,7 +637,8 @@ export default function Earnings() {
                     Showing 10 of {commissions.length} transactions for selected
                     period
                   </p>
-                  <Button variant="outline" size="sm" className="mt-2">
+                  <Button variant="outline" size="sm" className="mt-2 gap-2">
+                    <ReceiptIcon size={16} />
                     View All Transactions
                   </Button>
                 </div>

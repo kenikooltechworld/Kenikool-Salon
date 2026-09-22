@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { get, post, put, del } from "@/lib/utils/api";
 
 export interface ServiceCategory {
   id: string;
@@ -19,12 +19,18 @@ export function useServiceCategories() {
   return useQuery({
     queryKey: ["serviceCategories"],
     queryFn: async () => {
-      const response = await apiClient.get<{
-        categories: ServiceCategory[];
-        total: number;
-      }>("/service-categories");
-      return (response as any).data?.categories || [];
+      try {
+        const response = await get<{
+          categories: ServiceCategory[];
+          total: number;
+        }>("/service-categories");
+        return (response as any)?.categories || [];
+      } catch (error) {
+        console.error("Error fetching service categories:", error);
+        return [];
+      }
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
@@ -38,11 +44,14 @@ export function useCreateServiceCategory() {
     mutationFn: async (
       category: Omit<ServiceCategory, "id" | "created_at" | "updated_at">,
     ) => {
-      const response = await apiClient.post<ServiceCategory>(
+      const response = await post<ServiceCategory>(
         "/service-categories",
         category,
+        {
+          headers: { "Idempotency-Key": crypto.randomUUID() }
+        }
       );
-      return (response as any).data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
@@ -61,11 +70,11 @@ export function useUpdateServiceCategory() {
       id,
       ...updates
     }: Partial<ServiceCategory> & { id: string }) => {
-      const response = await apiClient.put<ServiceCategory>(
+      const response = await put<ServiceCategory>(
         `/service-categories/${id}`,
         updates,
       );
-      return (response as any).data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
@@ -81,7 +90,7 @@ export function useDeleteServiceCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/service-categories/${id}`);
+      await del(`/service-categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });

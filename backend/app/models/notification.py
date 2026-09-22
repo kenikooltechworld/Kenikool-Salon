@@ -27,9 +27,14 @@ class Notification(BaseDocument):
         "appointment_cancelled",
         "appointment_completed",
         "payment_receipt",
+        "payment_success",
+        "payment_failed",
+        "payment_cancelled",
+        "refund_success",
         "shift_assigned",
         "time_off_approved",
         "time_off_rejected",
+        "time_off_request_created",
         "custom",
     ]
 
@@ -152,9 +157,14 @@ class NotificationTemplate(BaseDocument):
         "appointment_cancelled",
         "appointment_completed",
         "payment_receipt",
+        "payment_success",
+        "payment_failed",
+        "payment_cancelled",
+        "refund_success",
         "shift_assigned",
         "time_off_approved",
         "time_off_rejected",
+        "time_off_request_created",
     ]
 
     CHANNELS = ["email", "sms", "push", "in_app"]
@@ -194,10 +204,14 @@ class NotificationPreference(BaseDocument):
         "appointment_cancelled",
         "appointment_completed",
         "payment_receipt",
+        "payment_success",
+        "payment_failed",
+        "payment_cancelled",
+        "refund_success",
         "shift_assigned",
-        "shift_reminder",
         "time_off_approved",
         "time_off_rejected",
+        "time_off_request_created",
         "commission_payment",
     ]
 

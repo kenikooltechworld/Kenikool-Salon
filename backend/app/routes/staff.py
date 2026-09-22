@@ -33,6 +33,13 @@ def staff_to_response(staff: Staff, user: User = None) -> dict:
     if user is None:
         user = User.objects(id=staff.user_id).first()
     
+    role_ids = []
+    try:
+        if user and hasattr(user, "role_ids"):
+            role_ids = [str(rid) for rid in (user.role_ids or [])]
+    except Exception:
+        pass
+    
     return {
         "id": str(staff.id),
         "user_id": str(staff.user_id),
@@ -40,6 +47,7 @@ def staff_to_response(staff: Staff, user: User = None) -> dict:
         "lastName": user.last_name if user else "",
         "email": user.email if user else "",
         "phone": user.phone if user else "",
+        "role_ids": role_ids,
         "service_ids": [str(sid) for sid in getattr(staff, "service_ids", [])],
         "specialties": staff.specialties,
         "certifications": staff.certifications,
@@ -87,6 +95,80 @@ def _sync_service_staff_ids(tenant_id: ObjectId, service_ids: list, staff_id: Ob
             cleaned = [x for x in (svc.staff_ids or []) if x != staff_id]
             svc.staff_ids = cleaned
             svc.save()
+
+
+@router.get("/user/{user_id}", response_model=dict)
+@tenant_isolated
+async def get_staff_by_user_id(
+    user_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """Get staff profile by user ID."""
+    try:
+        staff = Staff.objects(user_id=ObjectId(user_id), tenant_id=tenant_id).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff profile not found for this user")
+        
+        user = User.objects(id=ObjectId(user_id), tenant_id=tenant_id).first()
+        return staff_to_response(staff, user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get staff by user ID: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to get staff profile")
+
+
+@router.put("/user/{user_id}", response_model=dict)
+@tenant_isolated
+async def update_staff_by_user_id(
+    user_id: str,
+    staff_data: StaffUpdate,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """Update staff profile by user ID."""
+    try:
+        staff = Staff.objects(user_id=ObjectId(user_id), tenant_id=tenant_id).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff profile not found for this user")
+
+        if staff_data.service_ids is not None:
+            staff.service_ids = [ObjectId(sid) if isinstance(sid, str) else sid for sid in staff_data.service_ids]
+        if staff_data.specialties is not None:
+            staff.specialties = staff_data.specialties
+        if staff_data.certifications is not None:
+            staff.certifications = staff_data.certifications
+        if staff_data.certification_files is not None:
+            staff.certification_files = staff_data.certification_files
+        if staff_data.payment_type is not None:
+            staff.payment_type = staff_data.payment_type
+        if staff_data.payment_rate is not None:
+            staff.payment_rate = staff_data.payment_rate
+        if staff_data.hire_date is not None:
+            staff.hire_date = staff_data.hire_date
+        if staff_data.bio is not None:
+            staff.bio = staff_data.bio
+        if staff_data.profile_image_url is not None:
+            staff.profile_image_url = staff_data.profile_image_url
+        if staff_data.status is not None:
+            staff.status = staff_data.status
+        
+        if staff_data.role_ids is not None:
+            user = User.objects(id=ObjectId(user_id), tenant_id=tenant_id).first()
+            if user:
+                user.role_ids = [ObjectId(rid) if isinstance(rid, str) else rid for rid in staff_data.role_ids]
+                user.save()
+
+        staff.save()
+        logger.info(f"Updated staff profile by user ID: {user_id}")
+        _sync_service_staff_ids(tenant_id, staff_data.service_ids, staff.id)
+
+        user = User.objects(id=staff.user_id).first()
+        return staff_to_response(staff, user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update staff by user ID: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to update staff profile")
 
 
 @router.get("", response_model=dict)
@@ -468,6 +550,13 @@ async def update_staff(
             staff.profile_image_url = staff_data.profile_image_url
         if staff_data.status is not None:
             staff.status = staff_data.status
+        
+        # Update role_ids on the associated user account
+        if staff_data.role_ids is not None:
+            user = User.objects(id=staff.user_id, tenant_id=tenant_id).first()
+            if user:
+                user.role_ids = [ObjectId(rid) if isinstance(rid, str) else rid for rid in staff_data.role_ids]
+                user.save()
 
         staff.save()
         logger.info(f"Updated staff profile: {staff.id}")
@@ -657,6 +746,62 @@ async def delete_staff_certificate(
     except Exception as e:
         logger.error(f"Failed to delete certificate: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="Failed to delete certificate")
+
+
+@router.get("/{staff_id}/payment-structure", response_model=dict)
+@tenant_isolated
+async def get_staff_payment_structure(
+    staff_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """Get staff payment structure information."""
+    try:
+        staff = Staff.objects(id=ObjectId(staff_id), tenant_id=tenant_id).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff member not found")
+        
+        user = User.objects(id=staff.user_id, tenant_id=tenant_id).first()
+        
+        return {
+            "payment_type": staff.payment_type,
+            "payment_rate": float(staff.payment_rate),
+            "staff_name": f"{user.first_name if user else ''} {user.last_name if user else ''}".strip(),
+            "hire_date": staff.hire_date.isoformat() if staff.hire_date else None,
+            "status": staff.status,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get payment structure: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to get payment structure")
+
+
+@router.get("/user/{user_id}/payment-structure", response_model=dict)
+@tenant_isolated
+async def get_staff_payment_structure_by_user(
+    user_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """Get staff payment structure by user ID."""
+    try:
+        staff = Staff.objects(user_id=ObjectId(user_id), tenant_id=tenant_id).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff profile not found for this user")
+        
+        user = User.objects(id=ObjectId(user_id), tenant_id=tenant_id).first()
+        
+        return {
+            "payment_type": staff.payment_type,
+            "payment_rate": float(staff.payment_rate),
+            "staff_name": f"{user.first_name if user else ''} {user.last_name if user else ''}".strip(),
+            "hire_date": staff.hire_date.isoformat() if staff.hire_date else None,
+            "status": staff.status,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get payment structure: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to get payment structure")
 
 
 @router.get("/{staff_id}/metrics", response_model=dict)

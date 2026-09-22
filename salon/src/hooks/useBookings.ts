@@ -34,6 +34,8 @@ export function useBookings(filters?: BookingFilters) {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -68,6 +70,8 @@ export function useBooking(id: string) {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -103,6 +107,8 @@ export function useCreateBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -151,6 +157,8 @@ export function useConfirmBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -197,6 +205,8 @@ export function useCancelBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -319,6 +329,8 @@ export function useCompleteBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -341,7 +353,74 @@ export function useCompleteBooking() {
       });
       // Invalidate invoices cache since appointment completion auto-creates invoices
       queryClient.invalidateQueries({
-        queryKey: ["invoices"],
+        queryKey: ["calendar"],
+        exact: false,
+      });
+    },
+  });
+}
+
+export function useCollectPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      paymentMethod,
+      amount,
+      notes,
+    }: {
+      id: string;
+      paymentMethod: string;
+      amount: number;
+      notes?: string;
+    }) => {
+      const { data } = await apiClient.post<any>(
+        `/appointments/${id}/collect-payment`,
+        {
+          payment_method: paymentMethod,
+          amount,
+          notes,
+        },
+      );
+      const appt = data;
+
+      // Transform snake_case from backend to camelCase for frontend
+      return {
+        id: appt.id,
+        customerId: appt.customer_id,
+        staffId: appt.staff_id,
+        serviceId: appt.service_id,
+        locationId: appt.location_id,
+        startTime: appt.start_time,
+        endTime: appt.end_time,
+        status: appt.status,
+        notes: appt.notes,
+        price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
+        cancellationReason: appt.cancellation_reason,
+        cancelledAt: appt.cancelled_at,
+        cancelledBy: appt.cancelled_by,
+        noShowReason: appt.no_show_reason,
+        markedNoShowAt: appt.marked_no_show_at,
+        confirmedAt: appt.confirmed_at,
+        createdAt: appt.created_at,
+        updatedAt: appt.updated_at,
+      };
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({
+        queryKey: [BOOKINGS_QUERY_KEY],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({
+        queryKey: ["calendar"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["transactions"],
         exact: false,
       });
     },
@@ -371,6 +450,8 @@ export function useMarkNoShow() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
+        paymentOption: appt.payment_option,
+        paymentStatus: appt.payment_status,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,

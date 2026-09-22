@@ -233,7 +233,8 @@ async def _handle_charge_success(
                 "payment_id": str(payment.id),
                 "amount": str(payment.amount),
                 "reference": payment.reference,
-            }
+            },
+            recipient_type="customer",
         )
         logger.info(f"Notification queued for payment {payment.id}")
         
@@ -529,7 +530,8 @@ async def _handle_charge_failed(
                 "amount": str(payment.amount),
                 "reference": payment.reference,
                 "reason": failure_reason,
-            }
+            },
+            recipient_type="customer",
         )
         logger.info(f"Notification queued for customer {payment.customer_id}")
         
@@ -576,7 +578,8 @@ async def _handle_charge_cancelled(
                 "amount": str(payment.amount),
                 "reference": payment.reference,
                 "reason": cancel_reason,
-            }
+            },
+            recipient_type="customer",
         )
         logger.info(f"Notification queued for customer {payment.customer_id}")
 
@@ -665,7 +668,8 @@ async def _handle_refund_success(
                     "payment_id": str(payment.id),
                     "amount": str(refund.amount),
                     "reference": refund.reference,
-                }
+                },
+                recipient_type="customer",
             )
             logger.info(f"Notification queued for customer {payment.customer_id}")
         

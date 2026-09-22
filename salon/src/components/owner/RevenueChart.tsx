@@ -46,8 +46,8 @@ export function RevenueChart({
     }
 
     // Create CSV content
-    const headers = ["Date", "Revenue"];
-    const rows = chartData.map((item) => [item.date, item.revenue.toFixed(2)]);
+    const headers = ["Period", "Revenue"];
+    const rows = chartData.map((item) => [item.label || item.date, item.revenue.toFixed(2)]);
 
     const csvContent = [
       headers.join(","),
@@ -194,9 +194,12 @@ export function RevenueChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No revenue data available
-          </p>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <BarChart3Icon size={48} className="text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">
+              No revenue data available
+            </p>
+          </div>
         </CardContent>
       </Card>
     );

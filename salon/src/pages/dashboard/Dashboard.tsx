@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   // Fetch tenant settings for currency
   const { data: tenantSettings } = useTenantSettings();
-  const currency = tenantSettings?.currency || "USD";
+  const currency = tenantSettings?.currency || "NGN";
 
   // Establish WebSocket connection for real-time updates
   useWebSocket({

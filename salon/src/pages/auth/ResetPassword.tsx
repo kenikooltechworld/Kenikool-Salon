@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { apiClient } from "@/lib/utils/api";
+import { MailIcon, ArrowLeftIcon } from "@/components/icons";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -103,16 +104,20 @@ export default function ResetPassword() {
               </p>
             </div>
 
-            <div className="space-y-4">
-              <Link to="/auth/forgot-password">
-                <Button className="w-full">Request New Link</Button>
-              </Link>
-              <Link to="/auth/login">
-                <Button variant="outline" className="w-full">
-                  Back to Sign In
-                </Button>
-              </Link>
-            </div>
+             <div className="space-y-4">
+               <Link to="/auth/forgot-password">
+                 <Button className="w-full gap-2">
+                   <MailIcon size={16} />
+                   Request New Link
+                 </Button>
+               </Link>
+               <Link to="/auth/login">
+                 <Button variant="outline" className="w-full gap-2">
+                   <ArrowLeftIcon size={16} />
+                   Back to Sign In
+                 </Button>
+               </Link>
+             </div>
           </Card>
         </div>
       </div>

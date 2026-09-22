@@ -11,6 +11,7 @@ from app.schemas.appointment import (
     AppointmentUpdateRequest,
     AppointmentCancelRequest,
     AppointmentConfirmRequest,
+    AppointmentCollectPaymentRequest,
     AppointmentResponse,
     AppointmentListResponse,
     AvailableSlotsResponse,
@@ -30,6 +31,7 @@ from app.models.service import Service
 from app.middleware.tenant_context import get_tenant_id
 from app.decorators.tenant_isolated import tenant_isolated
 from app.routes.auth import get_current_user_dependency
+from app.services.transaction_service import TransactionService
 
 logger = logging.getLogger(__name__)
 
@@ -634,6 +636,8 @@ async def complete_appointment(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
@@ -648,6 +652,120 @@ async def complete_appointment(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@router.post("/{appointment_id}/collect-payment", response_model=AppointmentResponse)
+async def collect_payment(
+    appointment_id: str,
+    request: AppointmentCollectPaymentRequest,
+    tenant_id: ObjectId = Depends(get_tenant_id),
+):
+    """
+    Collect payment after service for pay-later appointments.
+    
+    Creates a POS transaction and updates appointment payment status.
+    
+    - **appointment_id**: Appointment ID
+    - **payment_method**: cash, card, mobile_money, check, bank_transfer
+    - **amount**: Payment amount
+    - **notes**: Optional payment notes
+    """
+    try:
+        appt_id = ObjectId(appointment_id)
+        appointment = AppointmentService.get_appointment(tenant_id, appt_id)
+
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+
+        if appointment.payment_option != "later":
+            raise HTTPException(status_code=400, detail="This appointment is not a pay-later booking")
+
+        if appointment.payment_status == "completed":
+            raise HTTPException(status_code=400, detail="Payment has already been collected for this appointment")
+
+        # Get service details for transaction
+        service = Service.objects(tenant_id=tenant_id, id=appointment.service_id).first()
+        if not service:
+            raise HTTPException(status_code=404, detail="Service not found")
+
+        # Create POS transaction for the payment
+        try:
+            from app.services.transaction_service import TransactionService
+            from app.models.transaction import TransactionItem
+            
+            transaction = TransactionService.create_transaction(
+                tenant_id=tenant_id,
+                customer_id=appointment.customer_id,
+                staff_id=appointment.staff_id,
+                items_data=[{
+                    "item_type": "service",
+                    "item_id": str(service.id),
+                    "item_name": service.name,
+                    "quantity": 1,
+                    "unit_price": float(appointment.price or service.price),
+                }],
+                payment_method=request.payment_method,
+                transaction_type="service",
+                appointment_id=appt_id,
+                notes=request.notes,
+            )
+            logger.info(f"[CollectPayment] Created transaction {transaction.id} for appointment {appt_id}")
+        except Exception as e:
+            logger.error(f"Failed to create transaction for appointment {appt_id}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to create transaction: {str(e)}")
+
+        # Update appointment payment status
+        appointment.payment_status = "completed"
+        appointment.payment_id = transaction.id
+        appointment.save()
+
+        logger.info(f"[CollectPayment] Appointment {appt_id} payment status updated to completed")
+
+        # Create invoice if not already exists
+        invoice = None
+        try:
+            from app.models.invoice import Invoice
+            invoice = Invoice.objects(tenant_id=tenant_id, appointment_id=appt_id).first()
+            if not invoice:
+                invoice = InvoiceService.create_invoice_from_appointment(
+                    tenant_id=tenant_id,
+                    appointment_id=appt_id,
+                    discount=Decimal("0"),
+                    tax=Decimal("0"),
+                )
+                invoice.status = "paid"
+                invoice.save()
+                logger.info(f"[CollectPayment] Created invoice {invoice.id} for appointment {appt_id}")
+        except Exception as e:
+            logger.warning(f"[CollectPayment] Failed to create invoice for appointment {appt_id}: {e}")
+
+        return AppointmentResponse(
+            id=str(appointment.id),
+            customer_id=str(appointment.customer_id),
+            staff_id=str(appointment.staff_id),
+            service_id=str(appointment.service_id),
+            location_id=str(appointment.location_id) if appointment.location_id else None,
+            start_time=appointment.start_time.isoformat(),
+            end_time=appointment.end_time.isoformat(),
+            status=appointment.status,
+            notes=appointment.notes,
+            price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
+            cancellation_reason=appointment.cancellation_reason,
+            cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
+            no_show_reason=appointment.no_show_reason,
+            marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
+            confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
+            created_at=appointment.created_at.isoformat(),
+            updated_at=appointment.updated_at.isoformat(),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error collecting payment for appointment {appointment_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to collect payment")
 
 
 @router.get("/available-slots/{staff_id}/{service_id}", response_model=AvailableSlotsResponse)

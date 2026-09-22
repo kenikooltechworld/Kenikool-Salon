@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeftIcon, EditIcon, TrashIcon, UsersIcon } from "@/components/icons";
+import { ArrowLeftIcon, EditIcon, TrashIcon, UsersIcon, PlusIcon } from "@/components/icons";
 import { useService, useDeleteService } from "@/hooks/useServices";
 import { useStaff } from "@/hooks/useStaff";
 import { useServiceCategories } from "@/hooks/useServiceCategories";
@@ -175,6 +175,15 @@ export default function ServiceDetail() {
           </div>
         </div>
         <div className="flex gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/services/addons")}
+            className="gap-2 cursor-pointer text-xs sm:text-sm"
+          >
+            <PlusIcon size={16} />
+            <span className="hidden sm:inline">Add-ons</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"

@@ -10,6 +10,7 @@ import {
   Mail,
   Phone,
   DollarSign,
+  HomeIcon,
 } from "@/components/icons";
 
 export default function GroupBookingConfirmation() {
@@ -36,7 +37,10 @@ export default function GroupBookingConfirmation() {
           <p className="text-gray-600 mb-6">
             We couldn't find the booking you're looking for.
           </p>
-          <Button onClick={() => navigate("/public")}>Return to Home</Button>
+          <Button onClick={() => navigate("/public")} className="gap-2">
+            <HomeIcon size={16} />
+            Return to Home
+          </Button>
         </Card>
       </div>
     );

@@ -50,6 +50,7 @@ import CustomerAppointments from "@/pages/customers/CustomerAppointments";
 import AppointmentDetail from "@/pages/customers/AppointmentDetail";
 import Services from "@/pages/services/Services";
 import ServiceDetail from "@/pages/services/ServiceDetail";
+import ServiceAddons from "@/pages/services/ServiceAddons";
 import Staff from "@/pages/staff/Staff";
 import StaffDetail from "@/pages/staff/StaffDetail";
 import Invoices from "@/pages/invoices/Invoices";
@@ -57,6 +58,7 @@ import CreateInvoice from "@/pages/invoices/CreateInvoice";
 import EditInvoice from "@/pages/invoices/EditInvoice";
 import InvoiceDetail from "@/pages/invoices/InvoiceDetail";
 import Settings from "@/pages/owner/Settings";
+import OwnerProfile from "@/pages/owner/OwnerProfile";
 import GeneralSettings from "@/pages/owner/settings/GeneralSettings";
 import SystemSettings from "@/pages/owner/settings/SystemSettings";
 import { IntegrationSettings } from "@/pages/owner/settings/IntegrationSettings";
@@ -371,6 +373,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/owner/profile"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <OwnerProfile />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
             path="/my-account"
             element={
               <RoleBasedRoute
@@ -457,6 +467,14 @@ function AppContent() {
             element={
               <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
                 <Services />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/services/addons"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <ServiceAddons />
               </RoleBasedRoute>
             }
           />

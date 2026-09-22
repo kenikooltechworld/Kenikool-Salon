@@ -47,16 +47,16 @@ export function D3BarChart({
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Parse dates and get revenue values
-    const parseDate = d3.timeParse("%Y-%m-%d");
     const formattedData = data.map((d) => ({
-      date: parseDate(d.date) || new Date(),
+      date: new Date(d.date),
       revenue: d.revenue,
+      label: d.label || d.date,
     }));
 
     // Create scales
     const xScale = d3
       .scaleBand()
-      .domain(formattedData.map((d) => d.date.toISOString()))
+      .domain(formattedData.map((d) => d.label))
       .range([0, chartWidth])
       .padding(0.2);
 
@@ -84,8 +84,8 @@ export function D3BarChart({
     const xAxis = d3
       .axisBottom(xScale)
       .tickFormat((d: d3.AxisDomain) => {
-        const date = new Date(d as string);
-        return d3.timeFormat("%b %d")(date);
+        const label = d as string;
+        return label;
       })
       .tickSizeOuter(0);
 
@@ -196,8 +196,8 @@ export function D3BarChart({
       .attr("class", "bar")
       .attr(
         "x",
-        (d: { date: Date; revenue: number }) =>
-          xScale(d.date.toISOString()) || 0,
+        (d: { label: string; revenue: number }) =>
+          xScale(d.label) || 0,
       )
       .attr("y", chartHeight)
       .attr("width", xScale.bandwidth())
@@ -221,7 +221,7 @@ export function D3BarChart({
           });
           tooltip.style("visibility", "visible").html(
             `<div style="line-height: 1.6;">
-                <div style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">${d3.timeFormat("%b %d, %Y")(d.date)}</div>
+                <div style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">${d.label}</div>
                 <div style="font-size: 16px; font-weight: 600;">${formatter.format(d.revenue)}</div>
               </div>`,
           );
@@ -242,12 +242,12 @@ export function D3BarChart({
       })
       .transition()
       .duration(800)
-      .delay((_d: { date: Date; revenue: number }, i: number) => i * 50)
+      .delay((_d: { label: string; revenue: number }, i: number) => i * 50)
       .ease(d3.easeCubicOut)
-      .attr("y", (d: { date: Date; revenue: number }) => yScale(d.revenue))
+      .attr("y", (d: { label: string; revenue: number }) => yScale(d.revenue))
       .attr(
         "height",
-        (d: { date: Date; revenue: number }) => chartHeight - yScale(d.revenue),
+        (d: { label: string; revenue: number }) => chartHeight - yScale(d.revenue),
       );
 
     // Cleanup tooltip on unmount

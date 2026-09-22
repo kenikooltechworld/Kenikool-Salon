@@ -13,6 +13,7 @@ import {
   ClockIcon,
   DollarIcon,
   BriefcaseIcon,
+  RefreshCwIcon,
 } from "@/components/icons";
 
 export default function StaffDashboard() {
@@ -81,7 +82,9 @@ export default function StaffDashboard() {
             size="sm"
             onClick={handleRefreshAll}
             disabled={metricsLoading || activitiesLoading}
+            className="gap-2"
           >
+            <RefreshCwIcon size={16} />
             Refresh
           </Button>
         </div>

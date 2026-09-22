@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
+import { get } from "@/lib/utils/api";
 
 export interface ServiceAddon {
   id: string;
@@ -18,10 +18,15 @@ export function useServiceAddons(serviceId: string | null) {
     queryKey: ["service-addons", serviceId],
     queryFn: async () => {
       if (!serviceId) return [];
-      const { data } = await apiClient.get<ServiceAddon[]>(
-        `/public/service-addons/${serviceId}`,
-      );
-      return data;
+      try {
+        const response = await get<ServiceAddon[]>(
+          `/public/service-addons/${serviceId}`,
+        );
+        return response || [];
+      } catch (error) {
+        console.error("Error fetching service addons:", error);
+        return [];
+      }
     },
     enabled: !!serviceId,
     staleTime: 5 * 60 * 1000, // 5 minutes

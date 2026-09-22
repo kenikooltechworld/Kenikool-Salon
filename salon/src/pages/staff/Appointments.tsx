@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { RefreshCwIcon, ListIcon, CalendarIcon } from "@/components/icons";
 import type { StaffAppointment } from "@/hooks/useMyAppointments";
 
 type ViewMode = "list" | "calendar";
@@ -67,7 +68,8 @@ export default function StaffAppointments() {
             Manage your appointments and schedule
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
+        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+          <RefreshCwIcon size={16} />
           Refresh
         </Button>
       </div>
@@ -81,7 +83,9 @@ export default function StaffAppointments() {
               variant={viewMode === "list" ? "primary" : "outline"}
               size="sm"
               onClick={() => setViewMode("list")}
+              className="gap-2"
             >
+              <ListIcon size={16} />
               List
             </Button>
             <Button
@@ -89,7 +93,9 @@ export default function StaffAppointments() {
               size="sm"
               onClick={() => setViewMode("calendar")}
               disabled
+              className="gap-2"
             >
+              <CalendarIcon size={16} />
               Calendar (Coming Soon)
             </Button>
           </div>

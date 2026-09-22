@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { formatDate, formatTime } from "@/lib/utils/format";
-import { ArrowLeftIcon } from "@/components/icons";
+import { ArrowLeftIcon, CheckCircleIcon, XIcon, CalendarIcon, XCircleIcon } from "@/components/icons";
 import AppointmentCancellationModal from "@/components/staff/AppointmentCancellationModal";
 import AppointmentRescheduleModal from "@/components/staff/AppointmentRescheduleModal";
 import AppointmentNotesSection from "@/components/staff/AppointmentNotesSection";
@@ -247,8 +247,9 @@ export default function AppointmentDetail() {
             variant="outline"
             size="sm"
             onClick={() => navigate("/staff/appointments")}
-            className="mt-4"
+            className="mt-4 gap-2"
           >
+            <ArrowLeftIcon size={16} />
             Back to Appointments
           </Button>
         </div>
@@ -390,7 +391,9 @@ export default function AppointmentDetail() {
                   <Button
                     onClick={() => setShowConfirmDialog(true)}
                     disabled={completeAppointmentMutation.isPending}
+                    className="gap-2"
                   >
+                    <CheckCircleIcon size={16} />
                     {completeAppointmentMutation.isPending
                       ? "Marking as Complete..."
                       : "Mark as Completed"}
@@ -404,7 +407,9 @@ export default function AppointmentDetail() {
                       size="sm"
                       onClick={handleCompleteAppointment}
                       disabled={completeAppointmentMutation.isPending}
+                      className="gap-1"
                     >
+                      <CheckCircleIcon size={14} />
                       {completeAppointmentMutation.isPending
                         ? "Confirming..."
                         : "Confirm"}
@@ -414,7 +419,9 @@ export default function AppointmentDetail() {
                       variant="outline"
                       onClick={() => setShowConfirmDialog(false)}
                       disabled={completeAppointmentMutation.isPending}
+                      className="gap-1"
                     >
+                      <XIcon size={14} />
                       Cancel
                     </Button>
                   </div>
@@ -431,7 +438,9 @@ export default function AppointmentDetail() {
                     rescheduleAppointmentMutation.isPending ||
                     cancelAppointmentMutation.isPending
                   }
+                  className="gap-2"
                 >
+                  <CalendarIcon size={16} />
                   Reschedule
                 </Button>
                 <Button
@@ -441,7 +450,9 @@ export default function AppointmentDetail() {
                     cancelAppointmentMutation.isPending ||
                     rescheduleAppointmentMutation.isPending
                   }
+                  className="gap-2"
                 >
+                  <XCircleIcon size={16} />
                   Cancel Appointment
                 </Button>
               </>
@@ -450,7 +461,9 @@ export default function AppointmentDetail() {
             <Button
               variant="outline"
               onClick={() => navigate("/staff/appointments")}
+              className="gap-2"
             >
+              <ArrowLeftIcon size={16} />
               Back
             </Button>
           </div>

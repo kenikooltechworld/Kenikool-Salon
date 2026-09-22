@@ -42,7 +42,7 @@ export function useMyEarnings(filters?: MyEarningsFilters) {
     queryKey: ["my-earnings", filters],
     queryFn: async () => {
       const { data } = await apiClient.get<EarningsSummary>(
-        `/commissions/staff/${user?.id}`,
+        `/commissions/staff/user/${user?.id}`,
         {
           params: filters,
         },
@@ -72,7 +72,7 @@ export function useMyEarningsSummary() {
         totalEarnings: number;
         thisMonth: number;
         thisWeek: number;
-      }>(`/commissions/staff/${user?.id}/summary`);
+      }>(`/commissions/staff/user/${user?.id}/summary`);
       return data || { totalEarnings: 0, thisMonth: 0, thisWeek: 0 };
     },
     enabled: !!user?.id,

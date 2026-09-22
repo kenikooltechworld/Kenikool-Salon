@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -17,6 +19,7 @@ import {
   useCancelBooking,
   useCompleteBooking,
   useMarkNoShow,
+  useCollectPayment,
 } from "@/hooks/useBookings";
 import { useBookingsStore } from "@/stores/bookings";
 import { BookingCard } from "@/components/bookings/BookingCard";
@@ -45,12 +48,22 @@ export default function Bookings() {
   const { mutate: completeBooking, isPending: isCompleting } =
     useCompleteBooking();
   const { mutate: markNoShow, isPending: isMarkingNoShow } = useMarkNoShow();
+  const { mutate: collectPayment, isPending: isCollectingPayment } =
+    useCollectPayment();
   const {
     isDetailModalOpen,
     setIsDetailModalOpen,
     selectedBookingId,
     setSelectedBookingId,
   } = useBookingsStore();
+
+  const [isCollectPaymentModalOpen, setIsCollectPaymentModalOpen] =
+    useState(false);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] =
+    useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
 
   const handleConfirm = (id: string) => {
     confirmBooking(id, {
@@ -134,6 +147,47 @@ export default function Bookings() {
     );
   };
 
+  const handleCollectPayment = (booking: any) => {
+    setSelectedBookingForPayment(booking);
+    setPaymentAmount(booking.price?.toString() || "");
+    setPaymentMethod("cash");
+    setPaymentNotes("");
+    setIsCollectPaymentModalOpen(true);
+  };
+
+  const handleSubmitCollectPayment = () => {
+    if (!selectedBookingForPayment) return;
+
+    collectPayment(
+      {
+        id: selectedBookingForPayment.id,
+        paymentMethod,
+        amount: parseFloat(paymentAmount),
+        notes: paymentNotes,
+      },
+      {
+        onSuccess: () => {
+          addToast({
+            title: "Payment Collected",
+            description: `Payment of ₦${paymentAmount} collected successfully`,
+            variant: "success",
+          });
+          setIsCollectPaymentModalOpen(false);
+          setSelectedBookingForPayment(null);
+          setPaymentAmount("");
+          setPaymentNotes("");
+        },
+        onError: () => {
+          addToast({
+            title: "Error",
+            description: "Failed to collect payment",
+            variant: "error",
+          });
+        },
+      },
+    );
+  };
+
   const handleViewBooking = (id: string) => {
     setSelectedBookingId(id);
     setIsDetailModalOpen(true);
@@ -144,7 +198,8 @@ export default function Bookings() {
     isConfirming ||
     isCancelling ||
     isCompleting ||
-    isMarkingNoShow;
+    isMarkingNoShow ||
+    isCollectingPayment;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -253,18 +308,19 @@ export default function Bookings() {
             </div>
           ) : bookings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {bookings.map((booking: any) => (
-                <BookingCard
-                  key={booking.id}
-                  booking={booking}
-                  onView={handleViewBooking}
-                  onConfirm={handleConfirm}
-                  onCancel={handleCancel}
-                  onComplete={handleComplete}
-                  onMarkNoShow={handleMarkNoShow}
-                  isLoading={isLoading_}
-                />
-              ))}
+               {bookings.map((booking: any) => (
+                 <BookingCard
+                   key={booking.id}
+                   booking={booking}
+                   onView={handleViewBooking}
+                   onConfirm={handleConfirm}
+                   onCancel={handleCancel}
+                   onComplete={handleComplete}
+                   onMarkNoShow={handleMarkNoShow}
+                   onCollectPayment={handleCollectPayment}
+                   isLoading={isLoading_}
+                 />
+               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -284,6 +340,78 @@ export default function Bookings() {
           onComplete={handleComplete}
           onMarkNoShow={handleMarkNoShow}
         />
+      )}
+
+      {/* Collect Payment Modal */}
+      {isCollectPaymentModalOpen && selectedBookingForPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Collect Payment</CardTitle>
+              <CardDescription>
+                Record payment for booking #{selectedBookingForPayment.id.slice(0, 8)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <select
+                  id="payment-method"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full p-2 border border-border rounded-md bg-background"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="check">Check</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="payment-amount">Amount (₦)</Label>
+                <Input
+                  id="payment-amount"
+                  type="number"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="payment-notes">Notes (Optional)</Label>
+                <textarea
+                  id="payment-notes"
+                  value={paymentNotes}
+                  onChange={(e) => setPaymentNotes(e.target.value)}
+                  placeholder="Payment notes..."
+                  className="w-full p-2 border border-border rounded-md bg-background min-h-[80px]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={handleSubmitCollectPayment}
+                  disabled={isCollectingPayment || !paymentAmount}
+                  className="flex-1 cursor-pointer"
+                >
+                  {isCollectingPayment ? "Processing..." : "Collect Payment"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCollectPaymentModalOpen(false)}
+                  disabled={isCollectingPayment}
+                  className="cursor-pointer"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

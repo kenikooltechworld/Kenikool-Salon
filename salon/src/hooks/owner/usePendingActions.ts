@@ -63,6 +63,7 @@ export function usePendingActions() {
         description: "The pending action has been marked as complete.",
       });
       queryClient.invalidateQueries({ queryKey: ["pending-actions"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-metrics"] });
     },
     onError: (error: any, _actionId, context) => {
       const message = error?.response?.data?.detail || error?.message || "Failed to mark action as complete";
@@ -101,6 +102,7 @@ export function usePendingActions() {
         description: "The pending action has been dismissed.",
       });
       queryClient.invalidateQueries({ queryKey: ["pending-actions"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-metrics"] });
     },
     onError: (error: any, _actionId, context) => {
       const message = error?.response?.data?.detail || error?.message || "Failed to dismiss action";

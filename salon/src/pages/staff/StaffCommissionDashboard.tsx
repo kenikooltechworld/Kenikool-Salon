@@ -4,6 +4,7 @@ import { StaffCommissionDashboard } from "@/components/staff/StaffCommissionDash
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { UserIcon } from "@/components/icons";
 
 export default function StaffCommissionDashboardPage() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
@@ -39,8 +40,9 @@ export default function StaffCommissionDashboardPage() {
                 key={member.id}
                 variant={selectedStaffId === member.id ? "primary" : "outline"}
                 onClick={() => setSelectedStaffId(member.id)}
-                className="justify-start text-sm md:text-base"
+                className="justify-start text-sm md:text-base gap-2"
               >
+                <UserIcon size={16} />
                 {member.firstName} {member.lastName}
               </Button>
             ))}

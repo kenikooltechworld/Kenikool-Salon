@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { ZapIcon, XIcon } from "@/components/icons";
 
 export function ExitIntentPopup() {
   const [isVisible, setIsVisible] = useState(false);
@@ -69,16 +70,20 @@ export function ExitIntentPopup() {
                 gap: "0.75rem",
               }}
             >
-              <Link to="/auth/register" className="block">
-                <Button className="w-full">Start Free Trial</Button>
-              </Link>
-              <Button
-                onClick={() => setIsVisible(false)}
-                variant="outline"
-                className="w-full"
-              >
-                Maybe later
-              </Button>
+               <Link to="/auth/register" className="block">
+                 <Button className="w-full gap-2">
+                   <ZapIcon size={16} />
+                   Start Free Trial
+                 </Button>
+               </Link>
+               <Button
+                 onClick={() => setIsVisible(false)}
+                 variant="outline"
+                 className="w-full gap-2"
+               >
+                 <XIcon size={16} />
+                 Maybe later
+               </Button>
             </motion.div>
           </DialogContent>
         </Dialog>

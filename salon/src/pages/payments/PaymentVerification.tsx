@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { CheckCircleIcon, XCircleIcon } from "@/components/icons";
+import { CheckCircleIcon, XCircleIcon, ArrowLeftIcon, RefreshCwIcon } from "@/components/icons";
 import { useVerifyPayment } from "@/hooks/usePayments";
 
 type PaymentStatus = "loading" | "success" | "failed" | "error";
@@ -116,10 +116,15 @@ export default function PaymentVerification() {
                   <Button
                     variant="outline"
                     onClick={() => navigate("/invoices")}
+                    className="gap-2"
                   >
+                    <ArrowLeftIcon size={16} />
                     Back to Invoices
                   </Button>
-                  <Button onClick={() => navigate(-1)}>Retry Payment</Button>
+                  <Button onClick={() => navigate(-1)} className="gap-2">
+                    <RefreshCwIcon size={16} />
+                    Retry Payment
+                  </Button>
                 </div>
               </div>
             </div>

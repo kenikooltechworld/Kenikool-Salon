@@ -40,7 +40,7 @@ const ROUTES: { prefix: string; url: string }[] = [
   },
   {
     prefix: "salon_",
-    url: "https://api.kenikool.com/webhooks/paystack",
+    url: "https://api.kenikool.com/api/v1/webhooks/paystack",
   },
   // {
   //   prefix: "tutor_",

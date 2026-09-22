@@ -1,6 +1,7 @@
 """Owner dashboard routes."""
 
 import logging
+from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException, Depends
 from app.services.owner_dashboard_service import OwnerDashboardService
 from app.decorators.tenant_isolated import tenant_isolated
@@ -201,8 +202,8 @@ async def get_pending_actions(
 @router.get("/revenue-analytics")
 @tenant_isolated
 async def get_revenue_analytics(
-    start_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
-    end_date: str = Query(None, description="End date (YYYY-MM-DD)"),
+    period: str = Query("daily", description="Period: daily, weekly, monthly"),
+    days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
     tenant_id: ObjectId = Depends(get_tenant_id),
     current_user: dict = Depends(get_current_user_dependency),
 ):
@@ -251,7 +252,7 @@ async def get_revenue_analytics(
         if not tenant_id:
             raise HTTPException(status_code=401, detail="Tenant context not found")
 
-        analytics = service.get_revenue_analytics(tenant_id, start_date, end_date)
+        analytics = service.get_revenue_analytics(tenant_id, period, days)
         logger.info(f"[DashboardAPI][GET /revenue-analytics] tenant={tenant_id} totalRevenue={analytics.get('totalRevenue')} period={analytics.get('period')}")
         return {
             "success": True,
@@ -319,6 +320,87 @@ async def get_staff_performance(
     except Exception as e:
         logger.error(f"Error fetching staff performance: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch staff performance")
+
+
+@router.get("/data-status")
+@tenant_isolated
+async def get_data_status(
+    tenant_id: ObjectId = Depends(get_tenant_id),
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """
+    Check the status of dashboard data availability.
+    
+    Returns counts of key entities to help troubleshoot "No data available" issues.
+    """
+    try:
+        _require_owner_or_manager(current_user)
+        if not tenant_id:
+            raise HTTPException(status_code=401, detail="Tenant context not found")
+
+        # Import models here to avoid circular imports
+        from app.models.appointment import Appointment
+        from app.models.payment import Payment
+        from app.models.staff import Staff
+        from app.models.service import Service
+        from app.models.customer import Customer
+        
+        status = {
+            "tenantId": str(tenant_id),
+            "dataAvailability": {
+                "appointments": {
+                    "total": Appointment.objects(tenant_id=tenant_id).count(),
+                    "completed": Appointment.objects(tenant_id=tenant_id, status="completed").count(),
+                    "thisMonth": Appointment.objects(
+                        tenant_id=tenant_id,
+                        created_at__gte=datetime.utcnow().replace(day=1)
+                    ).count()
+                },
+                "payments": {
+                    "total": Payment.objects(tenant_id=tenant_id).count(),
+                    "successful": Payment.objects(tenant_id=tenant_id, status="success").count(),
+                    "thisMonth": Payment.objects(
+                        tenant_id=tenant_id,
+                        created_at__gte=datetime.utcnow().replace(day=1)
+                    ).count()
+                },
+                "staff": Staff.objects(tenant_id=tenant_id, status="active").count(),
+                "services": Service.objects(tenant_id=tenant_id, is_active=True).count(),
+                "customers": Customer.objects(tenant_id=tenant_id).count(),
+            },
+            "hasData": False,
+            "recommendations": []
+        }
+        
+        # Determine if there's enough data for analytics
+        has_recent_appointments = status["dataAvailability"]["appointments"]["thisMonth"] > 0
+        has_payments = status["dataAvailability"]["payments"]["successful"] > 0
+        has_staff = status["dataAvailability"]["staff"] > 0
+        
+        status["hasData"] = has_recent_appointments and has_payments and has_staff
+        
+        # Provide recommendations
+        if not has_recent_appointments:
+            status["recommendations"].append("Create some appointments to see appointment analytics")
+        if not has_payments:
+            status["recommendations"].append("Process some payments to see revenue analytics")
+        if not has_staff:
+            status["recommendations"].append("Add staff members to see staff performance data")
+        if status["hasData"]:
+            status["recommendations"].append("Your dashboard should display analytics data")
+        else:
+            status["recommendations"].append("Consider running the demo data seeder: python backend/seed_demo_data.py")
+        
+        return {
+            "success": True,
+            "data": status,
+            "error": None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking data status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check data status")
 
 
 @router.post("/pending-actions/{action_id}/complete")

@@ -19,6 +19,7 @@ import {
   MapPinIcon,
   CalendarIcon,
   BellIcon,
+  EditIcon,
 } from "@/components/icons";
 
 export default function CustomerProfile() {
@@ -137,7 +138,10 @@ export default function CustomerProfile() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Profile Information</h2>
           {!isEditing && (
-            <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+            <Button onClick={() => setIsEditing(true)} className="gap-2">
+              <EditIcon size={16} />
+              Edit Profile
+            </Button>
           )}
         </div>
 

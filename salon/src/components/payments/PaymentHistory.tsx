@@ -10,6 +10,7 @@ import {
   ClockIcon,
   RefreshCwIcon,
   DownloadIcon,
+  ReceiptIcon,
 } from "@/components/icons";
 import { usePayments, useRetryPayment } from "@/hooks/usePayments";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -207,7 +208,10 @@ export function PaymentHistory({
 
       {payments.length > limit && (
         <div className="text-center">
-          <Button variant="outline">View All Payments</Button>
+          <Button variant="outline" className="gap-2">
+            <ReceiptIcon size={16} />
+            View All Payments
+          </Button>
         </div>
       )}
     </div>

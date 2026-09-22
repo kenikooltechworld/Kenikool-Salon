@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateInvoice } from "@/hooks/useInvoices";
+import { useCreateInvoice, useIssueInvoice } from "@/hooks/useInvoices";
 import { useCustomers, type Customer } from "@/hooks/useCustomers";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,6 @@ export default function CreateInvoice() {
     tax: 0,
     discount: 0,
     notes: "",
-    dueDate: "",
   });
 
   const { data: customersData, isLoading: isLoadingCustomers } = useCustomers();
@@ -33,6 +32,7 @@ export default function CreateInvoice() {
     ? customersData.customers
     : [];
   const createInvoice = useCreateInvoice();
+  const issueInvoice = useIssueInvoice();
 
   const calculateTotals = () => {
     const subtotal = formData.lineItems.reduce(
@@ -84,7 +84,7 @@ export default function CreateInvoice() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, shouldIssue = false) => {
     e.preventDefault();
     setError(null);
 
@@ -102,13 +102,8 @@ export default function CreateInvoice() {
       return;
     }
 
-    if (!formData.dueDate) {
-      setError("Please set a due date");
-      return;
-    }
-
     try {
-      await createInvoice.mutateAsync({
+      const created = await createInvoice.mutateAsync({
         customerId: formData.customerId,
         lineItems: formData.lineItems.map((item) => ({
           serviceId: item.serviceId || item.serviceName,
@@ -119,13 +114,18 @@ export default function CreateInvoice() {
         tax: formData.tax,
         discount: formData.discount,
         notes: formData.notes,
-        dueDate: formData.dueDate,
       });
+
+      if (shouldIssue) {
+        await issueInvoice.mutateAsync(created.id);
+      }
 
       showToast({
         variant: "success",
         title: "Success",
-        description: "Invoice created successfully",
+        description: shouldIssue
+          ? "Invoice created and issued successfully"
+          : "Invoice created successfully",
       });
       setShowSuccess(true);
       setTimeout(() => {
@@ -358,21 +358,6 @@ export default function CreateInvoice() {
           </div>
         </div>
 
-        {/* Due Date */}
-        <div className="bg-card border border-border rounded-lg p-6">
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Due Date *
-          </label>
-          <input
-            type="date"
-            value={formData.dueDate}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, dueDate: e.target.value }))
-            }
-            className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-
         {/* Notes */}
         <div className="bg-card border border-border rounded-lg p-6">
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -392,9 +377,9 @@ export default function CreateInvoice() {
         {/* Actions */}
         <div className="flex gap-4">
           <Button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={createInvoice.isPending}
+            type="button"
+            onClick={(e) => handleSubmit(e, false)}
+            disabled={createInvoice.isPending || issueInvoice.isPending}
             variant="outline"
             className="flex-1"
           >
@@ -402,11 +387,13 @@ export default function CreateInvoice() {
           </Button>
           <Button
             type="submit"
-            onClick={handleSubmit}
-            disabled={createInvoice.isPending}
+            onClick={(e) => handleSubmit(e, true)}
+            disabled={createInvoice.isPending || issueInvoice.isPending}
             className="flex-1"
           >
-            {createInvoice.isPending ? "Creating..." : "Create & Issue"}
+            {createInvoice.isPending || issueInvoice.isPending
+              ? "Creating..."
+              : "Create & Issue"}
           </Button>
         </div>
       </form>

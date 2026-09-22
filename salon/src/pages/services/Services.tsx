@@ -88,16 +88,26 @@ export default function Services() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">Services</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your salon services
+            Manage your salon services and add-ons
           </p>
         </div>
-        <Button
-          onClick={handleAddService}
-          className="gap-2 w-full sm:w-auto cursor-pointer"
-        >
-          <PlusIcon size={18} />
-          Add Service
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            onClick={() => navigate("/services/addons")}
+            variant="outline"
+            className="gap-2 flex-1 sm:flex-none cursor-pointer"
+          >
+            <PlusIcon size={18} />
+            Manage Add-ons
+          </Button>
+          <Button
+            onClick={handleAddService}
+            className="gap-2 flex-1 sm:flex-none cursor-pointer"
+          >
+            <PlusIcon size={18} />
+            Add Service
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}

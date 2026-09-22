@@ -29,6 +29,8 @@ const menuItems = [
   { icon: ShoppingCartIcon, label: "POS", path: "/pos" },
   { icon: UsersIcon, label: "Group Bookings", path: "/owner/group-bookings" },
   { icon: ScissorsIcon, label: "Social Proof", path: "/owner/social-proof" },
+  { icon: UserIcon, label: "My Profile", path: "/owner/profile" },
+  { icon: UserIcon, label: "My Account", path: "/my-account" },
   { icon: SettingsIcon, label: "Settings", path: "/settings" },
   { icon: UsersIcon, label: "Waiting Room", path: "/waiting-room" },
   { icon: ScissorsIcon, label: "Resources", path: "/resources" },
@@ -52,6 +54,8 @@ function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
         "/staff",
         "/invoices",
         "/settings",
+        "/my-account",
+        "/owner/profile",
       ].includes(item.path),
     );
   }
@@ -120,6 +124,16 @@ export function DashboardLayout() {
     setCurrentPath(path);
     navigate(path);
     setMobileMenuOpen(false);
+  };
+
+  const getUserProfilePath = () => {
+    if (user?.roleNames?.includes("Owner") || user?.roleNames?.includes("Manager")) {
+      return "/owner/profile";
+    }
+    if (user?.roleNames?.includes("Staff")) {
+      return "/staff/settings";
+    }
+    return "/my-account";
   };
 
   return (
@@ -235,11 +249,15 @@ export function DashboardLayout() {
             <ThemeSelector variant="icon" />
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-border">
+            <button
+              onClick={() => handleNavigation(getUserProfilePath())}
+              className="hidden sm:flex items-center gap-3 pl-4 border-l border-border cursor-pointer bg-transparent hover:bg-muted/50 rounded-lg transition p-2 -mr-2"
+              title="My Account"
+            >
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center flex-shrink-0">
                 <UserIcon size={20} className="text-white" />
               </div>
-              <div className="hidden sm:block">
+              <div className="hidden sm:block text-left">
                 <p className="text-sm font-medium text-foreground truncate">
                   {user?.firstName}
                 </p>
@@ -247,7 +265,7 @@ export function DashboardLayout() {
                   {user?.email}
                 </p>
               </div>
-            </div>
+            </button>
           </div>
         </header>
 

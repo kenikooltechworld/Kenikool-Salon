@@ -27,6 +27,8 @@ import {
   RefreshIcon,
   EyeIcon,
   EyeOffIcon,
+  PlusIcon,
+  SettingsIcon,
 } from "@/components/icons";
 
 export default function SocialProof() {
@@ -240,7 +242,10 @@ export default function SocialProof() {
           <Card className="p-6">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Video Testimonials</h2>
-              <Button>Add Testimonial</Button>
+              <Button className="gap-2">
+                <PlusIcon size={16} />
+                Add Testimonial
+              </Button>
             </div>
 
             {testimonialsLoading ? (
@@ -314,7 +319,10 @@ export default function SocialProof() {
                 <p className="text-sm text-gray-600 mb-2">
                   Show recent booking notifications to visitors
                 </p>
-                <Button variant="outline">Configure</Button>
+                <Button variant="outline" className="gap-2">
+                  <SettingsIcon size={16} />
+                  Configure
+                </Button>
               </div>
 
               <div>
@@ -324,7 +332,10 @@ export default function SocialProof() {
                 <p className="text-sm text-gray-600 mb-2">
                   Control how Instagram posts are displayed on your booking page
                 </p>
-                <Button variant="outline">Configure</Button>
+                <Button variant="outline" className="gap-2">
+                  <SettingsIcon size={16} />
+                  Configure
+                </Button>
               </div>
 
               <div>
@@ -334,7 +345,10 @@ export default function SocialProof() {
                 <p className="text-sm text-gray-600 mb-2">
                   Control how video testimonials are displayed
                 </p>
-                <Button variant="outline">Configure</Button>
+                <Button variant="outline" className="gap-2">
+                  <SettingsIcon size={16} />
+                  Configure
+                </Button>
               </div>
             </div>
           </Card>

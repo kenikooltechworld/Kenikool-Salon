@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useInvoice, useUpdateInvoice } from "@/hooks/useInvoices";
+import { useInvoice, useUpdateInvoice, useIssueInvoice, useMarkInvoicePaid } from "@/hooks/useInvoices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -10,14 +10,18 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { useState } from "react";
+import { useToast } from "@/components/ui/toast";
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: invoice, isLoading, error } = useInvoice(id || "");
   const updateInvoice = useUpdateInvoice();
+  const issueInvoice = useIssueInvoice();
+  const markPaid = useMarkInvoicePaid();
 
   if (isLoading) {
     return (
@@ -270,13 +274,49 @@ export default function InvoiceDetail() {
 
             {invoice.status !== "paid" && invoice.status !== "cancelled" && (
               <Button
-                onClick={() => {
-                  // TODO: Implement payment flow
-                  alert("Payment flow to be implemented");
+                onClick={async () => {
+                  if (invoice.status === "draft") {
+                    try {
+                      await issueInvoice.mutateAsync(invoice.id);
+                      showToast({
+                        variant: "success",
+                        title: "Success",
+                        description: "Invoice issued successfully",
+                      });
+                    } catch (error) {
+                      showToast({
+                        variant: "error",
+                        title: "Error",
+                        description:
+                          error instanceof Error ? error.message : "Failed to issue invoice",
+                      });
+                    }
+                  } else {
+                    try {
+                      await markPaid.mutateAsync(invoice.id);
+                      showToast({
+                        variant: "success",
+                        title: "Success",
+                        description: "Invoice marked as paid",
+                      });
+                    } catch (error) {
+                      showToast({
+                        variant: "error",
+                        title: "Error",
+                        description:
+                          error instanceof Error ? error.message : "Failed to mark invoice as paid",
+                      });
+                    }
+                  }
                 }}
+                disabled={issueInvoice.isPending || markPaid.isPending}
                 className="w-full"
               >
-                Pay Now
+                {issueInvoice.isPending || markPaid.isPending
+                  ? "Processing..."
+                  : invoice.status === "draft"
+                    ? "Issue Invoice"
+                    : "Mark as Paid"}
               </Button>
             )}
 

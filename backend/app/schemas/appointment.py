@@ -47,6 +47,14 @@ class AppointmentConfirmRequest(BaseModel):
     time_slot_id: Optional[str] = Field(None, description="Optional TimeSlot ID to confirm")
 
 
+class AppointmentCollectPaymentRequest(BaseModel):
+    """Request schema for collecting payment after service for pay-later appointments."""
+
+    payment_method: str = Field(..., description="Payment method: cash, card, mobile_money, check, bank_transfer")
+    amount: Decimal = Field(..., description="Payment amount")
+    notes: Optional[str] = Field(None, max_length=500, description="Payment notes")
+
+
 class AppointmentResponse(BaseModel):
     """Response schema for an appointment."""
 
@@ -60,6 +68,8 @@ class AppointmentResponse(BaseModel):
     status: str
     notes: Optional[str]
     price: Optional[Decimal]
+    payment_option: Optional[str] = Field(None, alias="paymentOption", description="Payment option: 'now' or 'later'")
+    payment_status: Optional[str] = Field(None, alias="paymentStatus", description="Payment status: pending, completed, failed")
     cancellation_reason: Optional[str]
     cancelled_at: Optional[str]
     cancelled_by: Optional[str]
@@ -73,6 +83,7 @@ class AppointmentResponse(BaseModel):
         """Pydantic config."""
 
         from_attributes = True
+        populate_by_name = True
 
 
 class AppointmentListResponse(BaseModel):

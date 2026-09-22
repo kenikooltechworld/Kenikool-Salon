@@ -11,6 +11,8 @@ from app.services.appointment_history_service import AppointmentHistoryService
 from app.context import get_tenant_id
 from app.decorators.tenant_isolated import tenant_isolated
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse, CustomerListResponse
+from app.services.balance_service import BalanceService
+from app.tasks import run_in_background
 
 logger = logging.getLogger(__name__)
 
@@ -320,11 +322,12 @@ async def create_customer(
                 
                 if rendered_html:
                     # Send email with rendered template
-                    run_in_background(send_email,
-                        to=new_customer.email,
-                        subject=f"Welcome to {tenant.name}!",
-                        template="custom",  # Special template type for custom HTML
-                        context={"html_content": rendered_html},
+                    run_in_background(
+                        send_email,
+                        new_customer.email,
+                        f"Welcome to {tenant.name}!",
+                        "custom",
+                        {"html_content": rendered_html},
                     )
                     logger.info(f"Welcome email queued for customer: {new_customer.email}")
                 else:
@@ -455,4 +458,146 @@ async def delete_customer(
         logger.error(f"Failed to delete customer: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="Failed to delete customer")
 
+
+@router.get("/{customer_id}/balance", response_model=dict)
+@tenant_isolated
+async def get_customer_balance(
+    customer_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """
+    Get customer balance information including outstanding balance and unpaid invoices.
+    """
+    try:
+        from app.services.balance_service import BalanceService
+        balance_info = BalanceService.get_customer_balance(tenant_id, customer_id)
+        return balance_info
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to get customer balance: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to get customer balance")
+
+
+@router.put("/{customer_id}/balance", response_model=dict)
+@tenant_isolated
+async def update_customer_balance(
+    customer_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """
+    Update customer balance by recalculating from unpaid invoices.
+    """
+    try:
+        from app.services.balance_service import BalanceService
+        updated_balance = BalanceService.update_customer_balance(tenant_id, customer_id)
+        return {
+            "customer_id": customer_id,
+            "updated_balance": float(updated_balance),
+            "message": "Balance updated successfully"
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to update customer balance: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to update customer balance")
+
+
+@router.get("/{customer_id}/booking-eligibility", response_model=dict)
+@tenant_isolated
+async def check_customer_booking_eligibility(
+    customer_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """
+    Check if customer is eligible to book based on outstanding balance.
+    """
+    try:
+        from app.services.balance_service import BalanceService
+        eligibility_info = BalanceService.check_booking_eligibility(tenant_id, customer_id)
+        return eligibility_info
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to check booking eligibility: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to check booking eligibility")
+
+
+@router.post("/{customer_id}/resend-portal-invitation", response_model=dict)
+@tenant_isolated
+async def resend_customer_portal_invitation(
+    customer_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id_from_context),
+):
+    """
+    Resend customer portal setup invitation.
+    """
+    try:
+        customer = Customer.objects(id=ObjectId(customer_id), tenant_id=tenant_id).first()
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        
+        # Check if customer already has a password
+        if customer.password_hash:
+            raise HTTPException(
+                status_code=400,
+                detail="Customer already has portal access"
+            )
+        
+        # Generate new setup token
+        import secrets
+        setup_token = secrets.token_urlsafe(32)
+        customer.password_reset_token = setup_token
+        customer.password_reset_expires = datetime.utcnow() + timedelta(days=7)
+        customer.save()
+        
+        # Send setup email
+        from app.tasks import send_email
+        from app.config import settings
+        from app.services.email_template_service import EmailTemplateService
+        
+        tenant = Tenant.objects(id=tenant_id).first()
+        if tenant:
+            platform_domain = settings.platform_domain
+            setup_url = f"https://{tenant.subdomain}.{platform_domain}/customer/setup-password?token={setup_token}"
+            booking_url = f"https://{tenant.subdomain}.{platform_domain}/book"
+            
+            tenant_settings = tenant.settings or {}
+            
+            email_context = {
+                "customer_name": f"{customer.first_name} {customer.last_name}",
+                "customer_email": customer.email,
+                "customer_phone": customer.phone,
+                "business_name": tenant.name,
+                "business_address": tenant.address,
+                "business_phone": tenant_settings.get("phone"),
+                "business_email": tenant_settings.get("email"),
+                "logo_url": tenant.logo_url,
+                "primary_color": tenant.primary_color or "#6366f1",
+                "secondary_color": tenant.secondary_color or "#8b5cf6",
+                "booking_url": booking_url,
+                "setup_url": setup_url,
+            }
+            
+            rendered_html = EmailTemplateService.render_customer_welcome_email(
+                str(tenant_id),
+                email_context
+            )
+            
+            if rendered_html:
+                run_in_background(
+                    send_email,
+                    customer.email,
+                    f"Set up your {tenant.name} customer portal access",
+                    "custom",
+                    {"html_content": rendered_html},
+                )
+        
+        return {"message": "Portal invitation sent successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to resend portal invitation: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to resend portal invitation")
 

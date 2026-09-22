@@ -13,8 +13,35 @@ export interface Customer {
   preferredServices?: string[];
   communicationPreference?: "email" | "sms" | "phone" | "none";
   status: "active" | "inactive";
+  outstandingBalance?: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  isGuest?: boolean;
+  lastLogin?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomerBalance {
+  customerId: string;
+  customerName: string;
+  outstandingBalance: number;
+  unpaidInvoiceCount: number;
+  unpaidInvoices: Array<{
+    invoiceId: string;
+    amount: number;
+    status: string;
+    dueDate?: string;
+    createdAt: string;
+  }>;
+}
+
+export interface BookingEligibility {
+  customerId: string;
+  customerName: string;
+  outstandingBalance: number;
+  isEligibleToBook: boolean;
+  reason: string;
 }
 
 interface CustomerFilters {
@@ -46,6 +73,11 @@ export function useCustomers(filters?: CustomerFilters) {
           preferredServices: customer.preferred_services,
           communicationPreference: customer.communication_preference,
           status: customer.status,
+          outstandingBalance: customer.outstanding_balance,
+          emailVerified: customer.email_verified,
+          phoneVerified: customer.phone_verified,
+          isGuest: customer.is_guest,
+          lastLogin: customer.last_login,
           createdAt: customer.created_at,
           updatedAt: customer.updated_at,
         })),
@@ -79,6 +111,11 @@ export function useCustomer(id: string) {
         preferredServices: customer.preferred_services,
         communicationPreference: customer.communication_preference,
         status: customer.status,
+        outstandingBalance: customer.outstanding_balance,
+        emailVerified: customer.email_verified,
+        phoneVerified: customer.phone_verified,
+        isGuest: customer.is_guest,
+        lastLogin: customer.last_login,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at,
       };
@@ -180,6 +217,70 @@ export function useDeleteCustomer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+  });
+}
+
+/**
+ * Fetch customer balance information
+ */
+export function useCustomerBalance(id: string) {
+  return useQuery({
+    queryKey: ["customer-balance", id],
+    queryFn: async () => {
+      const data = await get<CustomerBalance>(`/customers/${id}/balance`);
+      return data;
+    },
+    enabled: !!id,
+  });
+}
+
+/**
+ * Update customer balance (recalculate from invoices)
+ */
+export function useUpdateCustomerBalance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const data = await put<any>(`/customers/${id}/balance`);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["customer-balance", data.customer_id] });
+      queryClient.invalidateQueries({ queryKey: ["customers", data.customer_id] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+  });
+}
+
+/**
+ * Check customer booking eligibility
+ */
+export function useCustomerBookingEligibility(id: string) {
+  return useQuery({
+    queryKey: ["customer-booking-eligibility", id],
+    queryFn: async () => {
+      const data = await get<BookingEligibility>(`/customers/${id}/booking-eligibility`);
+      return data;
+    },
+    enabled: !!id,
+  });
+}
+
+/**
+ * Resend portal invitation to customer
+ */
+export function useResendPortalInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const data = await post<any>(`/customers/${id}/resend-portal-invitation`);
+      return data;
+    },
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: ["customers", id] });
     },
   });
 }

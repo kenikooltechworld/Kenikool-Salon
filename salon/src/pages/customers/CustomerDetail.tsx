@@ -3,18 +3,29 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeftIcon,
   EditIcon,
   TrashIcon,
   MailIcon,
+  UserIcon,
+  SettingsIcon,
+  DollarSignIcon,
 } from "@/components/icons";
+import {
+  useCustomerBalance,
+  useUpdateCustomerBalance,
+  useCustomerBookingEligibility,
+  useResendPortalInvitation,
+} from "@/hooks/useCustomers";
 import { useCustomerProfile } from "@/hooks/useCustomerWithDetails";
 import { useDeleteCustomer } from "@/hooks/useCustomers";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { EditCustomerModal } from "@/components/customers/EditCustomerModal";
+import { CustomerBalance } from "@/components/customers/CustomerBalance";
+import { CustomerPreferencesPanel } from "@/components/customers/CustomerPreferencesPanel";
 import { useToast } from "@/components/ui/toast";
-import { apiClient } from "@/lib/utils/api";
 import { useState } from "react";
 
 const APPOINTMENTS_PREVIEW_LIMIT = 5;
@@ -25,35 +36,32 @@ export default function CustomerDetail() {
   const { showToast } = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   const { data: customer, isLoading } = useCustomerProfile(id || "");
   const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer();
+  const { mutate: resendInvitation, isPending: isSendingInvite } = useResendPortalInvitation();
 
   const handleSendPortalInvitation = async () => {
     if (!id) return;
 
-    setIsSendingInvite(true);
-    try {
-      await apiClient.post(
-        `/public/customer-auth/resend-setup-invitation/${id}`,
-      );
-      showToast({
-        title: "Invitation Sent",
-        description:
-          "Portal setup invitation has been sent to the customer's email.",
-        variant: "success",
-      });
-    } catch (error: any) {
-      showToast({
-        title: "Failed to Send",
-        description:
-          error.response?.data?.detail || "Failed to send portal invitation.",
-        variant: "error",
-      });
-    } finally {
-      setIsSendingInvite(false);
-    }
+    resendInvitation(id, {
+      onSuccess: () => {
+        showToast({
+          title: "Invitation Sent",
+          description:
+            "Portal setup invitation has been sent to the customer's email.",
+          variant: "success",
+        });
+      },
+      onError: (error: any) => {
+        showToast({
+          title: "Failed to Send",
+          description:
+            error.response?.data?.detail || "Failed to send portal invitation.",
+          variant: "error",
+        });
+      },
+    });
   };
 
   if (isLoading) {
@@ -238,177 +246,148 @@ export default function CustomerDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* Contact Information */}
-          <Card className="p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
-              Contact Information
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                  Email
-                </p>
-                <p className="text-sm sm:text-base text-foreground mt-1 break-all">
-                  {customer!.email}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                  Phone
-                </p>
-                <p className="text-sm sm:text-base text-foreground mt-1">
-                  {customer!.phone}
-                </p>
-              </div>
-              {customer!.address && (
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                    Address
-                  </p>
-                  <p className="text-sm sm:text-base text-foreground mt-1">
-                    {customer!.address}
-                  </p>
-                </div>
-              )}
-              {customer!.dateOfBirth && (
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                    Date of Birth
-                  </p>
-                  <p className="text-sm sm:text-base text-foreground mt-1">
-                    {new Date(customer!.dateOfBirth).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                  Member Since
-                </p>
-                <p className="text-sm sm:text-base text-foreground mt-1">
-                  {new Date(customer!.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </Card>
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="profile" className="gap-2">
+                <UserIcon size={16} />
+                <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="balance" className="gap-2">
+                <DollarSignIcon size={16} />
+                <span className="hidden sm:inline">Balance</span>
+              </TabsTrigger>
+              <TabsTrigger value="preferences" className="gap-2">
+                <SettingsIcon size={16} />
+                <span className="hidden sm:inline">Preferences</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <span className="hidden sm:inline">History</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Preferences */}
-          {customer!.preferences && (
-            <Card className="p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
-                Preferences
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                    Preferred Time Slots
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {customer!.preferences.preferred_time_slots?.length > 0 ? (
-                      customer!.preferences.preferred_time_slots.map((slot) => (
-                        <Badge key={slot} variant="secondary">
-                          {slot.charAt(0).toUpperCase() + slot.slice(1)}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No preference
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                    Communication Methods
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {customer!.preferences.communication_methods?.length > 0 ? (
-                      customer!.preferences.communication_methods.map(
-                        (method) => (
-                          <Badge key={method} variant="secondary">
-                            {method.charAt(0).toUpperCase() + method.slice(1)}
-                          </Badge>
-                        ),
-                      )
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No preference
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                    Language
-                  </p>
-                  <p className="text-sm sm:text-base text-foreground mt-1">
-                    {customer!.preferences.language || "Not specified"}
-                  </p>
-                </div>
-                {customer!.preferences.notes && (
+            <TabsContent value="profile" className="space-y-4 mt-6">
+              {/* Contact Information */}
+              <Card className="p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
+                  Contact Information
+                </h2>
+                <div className="space-y-4">
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                      Notes
+                      Email
                     </p>
-                    <p className="text-sm sm:text-base text-foreground mt-1">
-                      {customer!.preferences.notes}
+                    <p className="text-sm sm:text-base text-foreground mt-1 break-all">
+                      {customer!.email}
                     </p>
                   </div>
-                )}
-              </div>
-            </Card>
-          )}
-
-          {/* Appointment History */}
-          {customer!.history && customer!.history.length > 0 && (
-            <Card className="p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
-                Appointment History ({customer!.history.length})
-              </h2>
-              <div className="space-y-3">
-                {customer!.history
-                  .slice(0, APPOINTMENTS_PREVIEW_LIMIT)
-                  .map((appointment: any) => (
-                    <div
-                      key={appointment.id}
-                      className="border-b border-border pb-3 last:border-0"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm sm:text-base font-medium text-foreground">
-                            {appointment.service_name}
-                          </p>
-                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                            with {appointment.staff_name}
-                          </p>
-                        </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground shrink-0 whitespace-nowrap">
-                          {new Date(
-                            appointment.appointment_date,
-                          ).toLocaleDateString()}
-                        </p>
-                      </div>
-                      {appointment.rating > 0 && (
-                        <div className="mt-2">
-                          <p className="text-xs text-muted-foreground">
-                            Rating: {appointment.rating}/5
-                          </p>
-                        </div>
-                      )}
+                  <div>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                      Phone
+                    </p>
+                    <p className="text-sm sm:text-base text-foreground mt-1">
+                      {customer!.phone}
+                    </p>
+                  </div>
+                  {customer!.address && (
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                        Address
+                      </p>
+                      <p className="text-sm sm:text-base text-foreground mt-1">
+                        {customer!.address}
+                      </p>
                     </div>
-                  ))}
-              </div>
-              {customer!.history.length > APPOINTMENTS_PREVIEW_LIMIT && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/customers/${id}/appointments`)}
-                  className="mt-4 w-full"
-                >
-                  View All Appointments ({customer!.history.length})
-                </Button>
+                  )}
+                  {customer!.dateOfBirth && (
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                        Date of Birth
+                      </p>
+                      <p className="text-sm sm:text-base text-foreground mt-1">
+                        {new Date(customer!.dateOfBirth).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                      Member Since
+                    </p>
+                    <p className="text-sm sm:text-base text-foreground mt-1">
+                      {new Date(customer!.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="balance" className="mt-6">
+              <CustomerBalance
+                customerId={customer!.id}
+                customerName={`${customer!.firstName} ${customer!.lastName}`}
+              />
+            </TabsContent>
+
+            <TabsContent value="preferences" className="mt-6">
+              <CustomerPreferencesPanel
+                customerId={customer!.id}
+                customerName={`${customer!.firstName} ${customer!.lastName}`}
+              />
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-4 mt-6">
+              {/* Appointment History */}
+              {customer!.history && customer!.history.length > 0 && (
+                <Card className="p-4 sm:p-6">
+                  <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
+                    Appointment History ({customer!.history.length})
+                  </h2>
+                  <div className="space-y-3">
+                    {customer!.history
+                      .slice(0, APPOINTMENTS_PREVIEW_LIMIT)
+                      .map((appointment: any) => (
+                        <div
+                          key={appointment.id}
+                          className="border-b border-border pb-3 last:border-0"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm sm:text-base font-medium text-foreground">
+                                {appointment.service_name}
+                              </p>
+                              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                with {appointment.staff_name}
+                              </p>
+                            </div>
+                            <p className="text-xs sm:text-sm text-muted-foreground shrink-0 whitespace-nowrap">
+                              {new Date(
+                                appointment.appointment_date,
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                          {appointment.rating > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs text-muted-foreground">
+                                Rating: {appointment.rating}/5
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                  {customer!.history.length > APPOINTMENTS_PREVIEW_LIMIT && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/customers/${id}/appointments`)}
+                      className="mt-4 w-full"
+                    >
+                      View All Appointments ({customer!.history.length})
+                    </Button>
+                  )}
+                </Card>
               )}
-            </Card>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Sidebar */}
