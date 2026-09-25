@@ -48,6 +48,7 @@ from app.routes import (
     goals,
     inventory,
     financial_reports,
+    locations,
 )
 
 __all__ = [
@@ -98,4 +99,5 @@ __all__ = [
     "goals",
     "inventory",
     "financial_reports",
+    "locations",
 ]

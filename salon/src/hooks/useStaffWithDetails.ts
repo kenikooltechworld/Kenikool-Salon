@@ -103,7 +103,7 @@ export function useStaffSchedule(
 ) {
   const { data: staff } = useStaffMember(staffId);
   const { data: shifts } = useShifts({ staffId: staffId });
-  const { data: timeOffRequests } = useTimeOffRequests({ staffId: staffId });
+  const { data: timeOffRequests } = useTimeOffRequests({ staff_id: staffId });
 
   return {
     data:

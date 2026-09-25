@@ -18,6 +18,9 @@ export {
   type Customer,
 } from "./useCustomers";
 
+// Roles
+export { useRoles, type Role } from "./useRoles";
+
 // Staff
 export {
   useStaff,

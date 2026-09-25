@@ -724,6 +724,56 @@ async def get_current_user(
     }
 
 
+@router.put("/me")
+async def update_current_user(
+    updates: dict,
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """
+    Update current user information.
+
+    Updates the authenticated user's profile.
+    """
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        user = User.objects(id=user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Update allowed fields
+        if "first_name" in updates:
+            user.first_name = updates["first_name"]
+        if "last_name" in updates:
+            user.last_name = updates["last_name"]
+        if "phone" in updates:
+            user.phone = updates["phone"]
+        
+        user.save()
+        
+        return {
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "firstName": user.first_name,
+                "lastName": user.last_name,
+                "phone": user.phone,
+                "role": current_user.get("role_names", [""])[0] if current_user.get("role_names") else "",
+                "roleNames": current_user.get("role_names", []),
+                "tenantId": current_user.get("tenant_id"),
+                "avatar": current_user.get("avatar"),
+            },
+            "message": "Profile updated successfully",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update profile")
+
+
 @router.post("/delete-account")
 async def delete_account(
     current_user: dict = Depends(get_current_user_dependency),

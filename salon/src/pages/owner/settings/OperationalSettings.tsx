@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
@@ -45,7 +46,14 @@ interface OperationalConfig {
 }
 
 export function OperationalSettings() {
-  const [config, setConfig] = useState<OperationalConfig | null>(null);
+  const [config, setConfig] = useState<OperationalConfig>({
+    resources: [],
+    inventory: [],
+    waitingRoom: {
+      maxQueueSize: 50,
+      estimatedWaitTime: 15,
+    },
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -62,7 +70,16 @@ export function OperationalSettings() {
     try {
       const response = await fetch("/api/v1/settings/operational");
       const data = await response.json();
-      setConfig(data);
+      setConfig((prev) => ({
+        ...prev,
+        ...data,
+        waitingRoom: {
+          maxQueueSize: data.waiting_room_max_capacity ?? prev.waitingRoom.maxQueueSize,
+          estimatedWaitTime: data.waiting_room_estimated_wait_time ?? prev.waitingRoom.estimatedWaitTime,
+        },
+        resources: data.resources ?? prev.resources,
+        inventory: data.inventory ?? prev.inventory,
+      }));
     } catch (error) {
       setMessage({
         type: "error",
@@ -74,13 +91,16 @@ export function OperationalSettings() {
   };
 
   const handleSave = async () => {
-    if (!config) return;
     setSaving(true);
     try {
       await fetch("/api/v1/settings/operational", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          ...config,
+          waiting_room_max_capacity: config.waitingRoom.maxQueueSize,
+          waiting_room_estimated_wait_time: config.waitingRoom.estimatedWaitTime,
+        }),
       });
       setMessage({ type: "success", text: "Operational settings saved" });
     } catch (error) {
@@ -91,7 +111,6 @@ export function OperationalSettings() {
   };
 
   const addResource = () => {
-    if (!config) return;
     setConfig({
       ...config,
       resources: [
@@ -108,7 +127,6 @@ export function OperationalSettings() {
   };
 
   const removeResource = (id: string) => {
-    if (!config) return;
     setConfig({
       ...config,
       resources: config.resources.filter((r) => r.id !== id),
@@ -116,7 +134,6 @@ export function OperationalSettings() {
   };
 
   const updateResource = (id: string, updates: Partial<ResourceCapacity>) => {
-    if (!config) return;
     setConfig({
       ...config,
       resources: config.resources.map((r) =>
@@ -126,7 +143,6 @@ export function OperationalSettings() {
   };
 
   const addInventoryThreshold = () => {
-    if (!config) return;
     setConfig({
       ...config,
       inventory: [
@@ -143,7 +159,6 @@ export function OperationalSettings() {
   };
 
   const removeInventoryThreshold = (id: string) => {
-    if (!config) return;
     setConfig({
       ...config,
       inventory: config.inventory.filter((i) => i.id !== id),
@@ -154,7 +169,6 @@ export function OperationalSettings() {
     id: string,
     updates: Partial<InventoryThreshold>,
   ) => {
-    if (!config) return;
     setConfig({
       ...config,
       inventory: config.inventory.map((i) =>
@@ -165,11 +179,32 @@ export function OperationalSettings() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2Icon className="animate-spin" />
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-5 w-72" />
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4 md:p-6 space-y-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="border rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-4 w-32" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-9 w-9 ml-4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
-  if (!config) return <div>Failed to load settings</div>;
 
   return (
     <div className="space-y-6">

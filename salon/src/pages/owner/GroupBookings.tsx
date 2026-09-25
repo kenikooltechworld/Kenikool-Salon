@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useGroupBookings,
   useConfirmGroupBooking,
@@ -11,6 +12,10 @@ import {
   type GroupBooking,
 } from "@/hooks/useGroupBookings";
 import { Users, Calendar, Check, X, Eye } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { GroupBookingCardSkeleton } from "@/components/ui/group-booking-card-skeleton";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function GroupBookings() {
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -18,8 +23,10 @@ export default function GroupBookings() {
     null,
   );
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: bookings, isLoading } = useGroupBookings({
+  const { data: bookings, isLoading, refetch } = useGroupBookings({
     status: statusFilter || undefined,
   });
   const confirmBooking = useConfirmGroupBooking();
@@ -69,8 +76,29 @@ export default function GroupBookings() {
     return <Badge variant={variants[status] || "default"}>{status}</Badge>;
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   if (isLoading) {
-    return <div className="p-6">Loading group bookings...</div>;
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+        <Card className="p-4 mb-6">
+          <Skeleton className="h-10 w-full max-w-xs" />
+        </Card>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <GroupBookingCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -145,7 +173,7 @@ export default function GroupBookings() {
 
               <div className="text-right">
                 <div className="text-2xl font-bold text-blue-600">
-                  ${booking.final_total.toFixed(2)}
+                  ₦{booking.final_total.toFixed(2)}
                 </div>
                 {booking.discount_percentage > 0 && (
                   <div className="text-sm text-green-600">
@@ -153,7 +181,7 @@ export default function GroupBookings() {
                   </div>
                 )}
                 <div className="text-sm text-gray-500 mt-1">
-                  Base: ${booking.base_total.toFixed(2)}
+                  Base: ₦{booking.base_total.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -273,7 +301,7 @@ export default function GroupBookings() {
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Base Total:</span>
-                    <span>${selectedBooking.base_total.toFixed(2)}</span>
+                    <span>₦{selectedBooking.base_total.toFixed(2)}</span>
                   </div>
                   {selectedBooking.discount_percentage > 0 && (
                     <div className="flex justify-between text-green-600">
@@ -281,13 +309,13 @@ export default function GroupBookings() {
                         Group Discount ({selectedBooking.discount_percentage}%):
                       </span>
                       <span>
-                        -${selectedBooking.discount_amount.toFixed(2)}
+                        -₦{selectedBooking.discount_amount.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold pt-2 border-t">
                     <span>Final Total:</span>
-                    <span>${selectedBooking.final_total.toFixed(2)}</span>
+                    <span>₦{selectedBooking.final_total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

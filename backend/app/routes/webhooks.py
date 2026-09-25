@@ -167,25 +167,90 @@ async def _handle_charge_success(
         logger.info(f"Payment metadata: {payment.metadata}")
         logger.info(f"Payment type: {payment.metadata.get('payment_type')}")
         
-        # Update payment status
-        payment.status = "success"
-        payment.metadata.update({
-            "paystack_transaction_id": extracted_data.get("transaction_id"),
-            "paystack_authorization": extracted_data.get("authorization"),
-            "webhook_processed_at": str(extracted_data.get("paid_at")),
-        })
-        payment.save()
-        logger.info(f"Payment {payment.id} marked as success")
-        
-        # Handle booking payment (create appointment if booking data exists)
+        # Handle booking payment first - create appointment before marking payment success
+        booking_created = False
         if payment.metadata.get("payment_type") == "booking":
             logger.info(f"Booking payment detected for {payment.id}, creating booking...")
             await _create_booking_from_payment(payment, tenant_id, webhook_data)
+            # Reload payment to check if appointment_id was saved
+            payment.reload()
+            booking_created = bool(payment.metadata.get("appointment_id"))
+            logger.info(f"Booking creation result for {payment.id}: appointment_id={payment.metadata.get('appointment_id')}")
         elif payment.metadata.get("payment_type") == "pos":
             logger.info(f"POS payment detected for {payment.id}, creating transaction...")
             await _create_transaction_from_payment(payment, tenant_id, webhook_data)
-        else:
-            logger.info(f"Non-booking/POS payment {payment.id}, skipping creation")
+            booking_created = True  # POS doesn't need booking creation check
+        
+        # Handle booking payment failure - auto-refund if booking wasn't created
+        if payment.metadata.get("payment_type") == "booking" and not booking_created:
+            logger.error(f"Booking creation failed for payment {payment.id} - initiating automatic refund")
+            
+            # Create refund record and process Paystack refund
+            try:
+                refund_service = RefundService()
+                refund_result = refund_service.create_refund(
+                    payment_id=str(payment.id),
+                    amount=payment.amount,
+                    reason="Booking creation failed - automatic refund"
+                )
+                logger.info(f"Automatic refund created for payment {payment.id}: {refund_result.get('refund_id')}")
+                
+                # Mark payment as success with auto-refund metadata
+                payment.status = "success"
+                payment.metadata.update({
+                    "paystack_transaction_id": extracted_data.get("transaction_id"),
+                    "paystack_authorization": extracted_data.get("authorization"),
+                    "webhook_processed_at": str(extracted_data.get("paid_at")),
+                    "auto_refunded": True,
+                    "auto_refund_reason": "Booking creation failed",
+                    "refund_id": refund_result.get("refund_id"),
+                    "booking_creation_failed": True,
+                })
+                payment.save()
+                logger.info(f"Payment {payment.id} marked as success with auto-refund")
+                
+                # Queue notification for customer about failed booking and refund
+                queue_notification(
+                    tenant_id=tenant_id,
+                    notification_type="payment_failed",
+                    recipient_id=str(payment.customer_id) if payment.customer_id else None,
+                    data={
+                        "payment_id": str(payment.id),
+                        "amount": str(payment.amount),
+                        "reference": payment.reference,
+                        "reason": "Booking could not be created. Your payment has been refunded.",
+                    },
+                    recipient_type="customer",
+                )
+                logger.info(f"Auto-refund notification queued for payment {payment.id}")
+                return
+            except Exception as refund_error:
+                logger.error(f"Auto-refund failed for payment {payment.id}: {refund_error}", exc_info=True)
+                # Mark payment as success but flag for manual intervention
+                payment.status = "success"
+                payment.metadata.update({
+                    "paystack_transaction_id": extracted_data.get("transaction_id"),
+                    "paystack_authorization": extracted_data.get("authorization"),
+                    "webhook_processed_at": str(extracted_data.get("paid_at")),
+                    "booking_creation_failed": True,
+                    "auto_refund_failed": True,
+                    "auto_refund_error": str(refund_error),
+                })
+                payment.save()
+                logger.error(f"Payment {payment.id} marked as success but auto-refund failed - needs manual intervention")
+                return
+        
+        # Only mark payment as success if booking was created (for booking payments)
+        # or immediately for non-booking payments
+        if payment.metadata.get("payment_type") != "booking" or booking_created:
+            payment.status = "success"
+            payment.metadata.update({
+                "paystack_transaction_id": extracted_data.get("transaction_id"),
+                "paystack_authorization": extracted_data.get("authorization"),
+                "webhook_processed_at": str(extracted_data.get("paid_at")),
+            })
+            payment.save()
+            logger.info(f"Payment {payment.id} marked as success")
         
         # Mark invoice as paid and update appointment
         invoice = Invoice.objects(
@@ -225,18 +290,19 @@ async def _handle_charge_success(
         )
         
         # Queue notification for customer
-        queue_notification(
-            tenant_id=tenant_id,
-            notification_type="payment_success",
-            recipient_id=str(payment.customer_id) if payment.customer_id else None,
-            data={
-                "payment_id": str(payment.id),
-                "amount": str(payment.amount),
-                "reference": payment.reference,
-            },
-            recipient_type="customer",
-        )
-        logger.info(f"Notification queued for payment {payment.id}")
+        if payment.metadata.get("payment_type") != "booking" or booking_created:
+            queue_notification(
+                tenant_id=tenant_id,
+                notification_type="payment_success",
+                recipient_id=str(payment.customer_id) if payment.customer_id else None,
+                data={
+                    "payment_id": str(payment.id),
+                    "amount": str(payment.amount),
+                    "reference": payment.reference,
+                },
+                recipient_type="customer",
+            )
+            logger.info(f"Notification queued for payment {payment.id}")
         
     except Exception as e:
         logger.error(f"Error handling charge.success: {e}", exc_info=True)
@@ -398,6 +464,11 @@ async def _create_booking_from_payment(
                 logger.error(f"Error sending confirmation email: {e}")
             return
         
+        # Get service price before creating appointment
+        service = Service.objects(tenant_id=ObjectId(tenant_id), id=ObjectId(service_id)).first()
+        service_price = float(service.price) if service and service.price else None
+        logger.info(f"Service {service_id} price: {service_price}")
+
         # Create appointment
         logger.info(f"Creating new appointment for payment {payment.id}")
         appointment = AppointmentService.create_appointment(
@@ -409,6 +480,7 @@ async def _create_booking_from_payment(
             end_time=end_time,
             payment_option="now",
             payment_id=payment.id,
+            price=service_price,
         )
         
         logger.info(f"Appointment created: {appointment.id} from payment {payment.id}")

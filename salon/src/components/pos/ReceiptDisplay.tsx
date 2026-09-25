@@ -2,13 +2,14 @@ import {
   useReceipt,
   usePrintReceipt,
   useEmailReceipt,
+  useDownloadReceiptPDF,
 } from "@/hooks/useReceipt";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ReceiptDisplayProps {
   transactionId: string;
@@ -19,7 +20,14 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
   const { data: receipt, isLoading } = useReceipt(transactionId);
   const { mutate: printReceipt, isPending: isPrinting } = usePrintReceipt();
   const { mutate: emailReceipt, isPending: isEmailing } = useEmailReceipt();
+  const { mutate: downloadPDF, isPending: isDownloading } = useDownloadReceiptPDF();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (receipt?.customerEmail) {
+      setEmail(receipt.customerEmail);
+    }
+  }, [receipt?.customerEmail]);
 
   if (isLoading) {
     return (
@@ -62,6 +70,33 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
     );
   };
 
+  const handleDownloadPDF = () => {
+    downloadPDF(receipt.id, {
+      onSuccess: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `receipt-${receipt.receiptNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        showToast({
+          title: "Success",
+          description: "Receipt PDF downloaded",
+          variant: "success",
+        });
+      },
+      onError: () => {
+        showToast({
+          title: "Error",
+          description: "Failed to download receipt PDF",
+          variant: "error",
+        });
+      },
+    });
+  };
+
   const handleEmail = () => {
     if (!email) {
       showToast({
@@ -83,7 +118,6 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
             description: `Receipt sent to ${email}`,
             variant: "success",
           });
-          setEmail("");
         },
         onError: () => {
           showToast({
@@ -227,23 +261,14 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
             >
               {isPrinting ? <Spinner className="w-4 h-4" /> : "Print"}
             </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const element = document.createElement("a");
-                  element.href = `/api/v1/receipts/${receipt.id}/pdf`;
-                  element.download = `receipt-${receipt.receiptNumber}.pdf`;
-                  element.click();
-                  showToast({
-                    title: "Download Started",
-                    description: "Receipt PDF is downloading",
-                    variant: "default",
-                  });
-                }}
-                className="flex-1 text-sm md:text-base"
-              >
-                Download PDF
-              </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="flex-1 text-sm md:text-base"
+            >
+              {isDownloading ? <Spinner className="w-4 h-4" /> : "Download PDF"}
+            </Button>
           </div>
 
           <div className="flex gap-2 flex-col sm:flex-row">

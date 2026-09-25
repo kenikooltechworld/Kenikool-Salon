@@ -11,13 +11,19 @@ logger = logging.getLogger(__name__)
 
 def setup_middleware(app: FastAPI) -> None:
     """Set up all middleware for the application."""
-    # CORS middleware
+    cors_kwargs = {
+        "allow_credentials": settings.cors_credentials,
+        "allow_methods": settings.cors_methods,
+        "allow_headers": settings.cors_headers,
+    }
+    if settings.environment == "development":
+        cors_kwargs["allow_origin_regex"] = r"http://(localhost(:\d+)?|.*\.?localhost(:\d+)?)|https?://(localhost(:\d+)?|.*\.?kenikoolsalon\.com)"
+    else:
+        cors_kwargs["allow_origins"] = settings.cors_origins
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=settings.cors_credentials,
-        allow_methods=settings.cors_methods,
-        allow_headers=settings.cors_headers,
+        **cors_kwargs,
     )
 
     # Custom middleware

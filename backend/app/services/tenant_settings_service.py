@@ -55,28 +55,6 @@ class TenantSettingsService:
                 subdomain_url = ""
             
             # Default configs
-            default_system_config = {
-                "rate_limit_enabled": True,
-                "rate_limit_requests": 100,
-                "rate_limit_window": 60,
-                "ddos_protection_enabled": True,
-                "ddos_threshold": 1000,
-                "waf_enabled": True,
-                "intrusion_detection_enabled": True,
-                "audit_logging_enabled": True,
-                "feature_flags": {},
-            }
-            
-            default_integration_config = {
-                "termii": {"apiKey": "", "senderId": "", "enabled": False},
-                "paystack": {
-                    "publicKey": "",
-                    "secretKey": "",
-                    "webhookUrl": config.paystack_webhook_router_url,
-                    "enabled": False,
-                },
-            }
-            
             default_financial_config = {
                 "balance_enforcement_enabled": True,
                 "minimum_balance_threshold": 0,
@@ -132,8 +110,6 @@ class TenantSettingsService:
                 "require_customer_approval": settings.get("require_customer_approval", False),
                 "auto_confirm_bookings": settings.get("auto_confirm_bookings", True),
                 "customer_welcome_email_template": settings.get("customer_welcome_email_template", ""),
-                "system_config": settings.get("system_config", default_system_config),
-                "integration_config": settings.get("integration_config", default_integration_config),
                 "financial_config": settings.get("financial_config", default_financial_config),
                 "operational_config": settings.get("operational_config", default_operational_config),
             }
@@ -193,10 +169,6 @@ class TenantSettingsService:
                 tenant.settings["customer_welcome_email_template"] = updates["customer_welcome_email_template"]
             
             # Handle config sections if provided in updates
-            if "system_config" in updates:
-                tenant.settings["system_config"] = updates["system_config"]
-            if "integration_config" in updates:
-                tenant.settings["integration_config"] = updates["integration_config"]
             if "financial_config" in updates:
                 tenant.settings["financial_config"] = updates["financial_config"]
             if "operational_config" in updates:

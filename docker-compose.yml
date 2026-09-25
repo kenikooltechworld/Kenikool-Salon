@@ -1,22 +1,4 @@
 services:
-  # MongoDB Database
-  mongodb:
-    image: mongo:6.0
-    container_name: salon_mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: kenikool-salon
-    volumes:
-      - mongodb_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - salon_network
-
   # Backend API Server
   backend:
     build:
@@ -33,12 +15,9 @@ services:
         target: /app
         bind:
           create_host_path: true
-    depends_on:
-      mongodb:
-        condition: service_healthy
     networks:
       - salon_network
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -52,9 +31,6 @@ services:
       - backend
     networks:
       - salon_network
-
-volumes:
-  mongodb_data:
 
 networks:
   salon_network:

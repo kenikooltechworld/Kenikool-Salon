@@ -34,14 +34,10 @@ export function useStaffPerformance() {
       const { data } = await apiClient.get<{ data: StaffPerformanceData }>(
         "/owner/dashboard/staff-performance",
       );
-      const result = data.data || data;
-      console.log("[DashboardHook][useStaffPerformance] raw response:", data);
-      console.log("[DashboardHook][useStaffPerformance] extracted result:", result);
-      return result;
+      return data.data || data;
     },
-    refetchInterval: 60 * 60 * 1000, // 1 hour
-    staleTime: 60 * 60 * 1000, // 1 hour
-    retry: false, // Don't retry - fail fast
-    placeholderData: (previousData) => previousData,
+    refetchInterval: 60 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
   });
 }

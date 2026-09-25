@@ -15,6 +15,7 @@ from app.schemas.registration import (
     ResendCodeResponse,
 )
 from app.tasks import send_email
+from app.background import run_in_background
 
 logger = logging.getLogger(__name__)
 

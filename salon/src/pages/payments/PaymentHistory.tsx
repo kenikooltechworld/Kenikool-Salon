@@ -10,19 +10,24 @@ import {
   TrendingUpIcon,
   CheckCircleIcon,
 } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function PaymentHistoryPage() {
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: payments = [] } = usePayments({
+  const { data: payments = [], refetch } = usePayments({
     status: selectedStatus,
   });
 
   // Calculate statistics
-  const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+  const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const successfulPayments = payments.filter((p) => p.status === "completed");
   const successAmount = successfulPayments.reduce(
-    (sum, p) => sum + p.amount,
+    (sum, p) => sum + Number(p.amount || 0),
     0,
   );
   const failedPayments = payments.filter((p) => p.status === "failed");
@@ -41,6 +46,10 @@ export default function PaymentHistoryPage() {
       count: payments.filter((p) => p.status === "pending").length,
     },
   ];
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   return (
     <div className="space-y-6">

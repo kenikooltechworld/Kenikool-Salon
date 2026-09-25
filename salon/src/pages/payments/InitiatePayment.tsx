@@ -1,25 +1,28 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useInvoice } from "@/hooks/useInvoices";
 import { useInitializePayment } from "@/hooks/usePayments";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomers, type Customer } from "@/hooks/useCustomers";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AlertCircleIcon, CheckCircleIcon } from "@/components/icons";
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
 import { generateSalonReference } from "@/lib/utils/reference";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function InitiatePayment() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const { data: invoice, isLoading: invoiceLoading } = useInvoice(
+  const { data: invoice, isLoading: invoiceLoading, refetch: refetchInvoice } = useInvoice(
     invoiceId || "",
   );
-  const { data: customersData } = useCustomers();
+  const { data: customersData, refetch: refetchCustomers } = useCustomers();
   const customers = customersData?.customers || [];
   const initializePayment = useInitializePayment();
 
@@ -74,6 +77,13 @@ export default function InitiatePayment() {
 
   const customer = customers.find((c: any) => c.id === invoice.customerId);
 
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchInvoice();
+      refetchCustomers();
+    });
+  }, [refetchInvoice, refetchCustomers, setRefreshHandler]);
+
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -117,9 +127,11 @@ export default function InitiatePayment() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-        Initiate Payment
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+          Initiate Payment
+        </h1>
+      </div>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">

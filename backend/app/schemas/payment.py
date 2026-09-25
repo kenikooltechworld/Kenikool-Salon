@@ -16,7 +16,7 @@ class PaymentBase(BaseModel):
 
     amount: Decimal = Field(..., gt=0, description="Payment amount")
     customer_id: str = Field(..., description="Customer ID")
-    invoice_id: str = Field(..., description="Invoice ID")
+    invoice_id: Optional[str] = Field(None, description="Invoice ID")
     gateway: str = Field(default="paystack", description="Payment gateway")
     payment_method: str = Field(default="paystack", description="Payment method: paystack, cash, card, mobile_money, check, bank_transfer")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")

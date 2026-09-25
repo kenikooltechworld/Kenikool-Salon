@@ -6,6 +6,8 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Progress } from "@/components/ui/progress";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { ImageLightbox } from "@/components/services/ImageLightbox";
+import { useRoles } from "@/hooks/useRoles";
+import { useServices } from "@/hooks/useServices";
 import type { Staff } from "@/types/staff";
 
 interface StaffFormProps {
@@ -54,8 +56,8 @@ export function StaffForm({
   const [specialtyInput, setSpecialtyInput] = useState("");
   const [certificationInput, setCertificationInput] = useState("");
   const [error, setError] = useState("");
-  const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
-  const [services, setServices] = useState<Array<any>>([]);
+  const { data: roles = [] } = useRoles();
+  const { data: services = [] } = useServices({ page_size: 100 });
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Image upload hooks
@@ -71,38 +73,6 @@ export function StaffForm({
   // Monitor formData changes
   useEffect(() => {
   }, [formData.specialties, formData.certifications]);
-
-  // Fetch roles and services on mount
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await fetch("/api/v1/roles");
-        if (response.ok) {
-          const data = await response.json();
-          setRoles(data.roles || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch roles:", err);
-      }
-    };
-
-    const fetchServices = async () => {
-      try {
-        const response = await fetch("/api/v1/services?page_size=100");
-        if (response.ok) {
-          const data = await response.json();
-          setServices(data.services || []);
-        } else {
-          console.error("Failed to fetch services:", response.status);
-        }
-      } catch (err) {
-        console.error("Failed to fetch services:", err);
-      }
-    };
-
-    fetchRoles();
-    fetchServices();
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<

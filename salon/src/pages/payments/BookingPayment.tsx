@@ -45,6 +45,7 @@ type PaymentPageState =
   | { status: "cancelled"; reason?: string }
   | { status: "failed"; reason?: string }
   | { status: "success" }
+  | { status: "refunded"; reason?: string }
   | { status: "timeout" };
 
 export function BookingPayment() {
@@ -60,6 +61,7 @@ export function BookingPayment() {
   const [error, setError] = useState<string | null>(null);
   const [pageState, setPageState] = useState<PaymentPageState>({ status: "form" });
   const [timeoutMessage, setTimeoutMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const queryClient = useQueryClient();
   const reference = searchParams.get("reference");
@@ -175,6 +177,7 @@ export function BookingPayment() {
         status?: string;
         appointment_id?: string;
         booking_created?: boolean;
+        metadata?: Record<string, any>;
       }>(`/payments/${reference}/booking-status`);
       return response.data;
     },
@@ -184,6 +187,13 @@ export function BookingPayment() {
     retry: false,
     staleTime: 0,
   });
+
+  // Log booking status changes for debugging
+  useEffect(() => {
+    if (bookingStatus) {
+      console.log("[BookingPayment] booking-status response:", bookingStatus);
+    }
+  }, [bookingStatus]);
 
   // Timeout handler: if we've been polling too long with no terminal state,
   // surface a timeout state while keeping polling available via manual verify.
@@ -229,7 +239,16 @@ export function BookingPayment() {
         reason: bookingStatus?.metadata?.failure_reason,
       });
     } else if (status === "success") {
-      setPageState({ status: "success" });
+      // Check if booking creation failed and auto-refund was initiated
+      if (bookingStatus?.metadata?.auto_refunded) {
+        setPageState({
+          status: "refunded",
+          reason: bookingStatus?.metadata?.auto_refund_reason || "Booking could not be created. Your payment has been refunded.",
+        });
+      } else if (bookingStatus?.booking_created) {
+        setPageState({ status: "success" });
+      }
+      // If success but not booking_created and not auto_refunded, keep processing
     }
   }, [bookingStatus]);
 
@@ -244,6 +263,7 @@ export function BookingPayment() {
     },
     enabled: !!bookingStatus?.appointment_id,
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Transform appointment data to booking format
@@ -270,7 +290,7 @@ export function BookingPayment() {
     : null;
 
   // Query for service details
-  const { data: serviceData, isLoading: isLoadingService } = useQuery({
+  const { data: serviceData, isLoading: isLoadingService, error: serviceError } = useQuery({
     queryKey: ["service", booking?.serviceId],
     queryFn: async () => {
       const response = await apiClient.get(`/services/${booking?.serviceId}`);
@@ -278,10 +298,11 @@ export function BookingPayment() {
     },
     enabled: !!booking?.serviceId,
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Query for staff details
-  const { data: staffData, isLoading: isLoadingStaff } = useQuery({
+  const { data: staffData, isLoading: isLoadingStaff, error: staffError } = useQuery({
     queryKey: ["staff", booking?.staffId],
     queryFn: async () => {
       const response = await apiClient.get(`/staff/${booking?.staffId}`);
@@ -289,11 +310,12 @@ export function BookingPayment() {
     },
     enabled: !!booking?.staffId,
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleInitializePayment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
     setError(null);
 
     try {
@@ -328,7 +350,7 @@ export function BookingPayment() {
         "Failed to initialize payment. Please try again.";
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -391,8 +413,8 @@ export function BookingPayment() {
               Verifying payment and creating booking...
             </p>
             {timeoutMessage && (
-              <Alert className="border-amber-200 bg-amber-50">
-                <AlertDescription className="text-amber-800">
+              <Alert className="border-warning/20 bg-warning/10">
+                <AlertDescription className="text-warning-foreground">
                   {timeoutMessage}
                 </AlertDescription>
               </Alert>
@@ -432,218 +454,263 @@ export function BookingPayment() {
     );
   }
 
-  // Cancelled state
-  if (pageState.status === "cancelled") {
-    return (
-      <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Payment Cancelled</CardTitle>
-            <CardDescription>
-              Your payment was cancelled and no booking was created.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">
-                {pageState.reason ||
-                  "You cancelled the payment or the payment session expired. Your booking has not been created and no charges were made."}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handleTryAgain}
-                className="w-full cursor-pointer"
-              >
-                Try Again
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleGoToBookings}
-                className="w-full cursor-pointer"
-              >
-                Back to Bookings
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+   // Cancelled state
+   if (pageState.status === "cancelled") {
+     return (
+       <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
+         <Card className="w-full max-w-md">
+           <CardHeader>
+             <CardTitle>Payment Cancelled</CardTitle>
+             <CardDescription>
+               Your payment was cancelled and no booking was created.
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="space-y-4">
+             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+               <p className="text-sm text-destructive-foreground">
+                 {pageState.reason ||
+                   "You cancelled the payment or the payment session expired. Your booking has not been created and no charges were made."}
+               </p>
+             </div>
+             <div className="flex flex-col gap-2">
+               <Button
+                 onClick={handleTryAgain}
+                 className="w-full cursor-pointer"
+               >
+                 Try Again
+               </Button>
+               <Button
+                 variant="outline"
+                 onClick={handleGoToBookings}
+                 className="w-full cursor-pointer"
+               >
+                 Back to Bookings
+               </Button>
+             </div>
+           </CardContent>
+         </Card>
+       </div>
+     );
+   }
 
-  // Failed state
-  if (pageState.status === "failed") {
-    return (
-      <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Payment Failed</CardTitle>
-            <CardDescription>
-              We could not process your payment.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-800">
-                {pageState.reason ||
-                  "Your payment could not be completed. Please try again or use a different payment method."}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handleTryAgain}
-                className="w-full cursor-pointer"
-              >
-                Try Again
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleGoToBookings}
-                className="w-full cursor-pointer"
-              >
-                Back to Bookings
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+   // Failed state
+   if (pageState.status === "failed") {
+     return (
+       <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
+         <Card className="w-full max-w-md">
+           <CardHeader>
+             <CardTitle>Payment Failed</CardTitle>
+             <CardDescription>
+               We could not process your payment.
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="space-y-4">
+             <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+               <p className="text-sm text-warning-foreground">
+                 {pageState.reason ||
+                   "Your payment could not be completed. Please try again or use a different payment method."}
+               </p>
+             </div>
+             <div className="flex flex-col gap-2">
+               <Button
+                 onClick={handleTryAgain}
+                 className="w-full cursor-pointer"
+               >
+                 Try Again
+               </Button>
+               <Button
+                 variant="outline"
+                 onClick={handleGoToBookings}
+                 className="w-full cursor-pointer"
+               >
+                 Back to Bookings
+               </Button>
+             </div>
+           </CardContent>
+         </Card>
+       </div>
+     );
+    }
 
-  // Success / booking confirmation state
-  if (booking && bookingStatus?.booking_created) {
-    const bookingDate = new Date(booking.startTime);
-    const bookingRef = booking.id.slice(-8).toUpperCase();
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <div className="p-8 text-center space-y-6">
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="absolute inset-0 bg-green-100 rounded-full animate-pulse" />
-                <CheckCircleIcon
-                  size={64}
-                  className="text-green-600 relative z-10"
-                />
+    // Refunded state - booking creation failed but payment was refunded
+    if (pageState.status === "refunded") {
+      return (
+        <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Booking Could Not Be Created</CardTitle>
+              <CardDescription>
+                We were unable to create your booking, but your payment has been refunded.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+                <p className="text-sm text-warning-foreground">
+                  {pageState.reason ||
+                    "Your booking could not be completed. The payment has been automatically refunded to your original payment method. This usually takes 1-3 business days to reflect."}
+                </p>
               </div>
-            </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={handleTryAgain}
+                  className="w-full cursor-pointer"
+                >
+                  Try Again
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleGoToBookings}
+                  className="w-full cursor-pointer"
+                >
+                  Back to Bookings
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
 
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">
-                Booking Confirmed!
-              </h1>
-              <p className="text-muted-foreground">
-                Your appointment has been successfully scheduled.
-              </p>
-            </div>
+    // Success / booking confirmation state
+    if (booking && bookingStatus?.booking_created) {
+     const bookingDate = new Date(booking.startTime);
+     const bookingRef = booking.id.slice(-8).toUpperCase();
 
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <p className="text-xs text-muted-foreground mb-1">
-                Booking Reference
-              </p>
-              <p className="text-lg font-mono font-bold text-foreground">
-                {bookingRef}
-              </p>
-            </div>
+     return (
+       <div className="min-h-screen bg-background flex items-center justify-center p-4">
+         <Card className="w-full max-w-md shadow-lg">
+           <div className="p-8 text-center space-y-6">
+             <div className="flex justify-center">
+               <div className="relative">
+                 <div className="absolute inset-0 bg-success/20 rounded-full animate-pulse" />
+                 <CheckCircleIcon
+                   size={64}
+                   className="text-success relative z-10"
+                 />
+               </div>
+             </div>
 
-            <div className="space-y-3 text-left bg-gray-50 rounded-lg p-4">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Customer</span>
-                <span className="text-sm font-semibold text-foreground">
-                  {bookingData?.customerName || "N/A"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Service</span>
-                <span className="text-sm font-semibold text-foreground">
-                  {isLoadingService ? (
-                    <Loader2Icon size={14} className="animate-spin" />
-                  ) : (
-                    serviceData?.name || "N/A"
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Staff</span>
-                <span className="text-sm font-semibold text-foreground">
-                  {isLoadingStaff ? (
-                    <Loader2Icon size={14} className="animate-spin" />
-                  ) : staffData?.firstName && staffData?.lastName ? (
-                    `${staffData.firstName} ${staffData.lastName}`
-                  ) : (
-                    "N/A"
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Price</span>
-                <span className="text-sm font-semibold text-foreground">
-                  ₦{booking?.price?.toLocaleString() || "0"}
-                </span>
-              </div>
-              <div className="border-t pt-3">
+             <div>
+               <h1 className="text-2xl font-bold text-foreground mb-2">
+                 Booking Confirmed!
+               </h1>
+               <p className="text-muted-foreground">
+                 Your appointment has been successfully scheduled.
+               </p>
+             </div>
+
+             <div className="bg-muted rounded-lg p-4 border border-border">
+               <p className="text-xs text-muted-foreground mb-1">
+                 Booking Reference
+               </p>
+               <p className="text-lg font-mono font-bold text-foreground">
+                 {bookingRef}
+               </p>
+             </div>
+
+              <div className="space-y-3 text-left bg-muted rounded-lg p-4">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Date</span>
+                  <span className="text-sm text-muted-foreground">Customer</span>
                   <span className="text-sm font-semibold text-foreground">
-                    {bookingDate.toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {bookingData?.customerName || "N/A"}
                   </span>
                 </div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Time</span>
-                <span className="text-sm font-semibold text-foreground">
-                  {bookingDate.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <span className="text-sm font-semibold text-green-600">
-                  {booking.status.charAt(0).toUpperCase() +
-                    booking.status.slice(1)}
-                </span>
-              </div>
-            </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Service</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {isLoadingService ? (
+                      <Loader2Icon size={14} className="animate-spin" />
+                    ) : serviceError || !serviceData?.name ? (
+                      <span className="text-warning">Service no longer available</span>
+                    ) : (
+                      serviceData.name
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Staff</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {isLoadingStaff ? (
+                      <Loader2Icon size={14} className="animate-spin" />
+                    ) : staffError || (!staffData?.firstName && !staffData?.lastName) ? (
+                      <span className="text-warning">Staff no longer available</span>
+                    ) : staffData?.status === "terminated" ? (
+                      <span className="text-warning">
+                        {staffData.firstName} {staffData.lastName} (no longer active)
+                      </span>
+                    ) : (
+                      `${staffData.firstName} ${staffData.lastName}`
+                    )}
+                  </span>
+                </div>
+               <div className="flex justify-between">
+                 <span className="text-sm text-muted-foreground">Price</span>
+                 <span className="text-sm font-semibold text-foreground">
+                   ₦{booking?.price?.toLocaleString() || "0"}
+                 </span>
+               </div>
+               <div className="border-t border-border pt-3">
+                 <div className="flex justify-between">
+                   <span className="text-sm text-muted-foreground">Date</span>
+                   <span className="text-sm font-semibold text-foreground">
+                     {bookingDate.toLocaleDateString("en-US", {
+                       weekday: "long",
+                       year: "numeric",
+                       month: "long",
+                       day: "numeric",
+                     })}
+                   </span>
+                 </div>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-sm text-muted-foreground">Time</span>
+                 <span className="text-sm font-semibold text-foreground">
+                   {bookingDate.toLocaleTimeString("en-US", {
+                     hour: "2-digit",
+                     minute: "2-digit",
+                   })}
+                 </span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-sm text-muted-foreground">Status</span>
+                 <span className="text-sm font-semibold text-success">
+                   {booking.status.charAt(0).toUpperCase() +
+                     booking.status.slice(1)}
+                 </span>
+               </div>
+             </div>
 
-            <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-              <p className="text-xs font-semibold text-amber-900 mb-2">
-                Next Steps
-              </p>
-              <ul className="text-xs text-amber-800 space-y-1">
-                <li>• Check your email for confirmation details</li>
-                <li>• Arrive 5-10 minutes early</li>
-                <li>• You can reschedule anytime from your bookings</li>
-              </ul>
-            </div>
+             <div className="bg-warning/10 rounded-lg p-4 border border-warning/20">
+               <p className="text-xs font-semibold text-warning-foreground mb-2">
+                 Next Steps
+               </p>
+               <ul className="text-xs text-warning-foreground/90 space-y-1">
+                 <li>• Check your email for confirmation details</li>
+                 <li>• Arrive 5-10 minutes early</li>
+                 <li>• You can reschedule anytime from your bookings</li>
+               </ul>
+             </div>
 
-            <div className="flex flex-col gap-3 pt-4">
-              <Button
-                onClick={handleConfirmBooking}
-                className="w-full cursor-pointer"
-              >
-                View Booking Details
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleGoToBookings}
-                className="w-full cursor-pointer"
-              >
-                Back to Bookings
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+             <div className="flex flex-col gap-3 pt-4">
+               <Button
+                 onClick={handleConfirmBooking}
+                 className="w-full cursor-pointer"
+               >
+                 View Booking Details
+               </Button>
+               <Button
+                 variant="outline"
+                 onClick={handleGoToBookings}
+                 className="w-full cursor-pointer"
+               >
+                 Back to Bookings
+               </Button>
+             </div>
+           </div>
+         </Card>
+       </div>
+     );
+   }
 
   // Payment form / main page
   return (
@@ -751,29 +818,29 @@ export function BookingPayment() {
 
                   <div>
                     <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      disabled={loading}
-                      required
-                    />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    disabled={isSubmitting}
+                    required
+                  />
                   </div>
 
                   {error && (
-                    <Alert className="border-red-200 bg-red-50">
-                      <AlertCircleIcon size={16} className="text-red-600" />
-                      <AlertDescription className="text-red-800">
+                    <Alert className="border-destructive/20 bg-destructive/10">
+                      <AlertCircleIcon size={16} className="text-destructive" />
+                      <AlertDescription className="text-destructive-foreground">
                         {error}
                       </AlertDescription>
                     </Alert>
                   )}
 
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? (
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? (
                       <>
                         <Loader2Icon size={16} className="mr-2 animate-spin" />
                         Processing...
@@ -809,9 +876,9 @@ export function BookingPayment() {
         </div>
 
         {/* Security Notice */}
-        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3">
-          <LockIcon size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-900">
+        <div className="mt-8 p-4 bg-primary/10 border border-primary/20 rounded-lg flex gap-3">
+          <LockIcon size={20} className="text-primary flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-foreground">
             Your payment is secure and encrypted. We use Paystack to process
             payments safely.
           </p>

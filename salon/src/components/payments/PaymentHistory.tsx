@@ -13,6 +13,7 @@ import {
   ReceiptIcon,
 } from "@/components/icons";
 import { usePayments, useRetryPayment } from "@/hooks/usePayments";
+import { useDownloadReceiptPDF } from "@/hooks/useReceipt";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface PaymentHistoryProps {
@@ -40,7 +41,43 @@ export function PaymentHistory({
     status: invoiceId ? undefined : undefined,
   });
 
+  const { mutate: downloadPDF, isPending: isDownloading } = useDownloadReceiptPDF();
   const retryPaymentMutation = useRetryPayment();
+
+  const handleDownloadReceipt = (transactionId?: string) => {
+    if (!transactionId) {
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: "No transaction ID available for this payment",
+      });
+      return;
+    }
+    downloadPDF(transactionId, {
+      onSuccess: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `receipt-${transactionId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        showToast({
+          title: "Success",
+          description: "Receipt PDF downloaded",
+          variant: "success",
+        });
+      },
+      onError: () => {
+        showToast({
+          title: "Error",
+          description: "Failed to download receipt PDF",
+          variant: "error",
+        });
+      },
+    });
+  };
 
   const handleRetryPayment = async (paymentId: string) => {
     setRetryingPaymentId(paymentId);
@@ -189,15 +226,19 @@ export function PaymentHistory({
                         )}
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1"
-                      title="Download receipt"
-                    >
-                      <DownloadIcon size={14} />
-                      <span className="hidden sm:inline">Receipt</span>
-                    </Button>
+                    {payment.status === "completed" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1"
+                        title="Download receipt"
+                        onClick={() => handleDownloadReceipt(payment.transactionId)}
+                        disabled={isDownloading || !payment.transactionId}
+                      >
+                        <DownloadIcon size={14} />
+                        <span className="hidden sm:inline">Receipt</span>
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>

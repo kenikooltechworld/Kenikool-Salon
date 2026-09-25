@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useServices } from "@/hooks/useServices";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useCustomers } from "@/hooks/useCustomers";
@@ -6,6 +6,7 @@ import { useStaff } from "@/hooks/useStaff";
 import { useInventory } from "@/hooks/useInventory";
 import { usePOSStore } from "@/stores/pos";
 import { useToast } from "@/components/ui/toast";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ import ItemSelector from "./ItemSelector";
 import PaymentProcessor from "./PaymentProcessor";
 
 export default function TransactionEntry() {
+  const location = useLocation();
   const [showPayment, setShowPayment] = useState(false);
   const [showClearCartConfirm, setShowClearCartConfirm] = useState(false);
   const [customerId, setCustomerId] = useState("");
@@ -27,6 +29,8 @@ export default function TransactionEntry() {
   const [paymentMethod, setPaymentMethod] = useState<
     "cash" | "card" | "mobile_money" | "check"
   >("cash");
+  const [appointmentId, setAppointmentId] = useState<string | undefined>();
+  const initializedBookingRef = useRef<string | null>(null);
 
   // Fetch data from backend
   const { data: servicesData, isLoading: servicesLoading } = useServices();
@@ -42,8 +46,39 @@ export default function TransactionEntry() {
     cartTotal,
     clearCart,
     calculateCartTotals,
+    addToCart,
   } = usePOSStore();
   const { showToast } = useToast();
+
+  // Initialize cart from booking detail "Collect Payment" flow
+  useEffect(() => {
+    const state = location.state as { bookingId?: string; booking?: any } | null;
+    const bookingId = state?.booking?.id;
+
+    if (!bookingId || initializedBookingRef.current === bookingId) return;
+
+    initializedBookingRef.current = bookingId;
+
+    const { booking } = state;
+    if (booking.customerId) setCustomerId(booking.customerId);
+    if (booking.staffId) setStaffId(booking.staffId);
+    if (booking.id) setAppointmentId(booking.id);
+
+    const service = servicesData?.find((s: any) => s.id === booking.serviceId);
+    const serviceName = service?.name || "Service";
+    const unitPrice = booking.price || 0;
+
+    addToCart({
+      itemType: "service",
+      itemId: booking.serviceId,
+      itemName: serviceName,
+      quantity: 1,
+      unitPrice,
+      lineTotal: unitPrice,
+    });
+
+    setShowPayment(true);
+  }, [location.state, servicesData, addToCart]);
 
   // Extract data from queries
   const services = (servicesData as Service[]) || [];
@@ -81,6 +116,7 @@ export default function TransactionEntry() {
         {
           customer_id: customerId,
           staff_id: staffId,
+          appointment_id: appointmentId,
           items: transactionItems,
           payment_method: paymentMethod,
         },
@@ -414,14 +450,14 @@ export default function TransactionEntry() {
           )}
         </Card>
 
-        {showPayment && (
-          <PaymentProcessor
-            customerId={customerId}
-            staffId={staffId}
-            paymentMethod={paymentMethod}
-            onClose={() => setShowPayment(false)}
-          />
-        )}
+        <PaymentProcessor
+          customerId={customerId}
+          staffId={staffId}
+          appointmentId={appointmentId}
+          paymentMethod={paymentMethod}
+          open={showPayment}
+          onClose={() => setShowPayment(false)}
+        />
 
         <ConfirmationModal
           isOpen={showClearCartConfirm}

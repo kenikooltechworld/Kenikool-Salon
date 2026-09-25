@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Booking } from "@/types";
 import { BookingStatusBadge } from "./BookingStatusBadge";
-import { formatDate, formatTime } from "@/lib/utils/format";
+import { formatDate, formatTime, formatCurrency } from "@/lib/utils/format";
 import { EyeIcon, CheckIcon, TrashIcon, DollarSignIcon } from "@/components/icons";
 
 interface BookingCardProps {
@@ -53,6 +53,20 @@ export function BookingCard({
             {formatTime(new Date(booking.endTime))}
           </p>
         </div>
+        <div>
+          <p className="text-muted-foreground">Price</p>
+          <p className="font-medium text-foreground">
+            {booking.price
+              ? formatCurrency(booking.price, "NGN")
+              : "N/A"}
+          </p>
+        </div>
+        {booking.locationId && (
+          <div>
+            <p className="text-muted-foreground">Location</p>
+            <p className="font-medium text-foreground">{booking.locationId}</p>
+          </div>
+        )}
       </div>
 
       {booking.notes && (
@@ -112,18 +126,19 @@ export function BookingCard({
               <span>Cancel</span>
             </Button>
           )}
-        {booking.status === "confirmed" && onMarkNoShow && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onMarkNoShow(booking.id)}
-            disabled={isLoading}
-            className="gap-1 shrink-0"
-          >
-            <TrashIcon size={14} />
-            <span>No-Show</span>
-          </Button>
-        )}
+        {(booking.status === "scheduled" || booking.status === "confirmed") &&
+          onMarkNoShow && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onMarkNoShow(booking.id)}
+              disabled={isLoading}
+              className="gap-1 shrink-0"
+            >
+              <TrashIcon size={14} />
+              <span>No-Show</span>
+            </Button>
+          )}
         {booking.status === "completed" &&
           booking.paymentOption === "later" &&
           booking.paymentStatus !== "completed" &&

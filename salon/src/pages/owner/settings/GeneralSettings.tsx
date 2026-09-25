@@ -9,6 +9,8 @@ import {
   type TenantSettingsData,
 } from "@/hooks/owner/useTenantSettings";
 import { useSubscription } from "@/hooks/owner/useSubscription";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 const DEFAULT_SETTINGS: TenantSettingsData = {
   salon_name: "My Salon",
@@ -42,12 +44,13 @@ const DEFAULT_SETTINGS: TenantSettingsData = {
 
 export default function GeneralSettings() {
   const navigate = useNavigate();
-  const { data: tenantData, isLoading } = useTenantSettings();
+  const { data: tenantData, isLoading, refetch } = useTenantSettings();
   const { mutate: updateSettings, isPending } = useUpdateTenantSettings();
   const { data: subscription } = useSubscription();
   const { addToast } = useToast();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const { setRefreshHandler } = usePageRefresh();
 
   // Get plan name from subscription
   const planName = subscription?.plan_name || "Loading...";
@@ -63,6 +66,10 @@ export default function GeneralSettings() {
       }
     }
   }, [tenantData]);
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,7 +128,7 @@ export default function GeneralSettings() {
           <ArrowLeftIcon size={18} />
           Back
         </Button>
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-bold text-foreground">
             General Settings
           </h2>
@@ -132,12 +139,45 @@ export default function GeneralSettings() {
       </div>
 
       {isLoading ? (
-        <div className="bg-card border border-border rounded-lg p-4 md:p-6">
-          <div className="space-y-4">
-            <div className="h-6 bg-muted rounded animate-pulse w-1/4" />
-            <div className="space-y-3">
-              {[...Array(7)].map((_, i) => (
-                <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+        <div className="bg-card border border-border rounded-lg p-4 md:p-6 space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3 pt-6 border-t border-border">
+            <Skeleton className="h-6 w-40" />
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 flex-1" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3 pt-6 border-t border-border">
+            <Skeleton className="h-6 w-40" />
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3 pt-6 border-t border-border">
+            <Skeleton className="h-6 w-40" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
               ))}
             </div>
           </div>

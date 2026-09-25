@@ -7,6 +7,7 @@ import {
 import { CustomerForm, type CustomerFormData } from "./CustomerForm";
 import { useCreateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/components/ui/toast";
+import { useEffect, useRef } from "react";
 
 interface CreateCustomerModalProps {
   open: boolean;
@@ -21,8 +22,20 @@ export function CreateCustomerModal({
 }: CreateCustomerModalProps) {
   const createMutation = useCreateCustomer();
   const { showToast } = useToast();
+  const submitStarted = useRef(false);
+
+  useEffect(() => {
+    if (open) {
+      submitStarted.current = false;
+    }
+  }, [open]);
 
   const handleSubmit = async (data: CustomerFormData) => {
+    if (submitStarted.current) {
+      return;
+    }
+    submitStarted.current = true;
+
     try {
       const submitData = {
         ...data,
@@ -46,8 +59,6 @@ export function CreateCustomerModal({
         description: errorMessage,
         variant: "error",
       });
-      // Don't re-throw the error - it prevents the form from being usable
-      // and the toast already shows the error
     }
   };
 

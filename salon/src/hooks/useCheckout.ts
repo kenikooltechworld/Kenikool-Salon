@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils";
 import { usePOSStore } from "@/stores/pos";
+import { useCollectPayment } from "./useBookings";
 
 export interface TransactionItem {
   itemType: "service" | "product" | "package";
@@ -39,6 +40,7 @@ export interface Transaction {
 export function useCheckout() {
   const queryClient = useQueryClient();
   const { setCurrentTransactionId, addToTransactionHistory } = usePOSStore();
+  const { mutate: collectPayment } = useCollectPayment();
 
   return useMutation({
     mutationFn: async (data: {
@@ -62,11 +64,23 @@ export function useCheckout() {
       const response = await apiClient.post<Transaction>("/transactions", data);
       return response.data;
     },
-    onSuccess: (data) => {
-      // Set current transaction ID in POS store
+    onSuccess: async (data) => {
       setCurrentTransactionId(data.id);
       addToTransactionHistory(data.id);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
+      if (data.appointmentId) {
+        try {
+          await collectPayment.mutateAsync({
+            id: data.appointmentId,
+            paymentMethod: data.paymentMethod,
+            amount: data.total,
+            notes: `POS transaction ${data.id}`,
+          });
+        } catch (error) {
+          console.error("Failed to update booking payment status:", error);
+        }
+      }
     },
   });
 }

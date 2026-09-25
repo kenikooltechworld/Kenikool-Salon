@@ -12,9 +12,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Connect directly to MongoDB
-mongo_url = os.getenv("DATABASE_URL", "mongodb://localhost:27017")
-database_name = os.getenv("DATABASE_NAME", "kenikool-salon")
+# Connect directly to MongoDB using .env
+mongo_url = os.getenv("DATABASE_URL")
+database_name = os.getenv("DATABASE_NAME")
+
+if not mongo_url or not database_name:
+    raise RuntimeError("DATABASE_URL and DATABASE_NAME are required. Set them in backend/.env")
+
 client = MongoClient(mongo_url)
 db = client[database_name]
 

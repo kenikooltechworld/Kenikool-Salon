@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useTheme } from "@/components/providers/theme-provider";
 import { Button } from "@/components/ui/button";
 import { MoonIcon, SunIcon, CheckIcon } from "@/components/icons";
@@ -32,7 +32,15 @@ export function ThemeSelector({
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { style } = useDropdownPosition(triggerRef, contentRef, { align: "right" });
+  const { style, recalculate } = useDropdownPosition(triggerRef, contentRef, { align: "right" });
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      requestAnimationFrame(() => {
+        recalculate();
+      });
+    }
+  }, [isOpen, recalculate]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

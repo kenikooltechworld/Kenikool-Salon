@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
@@ -119,8 +120,35 @@ export function CommissionSettings() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2Icon className="animate-spin" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-40" />
+        </div>
+        <Card>
+          <CardHeader>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="border rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-4 w-32" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-9 w-9 ml-4" />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     );
   if (!settings) return <div>Failed to load settings</div>;

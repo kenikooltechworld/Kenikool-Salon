@@ -91,7 +91,7 @@ class Appointment(BaseDocument):
             ("tenant_id", "end_time"),
             ("tenant_id", "status"),
             ("tenant_id", "created_at"),
-            # Compound index for double-booking prevention
+            ("tenant_id", "status", "start_time"),
             ("tenant_id", "staff_id", "start_time", "end_time", "status"),
         ],
     }

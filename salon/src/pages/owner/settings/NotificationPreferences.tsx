@@ -6,9 +6,11 @@ import {
 import type { NotificationPreference } from "@/types/notification";
 import { CheckCircleIcon, AlertCircleIcon, BellIcon } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function OwnerNotificationPreferences() {
-  const { data: preferences = [], isLoading } = useNotificationPreferences();
+  const { data: preferences = [], isLoading, refetch } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
   const [localPreferences, setLocalPreferences] = useState<
     NotificationPreference[]
@@ -20,12 +22,18 @@ export default function OwnerNotificationPreferences() {
   const [frequency, setFrequency] = useState<"real-time" | "hourly" | "daily">(
     "real-time",
   );
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   useEffect(() => {
     if (preferences.length > 0) {
       setLocalPreferences(preferences);
     }
   }, [preferences]);
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   // Owner-specific notification types
   const ownerNotificationTypes = [
@@ -130,11 +138,13 @@ export default function OwnerNotificationPreferences() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="flex items-center gap-3 mb-2">
-        <BellIcon className="w-8 h-8 text-blue-600" />
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Notification Preferences
-        </h1>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <BellIcon className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Notification Preferences
+          </h1>
+        </div>
       </div>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
         Manage how and when you receive notifications about your business

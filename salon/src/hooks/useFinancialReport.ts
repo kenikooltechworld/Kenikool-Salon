@@ -76,6 +76,7 @@ export function useRevenueReport(startDate: string, endDate: string) {
       return data.data;
     },
     enabled: !!startDate && !!endDate,
+    refetchOnMount: true,
   });
 }
 
@@ -118,6 +119,7 @@ export function usePaymentReport(startDate: string, endDate: string) {
       } as PaymentReport;
     },
     enabled: !!startDate && !!endDate,
+    refetchOnMount: true,
   });
 }
 
@@ -141,6 +143,7 @@ export function useRefundReport(startDate: string, endDate: string) {
       return data.data;
     },
     enabled: !!startDate && !!endDate,
+    refetchOnMount: true,
   });
 }
 
@@ -161,6 +164,7 @@ export function useOutstandingBalanceReport() {
       );
       return data.data;
     },
+    refetchOnMount: true,
   });
 }
 
@@ -184,5 +188,6 @@ export function useComprehensiveReport(startDate: string, endDate: string) {
       return data.data;
     },
     enabled: !!startDate && !!endDate,
+    refetchOnMount: true,
   });
 }

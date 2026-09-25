@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -263,7 +262,7 @@ export function CustomerForm({
           <label className="block text-xs xs:text-sm sm:text-base font-semibold text-foreground mb-1 xs:mb-2">
             Communication Preference
           </label>
-          <Select
+          <SelectTrigger
             value={formData.communicationPreference || "email"}
             onValueChange={(value) =>
               setFormData({
@@ -272,17 +271,16 @@ export function CustomerForm({
               })
             }
             disabled={isLoading}
+            className="text-xs xs:text-sm sm:text-base py-2 xs:py-2.5"
           >
-            <SelectTrigger className="text-xs xs:text-sm sm:text-base py-2 xs:py-2.5">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectValue />
             <SelectContent>
               <SelectItem value="email">Email</SelectItem>
               <SelectItem value="sms">SMS</SelectItem>
               <SelectItem value="phone">Phone</SelectItem>
               <SelectItem value="none">None</SelectItem>
             </SelectContent>
-          </Select>
+          </SelectTrigger>
         </div>
       </div>
 
@@ -291,21 +289,20 @@ export function CustomerForm({
         <label className="block text-xs xs:text-sm sm:text-base font-semibold text-foreground mb-1 xs:mb-2">
           Status
         </label>
-        <Select
-          value={formData.status || "active"}
-          onValueChange={(value) =>
-            setFormData({ ...formData, status: value as any })
-          }
-          disabled={isLoading}
-        >
-          <SelectTrigger className="text-xs xs:text-sm sm:text-base py-2 xs:py-2.5">
+          <SelectTrigger
+            value={formData.status || "active"}
+            onValueChange={(value) =>
+              setFormData({ ...formData, status: value as any })
+            }
+            disabled={isLoading}
+            className="text-xs xs:text-sm sm:text-base py-2 xs:py-2.5"
+          >
             <SelectValue />
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Buttons */}

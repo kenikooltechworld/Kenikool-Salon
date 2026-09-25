@@ -48,14 +48,10 @@ export function useOwnerMetrics() {
       const { data } = await apiClient.get<{ data: DashboardMetrics }>(
         "/owner/dashboard/metrics",
       );
-      const result = data.data || data;
-      console.log("[DashboardHook][useOwnerMetrics] raw response:", data);
-      console.log("[DashboardHook][useOwnerMetrics] extracted result:", result);
-      return result;
+      return data.data || data;
     },
     refetchInterval: 30 * 1000,
     staleTime: 30 * 1000,
     retry: false,
-    placeholderData: (previousData) => previousData,
   });
 }

@@ -39,7 +39,7 @@ def test_settings_response():
     # Print all keys
     print("\nAll keys in response:")
     for key in sorted(settings.keys()):
-        if key not in ['business_hours', 'system_config', 'integration_config', 'financial_config', 'operational_config']:
+        if key not in ['business_hours', 'financial_config', 'operational_config']:
             print(f"  - {key}: {settings[key]}")
 
 if __name__ == "__main__":

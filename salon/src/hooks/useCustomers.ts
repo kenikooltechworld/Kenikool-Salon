@@ -52,12 +52,13 @@ interface CustomerFilters {
 /**
  * Fetch all customers with optional filters
  */
-export function useCustomers(filters?: CustomerFilters) {
+export function useCustomers(filters?: CustomerFilters & { enabled?: boolean }) {
   return useQuery({
     queryKey: ["customers", filters],
     queryFn: async () => {
+      const { enabled: _enabled, ...queryFilters } = filters || {};
       const data = await get<any>("/customers", {
-        params: filters,
+        params: queryFilters,
       });
       // Transform backend response to match frontend interface
       return {
@@ -86,6 +87,7 @@ export function useCustomers(filters?: CustomerFilters) {
         pageSize: data.page_size,
       };
     },
+    enabled: filters?.enabled !== false,
   });
 }
 
@@ -162,7 +164,7 @@ export function useCreateCustomer() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.refetchQueries({ queryKey: ["customers"] });
     },
   });
 }
@@ -199,8 +201,8 @@ export function useUpdateCustomer() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["customers", data.id] });
+      queryClient.refetchQueries({ queryKey: ["customers"] });
+      queryClient.refetchQueries({ queryKey: ["customers", data.id] });
     },
   });
 }
@@ -216,7 +218,7 @@ export function useDeleteCustomer() {
       await del(`/customers/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.refetchQueries({ queryKey: ["customers"] });
     },
   });
 }

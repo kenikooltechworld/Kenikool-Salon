@@ -11,6 +11,8 @@ import {
   ListIcon,
   CalendarIcon,
   PackageIcon,
+  SearchIcon,
+  XIcon,
 } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -25,23 +27,24 @@ import { useBookingsStore } from "@/stores/bookings";
 import { BookingCard } from "@/components/bookings/BookingCard";
 import { BookingList } from "@/components/bookings/BookingList";
 import { BookingCalendar } from "@/components/bookings/BookingCalendar";
-import { BookingDetail } from "@/pages/bookings/BookingDetail";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function Bookings() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [activeTab, setActiveTab] = useState(() => {
-    // Load from localStorage on mount
     return localStorage.getItem("bookingsActiveTab") || "list";
   });
 
-  // Save to localStorage whenever activeTab changes
   useEffect(() => {
     localStorage.setItem("bookingsActiveTab", activeTab);
   }, [activeTab]);
 
-  const { filters, setFilters } = useBookingsStore();
-  const { data: bookings = [], isLoading } = useBookings(filters);
+  const filters = useBookingsStore((state) => state.filters);
+  const setFilters = useBookingsStore((state) => state.setFilters);
+  const { data: bookings = [], isLoading, refetch } = useBookings(filters);
+  const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const { mutate: confirmBooking, isPending: isConfirming } =
     useConfirmBooking();
   const { mutate: cancelBooking, isPending: isCancelling } = useCancelBooking();
@@ -51,10 +54,8 @@ export default function Bookings() {
   const { mutate: collectPayment, isPending: isCollectingPayment } =
     useCollectPayment();
   const {
-    isDetailModalOpen,
-    setIsDetailModalOpen,
-    selectedBookingId,
-    setSelectedBookingId,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
   } = useBookingsStore();
 
   const [isCollectPaymentModalOpen, setIsCollectPaymentModalOpen] =
@@ -64,6 +65,14 @@ export default function Bookings() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
+  }, [searchTerm, setFilters]);
 
   const handleConfirm = (id: string) => {
     confirmBooking(id, {
@@ -189,8 +198,7 @@ export default function Bookings() {
   };
 
   const handleViewBooking = (id: string) => {
-    setSelectedBookingId(id);
-    setIsDetailModalOpen(true);
+    navigate(`/bookings/${id}`);
   };
 
   const isLoading_ =
@@ -222,6 +230,32 @@ export default function Bookings() {
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="relative w-full">
+        <SearchIcon
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="text"
+          placeholder="Search by ID, time, service, staff, or customer..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+          }}
+          className="w-full pl-10 pr-10 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <XIcon size={16} />
+          </button>
+        )}
+      </div>
+
       {/* Tabs */}
       <Tabs
         value={activeTab}
@@ -243,7 +277,7 @@ export default function Bookings() {
             className="text-xs sm:text-sm gap-2 cursor-pointer"
           >
             <CalendarIcon size={16} />
-            <span className="hidden sm:inline">Calendar</span>
+            <span className="hidden sm:inline">Calendar View</span>
             <span className="sm:hidden">Cal</span>
           </TabsTrigger>
           <TabsTrigger
@@ -257,90 +291,84 @@ export default function Bookings() {
         </TabsList>
 
         {/* List View */}
-        <TabsContent value="list" className="space-y-4">
-          <BookingList
-            bookings={bookings}
-            isLoading={isLoading}
-            onViewBooking={handleViewBooking}
-            onConfirmBooking={handleConfirm}
-            onCancelBooking={handleCancel}
-            filters={filters}
-            onFiltersChange={setFilters}
-            isConfirming={isConfirming}
-            isCancelling={isCancelling}
-          />
-        </TabsContent>
+        {activeTab === "list" && (
+          <div className="space-y-4">
+            <BookingList
+              bookings={bookings}
+              isLoading={isLoading}
+              onViewBooking={handleViewBooking}
+              onConfirmBooking={handleConfirm}
+              onCancelBooking={handleCancel}
+              filters={filters}
+              onFiltersChange={setFilters}
+              isConfirming={isConfirming}
+              isCancelling={isCancelling}
+            />
+          </div>
+        )}
 
         {/* Calendar View */}
-        <TabsContent value="calendar" className="space-y-4">
-          <BookingCalendar onBookingClick={handleViewBooking} />
-        </TabsContent>
+        {activeTab === "calendar" && (
+          <div className="space-y-4">
+            <BookingCalendar onBookingClick={handleViewBooking} />
+          </div>
+        )}
 
         {/* Card View */}
-        <TabsContent value="cards" className="space-y-3 sm:space-y-4">
-          {isLoading_ ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="p-3 sm:p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-24" />
+        {activeTab === "cards" && (
+          <div className="space-y-3 sm:space-y-4">
+            {isLoading_ ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="p-3 sm:p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-6 w-20 rounded-full flex-shrink-0" />
                     </div>
-                    <Skeleton className="h-6 w-20 rounded-full flex-shrink-0" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Skeleton className="h-3 w-16" />
-                      <Skeleton className="h-4 w-20" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Skeleton className="h-3 w-16" />
-                      <Skeleton className="h-4 w-20" />
+                    <div className="flex gap-2 pt-2 border-t border-border">
+                      <Skeleton className="flex-1 h-9" />
+                      <Skeleton className="flex-1 h-9" />
                     </div>
-                  </div>
-                  <div className="flex gap-2 pt-2 border-t border-border">
-                    <Skeleton className="flex-1 h-9" />
-                    <Skeleton className="flex-1 h-9" />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : bookings.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-               {bookings.map((booking: any) => (
-                 <BookingCard
-                   key={booking.id}
-                   booking={booking}
-                   onView={handleViewBooking}
-                   onConfirm={handleConfirm}
-                   onCancel={handleCancel}
-                   onComplete={handleComplete}
-                   onMarkNoShow={handleMarkNoShow}
-                   onCollectPayment={handleCollectPayment}
-                   isLoading={isLoading_}
-                 />
-               ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No bookings found
-            </div>
-          )}
-        </TabsContent>
+                  </Card>
+                ))}
+              </div>
+            ) : bookings.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                 {bookings.map((booking: any) => (
+                  <BookingCard
+                    key={booking.id}
+                    booking={booking}
+                    onView={handleViewBooking}
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                    onComplete={handleComplete}
+                    onMarkNoShow={handleMarkNoShow}
+                    onCollectPayment={handleCollectPayment}
+                    isLoading={isLoading_}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No bookings found
+              </div>
+            )}
+          </div>
+        )}
       </Tabs>
-
-      {/* Booking Detail Modal */}
-      {isDetailModalOpen && selectedBookingId && (
-        <BookingDetail
-          bookingId={selectedBookingId}
-          onClose={() => setIsDetailModalOpen(false)}
-          onConfirm={handleConfirm}
-          onCancel={handleCancel}
-          onComplete={handleComplete}
-          onMarkNoShow={handleMarkNoShow}
-        />
-      )}
 
       {/* Collect Payment Modal */}
       {isCollectPaymentModalOpen && selectedBookingForPayment && (

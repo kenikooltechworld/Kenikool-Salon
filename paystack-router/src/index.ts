@@ -40,12 +40,10 @@ const ROUTES: { prefix: string; url: string }[] = [
   },
   {
     prefix: "salon_",
-    url: "https://api.kenikool.com/api/v1/webhooks/paystack",
+    // Local testing: expose localhost:8000 with ngrok and paste the https URL here.
+    // Production:  https://api.kenikool.com/api/v1/webhooks/paystack
+    url: "http://localhost:8000/api/v1/webhooks/paystack",
   },
-  // {
-  //   prefix: "tutor_",
-  //   url: "https://tutor-api.yourapp.com/webhooks/paystack",
-  // },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────

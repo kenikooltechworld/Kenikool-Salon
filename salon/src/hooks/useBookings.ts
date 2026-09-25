@@ -15,6 +15,7 @@ export function useBookings(filters?: BookingFilters) {
       if (filters?.staffId) params.append("staff_id", filters.staffId);
       if (filters?.serviceId) params.append("service_id", filters.serviceId);
       if (filters?.customerId) params.append("customer_id", filters.customerId);
+      if (filters?.search) params.append("search", filters.search);
       if (filters?.page) params.append("page", filters.page.toString());
       if (filters?.limit) params.append("limit", filters.limit.toString());
 
@@ -22,7 +23,6 @@ export function useBookings(filters?: BookingFilters) {
         `/appointments?${params}`,
       );
 
-      // Transform snake_case from backend to camelCase for frontend
       return (data.appointments || []).map((appt: any) => ({
         id: appt.id,
         customerId: appt.customer_id,
@@ -34,8 +34,8 @@ export function useBookings(filters?: BookingFilters) {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -47,18 +47,18 @@ export function useBookings(filters?: BookingFilters) {
       }));
     },
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   });
 }
 
-export function useBooking(id: string) {
+export function useBooking(id: string, options?: { refetchOnMount?: boolean }) {
   return useQuery({
     queryKey: [BOOKINGS_QUERY_KEY, id],
     queryFn: async () => {
       const { data } = await apiClient.get<any>(`/appointments/${id}`);
       const appt = data;
       if (!appt) return null;
-
-      // Transform snake_case from backend to camelCase for frontend
+      console.log("[useBooking] raw appointment data:", appt);
       return {
         id: appt.id,
         customerId: appt.customer_id,
@@ -70,8 +70,8 @@ export function useBooking(id: string) {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -82,8 +82,7 @@ export function useBooking(id: string) {
         updatedAt: appt.updated_at,
       };
     },
-    enabled: !!id,
-    staleTime: 5 * 60 * 1000,
+    ...options,
   });
 }
 
@@ -107,8 +106,8 @@ export function useCreateBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -120,16 +119,8 @@ export function useCreateBooking() {
       };
     },
     onSuccess: () => {
-      // Invalidate all bookings queries (with any filters) using exact: false
-      queryClient.invalidateQueries({
-        queryKey: [BOOKINGS_QUERY_KEY],
-        exact: false,
-      });
-      // Also invalidate calendar queries
-      queryClient.invalidateQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY], exact: false });
+      queryClient.refetchQueries({ queryKey: ["calendar"], exact: false });
     },
   });
 }
@@ -157,8 +148,8 @@ export function useConfirmBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -170,15 +161,10 @@ export function useConfirmBooking() {
       };
     },
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({
-        queryKey: [BOOKINGS_QUERY_KEY],
-        exact: false,
-      });
-      queryClient.invalidateQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.invalidateQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY], exact: false });
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
+      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.refetchQueries({ queryKey: ["calendar"], exact: false });
     },
   });
 }
@@ -205,8 +191,8 @@ export function useCancelBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -218,15 +204,10 @@ export function useCancelBooking() {
       };
     },
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: [BOOKINGS_QUERY_KEY],
-        exact: false,
-      });
-      queryClient.invalidateQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.invalidateQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY], exact: false });
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
+      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.refetchQueries({ queryKey: ["calendar"], exact: false });
     },
   });
 }
@@ -245,7 +226,7 @@ export function useAvailableSlots(
       return data.data || [];
     },
     enabled: !!staffId && !!serviceId && !!date,
-    staleTime: 1 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -280,7 +261,6 @@ export function useCalendarView(view: "day" | "week" | "month", date: string) {
         throw error;
       }
 
-      // Transform snake_case from backend to camelCase for frontend
       return appointments.map((appt: any) => ({
         id: appt.id,
         customerId: appt.customer_id,
@@ -302,8 +282,7 @@ export function useCalendarView(view: "day" | "week" | "month", date: string) {
         updatedAt: appt.updated_at,
       }));
     },
-    enabled: !!date,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -316,6 +295,7 @@ export function useCompleteBooking() {
         `/appointments/${id}/complete`,
       );
       const appt = data;
+      console.log("[useCompleteBooking] raw complete response:", appt);
 
       // Transform snake_case from backend to camelCase for frontend
       return {
@@ -329,8 +309,8 @@ export function useCompleteBooking() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -342,17 +322,18 @@ export function useCompleteBooking() {
       };
     },
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({
+      console.log("[useCompleteBooking] success, refetching queries for id:", id);
+      queryClient.refetchQueries({
         queryKey: [BOOKINGS_QUERY_KEY],
         exact: false,
       });
-      queryClient.invalidateQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
+      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.refetchQueries({
         queryKey: ["calendar"],
         exact: false,
       });
-      // Invalidate invoices cache since appointment completion auto-creates invoices
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: ["calendar"],
         exact: false,
       });
@@ -397,8 +378,8 @@ export function useCollectPayment() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -410,16 +391,17 @@ export function useCollectPayment() {
       };
     },
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: [BOOKINGS_QUERY_KEY],
         exact: false,
       });
-      queryClient.invalidateQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
+      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.refetchQueries({
         queryKey: ["calendar"],
         exact: false,
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: ["transactions"],
         exact: false,
       });
@@ -450,8 +432,8 @@ export function useMarkNoShow() {
         status: appt.status,
         notes: appt.notes,
         price: appt.price,
-        paymentOption: appt.payment_option,
-        paymentStatus: appt.payment_status,
+        paymentOption: appt.paymentOption,
+        paymentStatus: appt.paymentStatus,
         cancellationReason: appt.cancellation_reason,
         cancelledAt: appt.cancelled_at,
         cancelledBy: appt.cancelled_by,
@@ -463,12 +445,13 @@ export function useMarkNoShow() {
       };
     },
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: [BOOKINGS_QUERY_KEY],
         exact: false,
       });
-      queryClient.invalidateQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
+      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.refetchQueries({
         queryKey: ["calendar"],
         exact: false,
       });

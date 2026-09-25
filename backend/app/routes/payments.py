@@ -351,17 +351,17 @@ async def list_payments(
 
         payments = [
             PaymentResponse(
-                id=str(p.id),
-                amount=p.amount,
-                customer_id=str(p.customer_id),
-                invoice_id=str(p.invoice_id),
-                reference=p.reference,
-                status=p.status,
-                gateway=p.gateway,
-                payment_method=p.payment_method,
-                metadata=p.metadata,
-                created_at=p.created_at,
-                updated_at=p.updated_at,
+                id=p["id"],
+                amount=p["amount"],
+                customer_id=p["customer_id"],
+                invoice_id=p["invoice_id"],
+                reference=p["reference"],
+                status=p["status"],
+                gateway=p.get("type") == "payment" and "paystack" or "pos",
+                payment_method=p["payment_method"],
+                metadata={},
+                created_at=p["created_at"],
+                updated_at=p["updated_at"],
             )
             for p in result["payments"]
         ]

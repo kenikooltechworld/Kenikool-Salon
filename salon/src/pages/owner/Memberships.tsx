@@ -20,12 +20,17 @@ import {
   useMembershipStats,
 } from "@/hooks/useMemberships";
 import { formatDate } from "@/lib/utils/date";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function Memberships() {
-  const { data: tiers, isLoading: tiersLoading } = useMembershipTiers();
-  const { data: memberships, isLoading: membershipsLoading } =
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
+  const { data: tiers, isLoading: tiersLoading, refetch: refetchTiers } = useMembershipTiers();
+  const { data: memberships, isLoading: membershipsLoading, refetch: refetchMemberships } =
     useAllMemberships();
-  const { data: stats, isLoading: statsLoading } = useMembershipStats();
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useMembershipStats();
   const deleteTier = useDeleteMembershipTier();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +48,14 @@ export default function Memberships() {
       alert("Failed to delete membership tier");
     }
   };
+
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchTiers();
+      refetchMemberships();
+      refetchStats();
+    });
+  }, [refetchTiers, refetchMemberships, refetchStats, setRefreshHandler]);
 
   // Filter memberships
   const filteredMemberships = memberships?.filter((m) => {

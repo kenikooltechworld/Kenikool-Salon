@@ -3,18 +3,22 @@ import { usePayment, useRetryPayment } from "@/hooks/usePayments";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AlertCircleIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function PaymentRetry() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
-  const { data: payment, isLoading } = usePayment(paymentId || "");
+  const { data: payment, isLoading, refetch } = usePayment(paymentId || "");
   const retryMutation = useRetryPayment();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const handleRetry = async () => {
     if (!paymentId) return;
     try {
       await retryMutation.mutateAsync(paymentId);
-      // Redirect to Paystack happens automatically in the hook
     } catch (error) {
       console.error("Retry failed:", error);
     }
@@ -33,13 +37,19 @@ export default function PaymentRetry() {
   const maxRetries = 3;
   const canRetry = retryCount < maxRetries && payment.status === "failed";
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Retry Payment</h1>
-        <Button variant="outline" onClick={() => navigate("/payments")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/payments")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       {/* Payment Details */}

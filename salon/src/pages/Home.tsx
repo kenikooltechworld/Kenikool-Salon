@@ -1,14 +1,11 @@
-import { Navbar } from "@/components/Navbar";
 import {
   HeroSection,
-  FeaturesSection,
   HowItWorksSection,
   BenefitsSection,
   TestimonialsSection,
   PricingPreviewSection,
   FAQSection,
   CTASection,
-  LandingFooter,
   StickyCTA,
   FloatingCTA,
   ExitIntentPopup,
@@ -17,13 +14,9 @@ import {
 export default function Home() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
       <main className="w-full">
         <section id="hero" className="w-full">
           <HeroSection />
-        </section>
-        <section id="features" className="w-full">
-          <FeaturesSection />
         </section>
         <section className="w-full">
           <HowItWorksSection />
@@ -44,7 +37,6 @@ export default function Home() {
           <CTASection />
         </section>
       </main>
-      <LandingFooter />
 
       {/* Conversion Elements - Hidden on very small screens */}
       <div className="hidden sm:block">

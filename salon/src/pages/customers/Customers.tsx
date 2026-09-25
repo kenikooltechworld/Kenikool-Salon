@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -18,11 +18,17 @@ import {
 } from "@/hooks/useCustomers";
 import { CreateCustomerModal } from "@/components/customers/CreateCustomerModal";
 import { EditCustomerModal } from "@/components/customers/EditCustomerModal";
-import { SelectTrigger, SelectItem } from "@/components/ui/select";
+import {
+  SelectTrigger,
+  SelectItem,
+} from "@/components/ui/select";
+import { SelectContent } from "@/components/ui/select";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function Customers() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,7 +51,7 @@ export default function Customers() {
     [searchTerm, statusFilter, currentPage, pageSize],
   );
 
-  const { data, isLoading, error } = useCustomers(filters);
+  const { data, isLoading, error, refetch } = useCustomers(filters);
   const deleteMutation = useDeleteCustomer();
 
   const handleEdit = (customerId: string) => {
@@ -72,7 +78,17 @@ export default function Customers() {
     }
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   const handleRefresh = () => {
+    refetch();
+    showToast({
+      variant: "success",
+      title: "Refreshed",
+      description: "Customers updated",
+    });
     setCurrentPage(1);
   };
 
@@ -145,9 +161,11 @@ export default function Customers() {
             setCurrentPage(1);
           }}
         >
-          <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="active">Active</SelectItem>
-          <SelectItem value="inactive">Inactive</SelectItem>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
         </SelectTrigger>
       </div>
 

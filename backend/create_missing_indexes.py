@@ -12,7 +12,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017/salon_db")
+MONGODB_URL = os.getenv("DATABASE_URL")
+
+if not MONGODB_URL:
+    raise RuntimeError("DATABASE_URL is required. Set it in backend/.env")
 
 def create_missing_indexes():
     """Create all missing indexes for better query performance."""

@@ -3,13 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select } from "@/components/ui/select";
 import {
   DollarSignIcon,
   CalendarIcon,
   FilterIcon,
-  RefreshCwIcon,
   HistoryIcon,
   PercentIcon,
   ReceiptIcon,
@@ -24,6 +23,8 @@ import { useMyEarnings, useMyEarningsSummary } from "@/hooks/useMyEarnings";
 import { useAuthStore } from "@/stores/auth";
 import { apiClient } from "@/lib/utils/api";
 import { getMonthStart, getMonthEnd, addDays } from "@/lib/utils/date";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 interface DateRange {
   startDate: string;
@@ -124,6 +125,7 @@ const timePeriods: TimePeriod[] = [
  */
 export default function Earnings() {
   const [selectedPeriod, setSelectedPeriod] = useState("this_month");
+  const { setRefreshHandler } = usePageRefresh();
   const [breakdownType, setBreakdownType] = useState<"service" | "date">(
     "service",
   );
@@ -182,10 +184,12 @@ export default function Earnings() {
     enabled: !!user?.id,
   });
 
-  const handleRefresh = () => {
-    refetchEarnings();
-    refetchSummary();
-  };
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchEarnings();
+      refetchSummary();
+    });
+  }, [refetchEarnings, refetchSummary, setRefreshHandler]);
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(value);
@@ -221,18 +225,6 @@ export default function Earnings() {
             Track your commission and earnings details
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-            className="self-start sm:self-auto"
-          >
-            <RefreshCwIcon size={16} className="mr-2" />
-            Refresh
-          </Button>
-        </div>
       </div>
 
       {/* Earnings Summary Cards */}
@@ -247,11 +239,9 @@ export default function Earnings() {
           </CardHeader>
           <CardContent>
             {summaryLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : summaryError ? (
               <div className="flex items-center gap-2">
@@ -282,11 +272,9 @@ export default function Earnings() {
           </CardHeader>
           <CardContent>
             {summaryLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : summaryError ? (
               <div className="flex items-center gap-2">
@@ -319,11 +307,9 @@ export default function Earnings() {
           </CardHeader>
           <CardContent>
             {summaryLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : summaryError ? (
               <div className="flex items-center gap-2">

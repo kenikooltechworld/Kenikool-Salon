@@ -11,8 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { RefreshCwIcon, ListIcon, CalendarIcon } from "@/components/icons";
+import { ListIcon, CalendarIcon } from "@/components/icons";
 import type { StaffAppointment } from "@/hooks/useMyAppointments";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 type ViewMode = "list" | "calendar";
 type StatusFilter =
@@ -26,6 +28,7 @@ type StatusFilter =
 export default function StaffAppointments() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
@@ -52,7 +55,10 @@ export default function StaffAppointments() {
     });
   };
 
-  // Sort appointments by date ascending
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   const sortedAppointments = [...appointments].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
   );
@@ -68,10 +74,6 @@ export default function StaffAppointments() {
             Manage your appointments and schedule
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
-          <RefreshCwIcon size={16} />
-          Refresh
-        </Button>
       </div>
 
       {/* Controls */}

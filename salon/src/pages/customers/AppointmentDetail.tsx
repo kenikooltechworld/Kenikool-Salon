@@ -6,6 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeftIcon } from "@/components/icons";
 import { useCustomer } from "@/hooks/useCustomers";
 import { useCustomerHistoryItem } from "@/hooks/useCustomerHistory";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function AppointmentDetail() {
   const { id: customerId, appointmentId } = useParams<{
@@ -13,11 +16,13 @@ export default function AppointmentDetail() {
     appointmentId: string;
   }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: customer, isLoading: customerLoading } = useCustomer(
+  const { data: customer, isLoading: customerLoading, refetch: refetchCustomer } = useCustomer(
     customerId || "",
   );
-  const { data: appointment, isLoading: appointmentLoading } =
+  const { data: appointment, isLoading: appointmentLoading, refetch: refetchAppointment } =
     useCustomerHistoryItem(customerId || "", appointmentId || "");
 
   if (customerLoading || appointmentLoading) {
@@ -49,6 +54,13 @@ export default function AppointmentDetail() {
     );
   }
 
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchCustomer();
+      refetchAppointment();
+    });
+  }, [refetchCustomer, refetchAppointment, setRefreshHandler]);
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
@@ -62,7 +74,7 @@ export default function AppointmentDetail() {
           <ArrowLeftIcon size={18} />
           <span className="hidden sm:inline">Back</span>
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             Appointment Details
           </h1>

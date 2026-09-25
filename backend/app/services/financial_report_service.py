@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, List
 from bson import ObjectId
 from app.models.payment import Payment
+from app.models.transaction import Transaction
 from app.models.invoice import Invoice
 from app.models.refund import Refund
 from app.models.appointment import Appointment
@@ -106,12 +107,25 @@ class FinancialReportService:
             created_at__lte=end_dt,
         )
 
-        # Calculate metrics
+        # Also include completed POS transactions as revenue
+        transactions = Transaction.objects(
+            tenant_id=ObjectId(tenant_id),
+            payment_status="completed",
+            created_at__gte=start_dt,
+            created_at__lte=end_dt,
+        )
+
+        # Calculate metrics from payments
         total_revenue = Decimal("0")
         payment_count = 0
         
         for payment in payments:
             total_revenue += payment.amount
+            payment_count += 1
+
+        # Add revenue from POS transactions
+        for transaction in transactions:
+            total_revenue += transaction.total
             payment_count += 1
 
         # Query refunds in date range
@@ -194,6 +208,13 @@ class FinancialReportService:
             created_at__lte=end_dt,
         )
 
+        # Also include POS transactions in date range
+        pos_transactions = Transaction.objects(
+            tenant_id=ObjectId(tenant_id),
+            created_at__gte=start_dt,
+            created_at__lte=end_dt,
+        )
+
         # Calculate metrics by status
         status_breakdown = {
             "pending": {"count": 0, "amount": Decimal("0")},
@@ -207,6 +228,20 @@ class FinancialReportService:
             if status in status_breakdown:
                 status_breakdown[status]["count"] += 1
                 status_breakdown[status]["amount"] += payment.amount
+
+        # Add POS transactions to payment breakdown
+        for transaction in pos_transactions:
+            # Map transaction payment_status to payment status
+            status_map = {
+                "completed": "success",
+                "pending": "pending",
+                "failed": "failed",
+                "refunded": "cancelled",
+            }
+            status = status_map.get(transaction.payment_status, "pending")
+            if status in status_breakdown:
+                status_breakdown[status]["count"] += 1
+                status_breakdown[status]["amount"] += transaction.total
 
         # Calculate success rate
         total_payments = sum(s["count"] for s in status_breakdown.values())

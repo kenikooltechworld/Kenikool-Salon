@@ -110,14 +110,12 @@ export default function Login() {
           // Route based on role priority (Owner > Manager > Staff > Customer)
           let redirectPath = "/dashboard"; // default
 
-          if (roleNames.includes("Owner")) {
-            redirectPath = "/dashboard"; // Owner Dashboard
-          } else if (roleNames.includes("Manager")) {
-            redirectPath = "/manager"; // Manager Dashboard
+          if (roleNames.includes("Owner") || roleNames.includes("Manager")) {
+            redirectPath = "/owner/profile";
           } else if (roleNames.includes("Staff")) {
-            redirectPath = "/appointments"; // Staff Dashboard - view their appointments
+            redirectPath = "/staff/settings";
           } else if (roleNames.includes("Customer")) {
-            redirectPath = "/my-account"; // Customer Dashboard
+            redirectPath = "/my-account";
           }
 
           navigate(redirectPath);

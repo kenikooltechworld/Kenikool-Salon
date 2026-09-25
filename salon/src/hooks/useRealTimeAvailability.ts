@@ -78,12 +78,10 @@ export function useRealTimeAvailability({
       });
 
       socket.on("connect", () => {
-        console.log("WebSocket connected");
         setIsConnected(true);
       });
 
       socket.on("disconnect", () => {
-        console.log("WebSocket disconnected");
         setIsConnected(false);
       });
 
@@ -107,9 +105,6 @@ export function useRealTimeAvailability({
       staff_id?: string;
       appointment_id?: string;
     }) => {
-      console.log("Availability update received:", data);
-
-      // Invalidate availability queries to refetch
       queryClient.invalidateQueries({ queryKey: ["availability"] });
       queryClient.invalidateQueries({ queryKey: ["time-slots"] });
       queryClient.invalidateQueries({ queryKey: ["availability-events"] });
@@ -117,13 +112,9 @@ export function useRealTimeAvailability({
 
     // Listen for viewer count updates
     const handleViewerJoined = (data: { service_id: string; date: string }) => {
-      console.log("Viewer joined:", data);
-      // Could update viewer count here if needed
     };
 
     const handleViewerLeft = (data: { service_id: string; date: string }) => {
-      console.log("Viewer left:", data);
-      // Could update viewer count here if needed
     };
 
     socket.on("availability:update", handleAvailabilityUpdate);

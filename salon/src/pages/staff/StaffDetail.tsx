@@ -23,18 +23,24 @@ import {
 } from "@/hooks/useStaff";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { AddStaffModal } from "@/components/staff/AddStaffModal";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ImageLightbox } from "@/components/services/ImageLightbox";
 import type { Staff } from "@/types/staff";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function StaffDetailPage() {
   const { staffId } = useParams<{ staffId: string }>();
   const navigate = useNavigate();
-  const { data: staff, isLoading, error } = useStaffMember(staffId || "");
+  const { data: staff, isLoading, error, refetch } = useStaffMember(staffId || "");
   const deleteStaffMutation = useDeleteStaff();
   const updateStaffMutation = useUpdateStaff();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   if (!staffId) {
     return (
@@ -58,6 +64,10 @@ export default function StaffDetailPage() {
     });
     setIsEditModalOpen(false);
   };
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -83,8 +93,65 @@ export default function StaffDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        Loading staff details...
+      <div className="w-full space-y-6">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex gap-4">
+            <Skeleton className="w-20 h-20 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+              <Skeleton className="h-6 w-40" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+              <Skeleton className="h-6 w-40" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+              <Skeleton className="h-6 w-20" />
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

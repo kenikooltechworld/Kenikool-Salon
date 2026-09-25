@@ -6,17 +6,24 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AlertCircleIcon } from "@/components/icons";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function RefundRequest() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { data: payment, isLoading } = usePayment(paymentId || "");
+  const { setRefreshHandler } = usePageRefresh();
+  const { data: payment, isLoading, refetch } = usePayment(paymentId || "");
   const createRefundMutation = useCreateRefund();
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
 
   const canRefund = payment && payment.status === "completed";
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +71,11 @@ export default function RefundRequest() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Request Refund</h1>
-        <Button variant="outline" onClick={() => navigate("/payments")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/payments")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       {/* Payment Details */}

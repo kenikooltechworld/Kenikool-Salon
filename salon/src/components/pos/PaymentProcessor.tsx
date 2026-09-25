@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from "@/components/ui/modal";
 import { usePOSStore } from "@/stores/pos";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useInitializePOSPayment } from "@/hooks/usePayment";
 import { useGenerateReceipt } from "@/hooks/useReceipt";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
@@ -18,14 +18,18 @@ import { generateSalonReference } from "@/lib/utils/reference";
 interface PaymentProcessorProps {
   customerId: string;
   staffId: string;
+  appointmentId?: string;
   paymentMethod: string;
+  open: boolean;
   onClose: () => void;
 }
 
 export default function PaymentProcessor({
   customerId,
   staffId,
+  appointmentId,
   paymentMethod: initialPaymentMethod,
+  open,
   onClose,
 }: PaymentProcessorProps) {
   const [paymentMethod, setPaymentMethod] =
@@ -46,6 +50,18 @@ export default function PaymentProcessor({
 
   const totalWithTip = cartTotal + tipAmount;
 
+  useEffect(() => {
+    if (!open) {
+      setIsProcessing(false);
+      setError(undefined);
+      setSuccess(false);
+      setShowTipHandler(false);
+      setShowSplitPayment(false);
+      setShowQuickCheckout(false);
+      setTipAmount(0);
+    }
+  }, [open]);
+
   const handlePayment = async () => {
     if (!customerId || !staffId || cartItems.length === 0) {
       setError("Missing required information");
@@ -62,7 +78,6 @@ export default function PaymentProcessor({
 
     try {
       if (paymentMethod === "cash") {
-        // Cash payment - create transaction immediately with completed status
         const transactionItems = cartItems.map((item: any) => ({
           item_type: item.itemType || "service",
           item_id: item.itemId,
@@ -77,12 +92,12 @@ export default function PaymentProcessor({
           {
             customer_id: customerId,
             staff_id: staffId,
+            appointment_id: appointmentId,
             items: transactionItems,
             payment_method: "cash",
           },
           {
             onSuccess: (transaction: any) => {
-              // Generate receipt after cash payment using React Query
               generateReceipt(transaction.id, {
                 onSuccess: () => {
                   setPaymentStatus("completed");
@@ -98,7 +113,6 @@ export default function PaymentProcessor({
                   }, 2000);
                 },
                 onError: (err: any) => {
-                  // Receipt generation failed but transaction was created
                   console.error("Receipt generation failed:", err);
                   setPaymentStatus("completed");
                   setSuccess(true);
@@ -128,7 +142,6 @@ export default function PaymentProcessor({
           },
         );
       } else if (paymentMethod === "card" || paymentMethod === "mobile_money") {
-        // Card/Mobile Money - create transaction FIRST, then initialize payment
         const transactionItems = cartItems.map((item: any) => ({
           item_type: item.itemType || "service",
           item_id: item.itemId,
@@ -139,17 +152,16 @@ export default function PaymentProcessor({
           discount_rate: 0,
         }));
 
-        // First, create the transaction
         checkout(
           {
             customer_id: customerId,
             staff_id: staffId,
+            appointment_id: appointmentId,
             items: transactionItems,
             payment_method: paymentMethod,
           },
           {
             onSuccess: (transaction: any) => {
-              // Transaction created successfully, now initialize payment
               const transactionId = transaction.id;
 
               initializePOSPayment(
@@ -162,7 +174,6 @@ export default function PaymentProcessor({
                 {
                   onSuccess: (paymentData: any) => {
                     if (paymentData.authorizationUrl) {
-                      // Save transaction data to localStorage before redirecting
                       localStorage.setItem(
                         "posPaymentData",
                         JSON.stringify({
@@ -179,7 +190,6 @@ export default function PaymentProcessor({
                         description: "Please complete payment on the next page",
                         variant: "default",
                       });
-                      // Redirect to Paystack
                       window.location.href = paymentData.authorizationUrl;
                     } else {
                       setError("Failed to get payment authorization URL");
@@ -220,7 +230,6 @@ export default function PaymentProcessor({
           },
         );
       } else if (paymentMethod === "check") {
-        // Check payment - create transaction with pending status
         const transactionItems = cartItems.map((item: any) => ({
           item_type: item.itemType || "service",
           item_id: item.itemId,
@@ -235,12 +244,12 @@ export default function PaymentProcessor({
           {
             customer_id: customerId,
             staff_id: staffId,
+            appointment_id: appointmentId,
             items: transactionItems,
             payment_method: "check",
           },
           {
             onSuccess: (transaction: any) => {
-              // Generate receipt after check payment using React Query
               generateReceipt(transaction.id, {
                 onSuccess: () => {
                   setPaymentStatus("pending");
@@ -256,7 +265,6 @@ export default function PaymentProcessor({
                   }, 2000);
                 },
                 onError: (err: any) => {
-                  // Receipt generation failed but transaction was created
                   console.error("Receipt generation failed:", err);
                   setPaymentStatus("pending");
                   setSuccess(true);
@@ -306,15 +314,12 @@ export default function PaymentProcessor({
   };
 
   return (
-    <>
-      {/* Overlay backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      {/* Modal */}
-      <Card className="p-4 md:p-6 border-2 border-primary fixed bottom-0 left-0 right-0 md:inset-auto md:bottom-6 md:right-6 md:max-w-md z-50 overflow-y-auto rounded-t-lg md:rounded-lg">
-        <h3 className="text-base md:text-lg font-semibold mb-4 text-foreground">
-          Payment Method
-        </h3>
+    <Modal open={open} onClose={onClose} size="md">
+      <ModalHeader className="text-center">
+        <ModalTitle>Payment Method</ModalTitle>
+      </ModalHeader>
 
+      <ModalBody>
         {error && (
           <Alert variant="error" className="mb-4">
             {error}
@@ -442,42 +447,48 @@ export default function PaymentProcessor({
                 Split Payment
               </Button>
             </div>
-
-            <div className="flex gap-2 md:gap-3 mt-4 md:mt-6">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                disabled={isProcessing}
-                className="flex-1 text-sm md:text-base"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handlePayment}
-                disabled={isProcessing}
-                className="flex-1 text-sm md:text-base"
-              >
-                {isProcessing ? (
-                  <>
-                    <Spinner className="w-4 h-4 mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  "Complete Payment"
-                )}
-              </Button>
-            </div>
-
-            <Button
-              variant="ghost"
-              onClick={() => setShowQuickCheckout(true)}
-              className="w-full mt-2 text-xs md:text-sm"
-            >
-              Use Saved Payment Method
-            </Button>
           </>
         )}
-      </Card>
-    </>
+      </ModalBody>
+
+      {!showTipHandler && !showSplitPayment && !showQuickCheckout && (
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isProcessing}
+            className="text-sm md:text-base"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handlePayment}
+            disabled={isProcessing}
+            className="text-sm md:text-base"
+          >
+            {isProcessing ? (
+              <>
+                <Spinner className="w-4 h-4 mr-2" />
+                Processing...
+              </>
+            ) : (
+              "Complete Payment"
+            )}
+          </Button>
+        </ModalFooter>
+      )}
+
+      {!showTipHandler && !showSplitPayment && !showQuickCheckout && (
+        <div className="px-6 pb-6">
+          <Button
+            variant="ghost"
+            onClick={() => setShowQuickCheckout(true)}
+            className="w-full text-xs md:text-sm"
+          >
+            Use Saved Payment Method
+          </Button>
+        </div>
+      )}
+    </Modal>
   );
 }

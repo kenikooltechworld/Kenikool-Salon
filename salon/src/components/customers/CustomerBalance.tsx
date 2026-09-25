@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import {
-  DollarSignIcon,
+  WalletIcon,
   RefreshCwIcon,
   AlertCircleIcon,
   CheckCircleIcon,
@@ -90,7 +90,7 @@ export function CustomerBalance({ customerId, customerName }: CustomerBalancePro
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <DollarSignIcon size={20} className="text-blue-600" />
+            <WalletIcon size={20} className="text-primary" />
             <h3 className="text-lg font-semibold text-foreground">Balance</h3>
           </div>
           <Button

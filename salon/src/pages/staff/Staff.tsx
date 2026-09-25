@@ -16,12 +16,16 @@ import {
 import { useStaff, useDeleteStaff, useCreateStaff } from "@/hooks/useStaff";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { AddStaffModal } from "@/components/staff/AddStaffModal";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Staff } from "@/types/staff";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function StaffPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { data: staffList = [], isLoading, error } = useStaff();
+  const { setRefreshHandler } = usePageRefresh();
+  const { data: staffList = [], isLoading, error, refetch } = useStaff();
   const deleteStaffMutation = useDeleteStaff();
   const createStaffMutation = useCreateStaff();
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,6 +92,10 @@ export default function StaffPage() {
     }
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "active":
@@ -120,13 +128,15 @@ export default function StaffPage() {
             Manage your salon staff members
           </p>
         </div>
-        <Button
-          className="gap-2 w-full sm:w-auto cursor-pointer"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          <PlusIcon size={18} />
-          Add Staff Member
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            className="gap-2 w-full sm:w-auto cursor-pointer"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <PlusIcon size={18} />
+            Add Staff Member
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -175,9 +185,111 @@ export default function StaffPage() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12 text-muted-foreground">
-          Loading staff members...
-        </div>
+        <>
+          {/* Mobile Skeleton Cards */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-card border border-border rounded-lg overflow-hidden space-y-3 p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Skeleton className="w-12 h-12 rounded-lg flex-shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2 border-t border-border">
+                  <Skeleton className="flex-1 h-9" />
+                  <Skeleton className="flex-1 h-9" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Skeleton Table */}
+          <div className="hidden md:block bg-card border border-border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted border-b border-border">
+                  <tr>
+                    <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Name
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Email
+                    </th>
+                    <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Phone
+                    </th>
+                    <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Payment
+                    </th>
+                    <th className="hidden xl:table-cell px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Specialties
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Status
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-foreground">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i} className="border-b border-border">
+                      <td className="px-4 lg:px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4">
+                        <Skeleton className="h-4 w-48" />
+                      </td>
+                      <td className="hidden lg:table-cell px-4 lg:px-6 py-4">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="hidden lg:table-cell px-4 lg:px-6 py-4">
+                        <Skeleton className="h-4 w-28" />
+                      </td>
+                      <td className="hidden xl:table-cell px-4 lg:px-6 py-4">
+                        <div className="flex gap-1">
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                          <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4">
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </td>
+                      <td className="px-4 lg:px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="h-9 w-9 rounded" />
+                          <Skeleton className="h-9 w-9 rounded" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Error State */}
@@ -495,14 +607,17 @@ export default function StaffPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={async (data) => {
+          console.log("[StaffCreate] Frontend submitting staff creation:", data);
           try {
-            await createStaffMutation.mutateAsync(data);
+            const result = await createStaffMutation.mutateAsync(data);
+            console.log("[StaffCreate] Frontend staff creation success:", result);
             showToast({
               variant: "success",
               title: "Success",
               description: `${data.firstName} ${data.lastName} has been added successfully`,
             });
           } catch (error: any) {
+            console.log("[StaffCreate] Frontend staff creation error:", error);
             let errorMessage =
               "Unable to add this staff member. Please try again.";
 

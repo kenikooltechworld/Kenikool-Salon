@@ -11,14 +11,19 @@ import {
   ClockIcon,
   ChevronRightIcon,
 } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function RefundsPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [selectedStatus, setSelectedStatus] = useState<
     "pending" | "success" | "failed" | undefined
   >();
 
-  const { data: refunds = [], isLoading } = useRefunds({
+  const { data: refunds = [], isLoading, refetch } = useRefunds({
     status: selectedStatus,
     limit: 50,
   });
@@ -71,6 +76,10 @@ export default function RefundsPage() {
   const totalRefunded = refunds
     .filter((r) => r.status === "success")
     .reduce((sum, r) => sum + r.amount, 0);
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   return (
     <div className="space-y-6">

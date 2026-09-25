@@ -5,14 +5,17 @@ import { StaffShiftsList } from "@/components/staff/StaffShiftsList";
 import { BookingCalendar } from "@/components/bookings/BookingCalendar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { RefreshCwIcon, ListIcon, CalendarIcon } from "@/components/icons";
+import { ListIcon, CalendarIcon } from "@/components/icons";
 import type { Shift } from "@/hooks/useShifts";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 type ViewMode = "list" | "calendar";
 
 export default function StaffShifts() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const { data: shifts = [], isLoading, error, refetch } = useMyShifts();
@@ -31,6 +34,10 @@ export default function StaffShifts() {
     });
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   // Sort shifts by date ascending
   const sortedShifts = [...shifts].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
@@ -45,10 +52,6 @@ export default function StaffShifts() {
             View your assigned shifts and work schedule
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
-          <RefreshCwIcon size={16} />
-          Refresh
-        </Button>
       </div>
 
       {/* Controls */}

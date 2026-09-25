@@ -9,24 +9,21 @@ import {
   Users,
   Mail,
   Phone,
-  DollarSign,
+  NairaSign,
   HomeIcon,
+  RefreshCwIcon,
 } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { GroupBookingConfirmationSkeleton } from "@/components/ui/group-booking-confirmation-skeleton";
 
 export default function GroupBookingConfirmation() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: booking, isLoading } = useGroupBookingById(id!);
+  const { data: booking, isLoading, refetch } = useGroupBookingById(id!);
+  const { showToast } = useToast();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading booking details...</p>
-        </div>
-      </div>
-    );
+    return <GroupBookingConfirmationSkeleton />;
   }
 
   if (!booking) {
@@ -58,6 +55,14 @@ export default function GroupBookingConfirmation() {
     });
   };
 
+  const handleRefresh = () => {
+    refetch();
+    showToast({
+      title: "Refreshed",
+      description: "Booking confirmation updated",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-3xl mx-auto">
@@ -69,6 +74,17 @@ export default function GroupBookingConfirmation() {
             Your group booking request has been received. We'll review it and
             send confirmation to your email.
           </p>
+        </div>
+        <div className="flex justify-end mb-6">
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         {/* Booking Status */}
@@ -141,23 +157,23 @@ export default function GroupBookingConfirmation() {
         {/* Pricing Summary */}
         <Card className="p-6 mb-6 bg-blue-50">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <DollarSign size={20} className="mr-2" />
+            <NairaSign size={20} className="mr-2" />
             Pricing Summary
           </h2>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>Base Total:</span>
-              <span>${booking.base_total.toFixed(2)}</span>
+              <span>₦{booking.base_total.toFixed(2)}</span>
             </div>
             {booking.discount_percentage > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Group Discount ({booking.discount_percentage}%):</span>
-                <span>-${booking.discount_amount.toFixed(2)}</span>
+                <span>-₦{booking.discount_amount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t">
               <span>Final Total:</span>
-              <span>${booking.final_total.toFixed(2)}</span>
+              <span>₦{booking.final_total.toFixed(2)}</span>
             </div>
           </div>
         </Card>

@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useStaff } from "@/hooks/useStaff";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function ManagerPage() {
-  const { data: appointments = [], isLoading: appointmentsLoading } =
+  const { data: appointments = [], isLoading: appointmentsLoading, refetch: refetchAppointments } =
     useAppointments();
-  const { data: staffList = [], isLoading: staffLoading } = useStaff();
+  const { data: staffList = [], isLoading: staffLoading, refetch: refetchStaff } = useStaff();
   const [dateFilter, setDateFilter] = useState<string>("today");
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -40,16 +46,27 @@ export default function ManagerPage() {
     (a: any) => a.status === "completed",
   ).length;
 
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchAppointments();
+      refetchStaff();
+    });
+  }, [refetchAppointments, refetchStaff, setRefreshHandler]);
+
   return (
     <div className="w-full space-y-6 px-0 sm:px-0">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold text-foreground">
-          Manager Dashboard
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Manage operations and monitor team performance
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">
+              Manager Dashboard
+            </h2>
+          <p className="text-sm text-muted-foreground">
+            Manage operations and monitor team performance
+          </p>
+          </div>
+        </div>
       </div>
 
       {/* Key Metrics */}

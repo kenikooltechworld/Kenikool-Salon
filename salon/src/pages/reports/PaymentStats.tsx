@@ -3,11 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { usePaymentReport } from "@/hooks/useFinancialReport";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/format";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function PaymentStats() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  // Convert local date to YYYY-MM-DD format (not UTC)
   const getLocalDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -20,18 +24,24 @@ export default function PaymentStats() {
     end: getLocalDateString(new Date()),
   });
 
-  const { data: report, isLoading } = usePaymentReport(
+  const { data: report, isLoading, refetch } = usePaymentReport(
     dateRange.start,
     dateRange.end,
   );
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Payment Statistics</h1>
-        <Button variant="outline" onClick={() => navigate("/reports")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/reports")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Filter */}

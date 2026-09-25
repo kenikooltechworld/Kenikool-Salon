@@ -48,14 +48,11 @@ export function useRevenueAnalytics(
         "/owner/dashboard/revenue-analytics",
         { params: { period, days } },
       );
-      const result = data.data || data;
-      console.log("[DashboardHook][useRevenueAnalytics] raw response:", data);
-      console.log("[DashboardHook][useRevenueAnalytics] extracted result:", result);
-      return result;
+      return data.data || data;
     },
-    refetchInterval: 60 * 60 * 1000, // 1 hour
-    staleTime: 60 * 60 * 1000, // 1 hour
-    retry: false, // Don't retry - fail fast
-    placeholderData: (previousData) => previousData,
+    refetchInterval: 60 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    refetchOnMount: true,
   });
 }

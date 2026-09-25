@@ -2,9 +2,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Card, Button, Spinner, Alert, Input } from "@/components/ui";
+import { useToast } from "@/components/ui/toast";
 import { apiClient } from "@/lib/utils/api";
 import { formatDate } from "@/lib/utils/format";
-import { AlertCircleIcon } from "@/components/icons";
+import { AlertCircleIcon, RefreshCwIcon } from "@/components/icons";
 
 interface BookingDetails {
   id: string;
@@ -22,6 +23,7 @@ interface BookingDetails {
 export default function BookingReschedule() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("");
   const [error, setError] = useState("");
@@ -30,6 +32,7 @@ export default function BookingReschedule() {
     data: booking,
     isLoading,
     error: fetchError,
+    refetch,
   } = useQuery({
     queryKey: ["public-booking", bookingId],
     queryFn: async () => {
@@ -95,15 +98,34 @@ export default function BookingReschedule() {
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = minDate.toISOString().split("T")[0];
 
+  const handleRefresh = () => {
+    refetch();
+    showToast({
+      title: "Refreshed",
+      description: "Booking details updated",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Reschedule Booking</h1>
-          <p className="text-gray-600">
-            Confirmation #{booking.id.substring(0, 8).toUpperCase()}
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Reschedule Booking</h1>
+            <p className="text-gray-600">
+              Confirmation #{booking.id.substring(0, 8).toUpperCase()}
+            </p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         {/* Current Booking Details */}

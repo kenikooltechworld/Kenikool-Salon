@@ -1,149 +1,97 @@
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBooking } from "@/hooks/useBookings";
+import { useConfirmBooking, useCancelBooking, useCompleteBooking, useMarkNoShow } from "@/hooks/useBookings";
 import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { formatDate, formatTime, formatCurrency } from "@/lib/utils/format";
-import { XIcon } from "@/components/icons";
+import { ArrowLeftIcon } from "@/components/icons";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
+import { useToast } from "@/components/ui/toast";
 
-interface BookingDetailProps {
-  bookingId: string;
-  onClose?: () => void;
-  onConfirm?: (id: string) => void;
-  onCancel?: (id: string) => void;
-  onComplete?: (id: string) => void;
-  onMarkNoShow?: (id: string) => void;
-}
+export default function BookingDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const bookingId = id || "";
+  const { showToast } = useToast();
+  const { mutate: confirmBooking } = useConfirmBooking();
+  const { mutate: cancelBooking } = useCancelBooking();
+  const { mutate: completeBooking } = useCompleteBooking();
+  const { mutate: markNoShow } = useMarkNoShow();
 
-export function BookingDetail({
-  bookingId,
-  onClose,
-  onConfirm,
-  onCancel,
-  onComplete,
-  onMarkNoShow,
-}: BookingDetailProps) {
-  const { data: booking, isLoading } = useBooking(bookingId);
+  const { data: booking, isLoading } = useBooking(bookingId, { refetchOnMount: true });
+  console.log("[BookingDetail] booking data:", booking);
 
-  // Fetch service details
-  const { data: serviceData, isLoading: isLoadingService } = useQuery({
-    queryKey: ["service", booking?.serviceId],
+  const { data: detail, isLoading: isLoadingDetail } = useQuery({
+    queryKey: ["bookingDetail", bookingId],
     queryFn: async () => {
-      const response = await apiClient.get(`/services/${booking?.serviceId}`);
+      const response = await apiClient.get(`/appointments/${bookingId}/detail`);
       return response.data;
     },
-    enabled: !!booking?.serviceId,
-    retry: false,
+    enabled: !!bookingId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   });
 
-  // Fetch staff details
-  const { data: staffData, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ["staff", booking?.staffId],
-    queryFn: async () => {
-      const response = await apiClient.get(`/staff/${booking?.staffId}`);
-      return response.data;
-    },
-    enabled: !!booking?.staffId,
-    retry: false,
-  });
+  const serviceData = detail?.service || null;
+  const staffData = detail?.staff || null;
+  const customerData = detail?.customer || null;
 
-  // Fetch customer details
-  const { data: customerData, isLoading: isLoadingCustomer } = useQuery({
-    queryKey: ["customer", booking?.customerId],
-    queryFn: async () => {
-      const response = await apiClient.get(`/customers/${booking?.customerId}`);
-      return response.data;
-    },
-    enabled: !!booking?.customerId,
-    retry: false,
-  });
-
-  if (isLoading) {
+  if (isLoading || isLoadingDetail) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <Card className="w-full max-w-md">
-          {/* Header Skeleton */}
-          <div className="flex items-center justify-between border-b border-border p-4 sticky top-0 bg-background">
-            <Skeleton className="h-6 w-40" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="cursor-pointer flex-shrink-0 ml-2"
-            >
-              <XIcon size={20} />
-            </Button>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/bookings")}
+            className="cursor-pointer"
+          >
+            <ArrowLeftIcon size={16} />
+            Back to Bookings
+          </Button>
+        </div>
+        <Card className="p-6 space-y-4">
+          <Skeleton className="h-6 w-40" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-5 w-32" />
           </div>
-
-          {/* Content Skeleton */}
-          <div className="space-y-4 p-4 overflow-y-auto max-h-[calc(100vh-200px)]">
-            {/* Status */}
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-6 w-24 rounded-full" />
-            </div>
-
-            {/* Customer */}
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-36" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-28" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-24" />
             </div>
-
-            {/* Service */}
             <div className="space-y-2">
               <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-5 w-40" />
-            </div>
-
-            {/* Staff */}
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-5 w-36" />
-            </div>
-
-            {/* Price */}
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-5 w-28" />
-            </div>
-
-            {/* Booking ID */}
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-5 w-48" />
-            </div>
-
-            {/* Date */}
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-5 w-40" />
-            </div>
-
-            {/* Times */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-5 w-24" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-5 w-24" />
-              </div>
-            </div>
-
-            {/* Timestamps */}
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-24" />
             </div>
           </div>
-
-          {/* Actions Skeleton */}
-          <div className="flex flex-wrap gap-2 border-t border-border p-4">
-            <Skeleton className="flex-1 min-w-[100px] h-10" />
-            <Skeleton className="flex-1 min-w-[100px] h-10" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </Card>
       </div>
@@ -152,8 +100,19 @@ export function BookingDetail({
 
   if (!booking || !booking.startTime) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <Card className="w-full max-w-md p-6">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/bookings")}
+            className="cursor-pointer"
+          >
+            <ArrowLeftIcon size={16} />
+            Back to Bookings
+          </Button>
+        </div>
+        <Card className="p-6">
           <div className="text-center py-8 text-muted-foreground">
             Booking not found
           </div>
@@ -163,89 +122,93 @@ export function BookingDetail({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="w-full max-w-md my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border p-4 sticky top-0 bg-background">
-          <h2 className="text-lg font-bold text-foreground truncate">
-            Booking Details
-          </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="cursor-pointer shrink-0 ml-2"
-          >
-            <XIcon size={20} />
-          </Button>
-        </div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/bookings")}
+          className="cursor-pointer"
+        >
+          <ArrowLeftIcon size={16} />
+          Back to Bookings
+        </Button>
+      </div>
 
-        {/* Content */}
-        <div className="space-y-3 p-4 overflow-y-auto max-h-[calc(100vh-200px)]">
+      <Card className="p-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Status</span>
+            <h1 className="text-xl font-bold text-foreground">Booking Details</h1>
             <BookingStatusBadge status={booking.status} />
           </div>
 
-          <div>
-            <span className="text-muted-foreground">Customer</span>
-            {isLoadingCustomer ? (
-              <Skeleton className="h-5 w-32 mt-1" />
-            ) : customerData?.first_name && customerData?.last_name ? (
-              <p className="text-foreground">{customerData.first_name} {customerData.last_name}</p>
-            ) : (
-              <p className="text-foreground">N/A</p>
-            )}
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">Service</span>
-            {isLoadingService ? (
-              <Skeleton className="h-5 w-40 mt-1" />
-            ) : (
-              <p className="text-foreground">{serviceData?.name || "N/A"}</p>
-            )}
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">Staff</span>
-            {isLoadingStaff ? (
-              <Skeleton className="h-5 w-36 mt-1" />
-            ) : staffData?.firstName && staffData?.lastName ? (
-              <p className="text-foreground">{staffData.firstName} {staffData.lastName}</p>
-            ) : (
-              <p className="text-foreground">N/A</p>
-            )}
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">Price</span>
-            <p className="text-foreground font-semibold">
-              {booking?.price ? formatCurrency(booking.price, "NGN") : "N/A"}
-            </p>
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">Booking ID</span>
-            <p className="font-mono text-sm text-foreground">{booking.id}</p>
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">Date</span>
-            <p className="text-foreground">
-              {formatDate(new Date(booking.startTime))}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span className="text-muted-foreground">Start Time</span>
+              <span className="text-sm text-muted-foreground">Customer</span>
+              {!customerData ? (
+                <Skeleton className="h-5 w-32 mt-1" />
+              ) : customerData?.first_name && customerData?.last_name ? (
+                <p className="text-foreground font-medium">{customerData.first_name} {customerData.last_name}</p>
+              ) : (
+                <p className="text-foreground">N/A</p>
+              )}
+            </div>
+
+            <div>
+              <span className="text-sm text-muted-foreground">Service</span>
+              {!serviceData ? (
+                <Skeleton className="h-5 w-40 mt-1" />
+              ) : (
+                <p className="text-foreground font-medium">{serviceData?.name || "N/A"}</p>
+              )}
+            </div>
+
+            <div>
+              <span className="text-sm text-muted-foreground">Staff</span>
+              {!staffData ? (
+                <Skeleton className="h-5 w-36 mt-1" />
+              ) : staffData?.first_name && staffData?.last_name ? (
+                <p className="text-foreground font-medium">{staffData.first_name} {staffData.last_name}</p>
+              ) : (
+                <p className="text-foreground">N/A</p>
+              )}
+            </div>
+
+            <div>
+              <span className="text-sm text-muted-foreground">Price</span>
+              <p className="text-foreground font-semibold">
+                {booking?.price ? formatCurrency(booking.price, "NGN") : "N/A"}
+              </p>
+            </div>
+
+            {booking.locationId && (
+              <div>
+                <span className="text-sm text-muted-foreground">Location</span>
+                <p className="text-foreground">{booking.locationId}</p>
+              </div>
+            )}
+
+            <div>
+              <span className="text-sm text-muted-foreground">Booking ID</span>
+              <p className="font-mono text-sm text-foreground">{booking.id}</p>
+            </div>
+
+            <div>
+              <span className="text-sm text-muted-foreground">Date</span>
+              <p className="text-foreground">
+                {formatDate(new Date(booking.startTime))}
+              </p>
+            </div>
+
+            <div>
+              <span className="text-sm text-muted-foreground">Start Time</span>
               <p className="text-foreground">
                 {formatTime(new Date(booking.startTime))}
               </p>
             </div>
+
             <div>
-              <span className="text-muted-foreground">End Time</span>
+              <span className="text-sm text-muted-foreground">End Time</span>
               <p className="text-foreground">
                 {formatTime(new Date(booking.endTime))}
               </p>
@@ -254,7 +217,7 @@ export function BookingDetail({
 
           {booking.notes && (
             <div>
-              <span className="text-muted-foreground">Notes</span>
+              <span className="text-sm text-muted-foreground">Notes</span>
               <p className="text-foreground">{booking.notes}</p>
             </div>
           )}
@@ -265,61 +228,131 @@ export function BookingDetail({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-2 border-t border-border p-4">
-          {booking.status === "scheduled" && onConfirm && (
+        <div className="flex flex-wrap gap-2 border-t border-border pt-4 mt-4">
+          {booking.status === "scheduled" && (
             <Button
               variant="primary"
-              className="flex-1 min-w-[100px] cursor-pointer"
+              className="cursor-pointer"
               onClick={() => {
-                onConfirm(booking.id);
-                onClose?.();
+                confirmBooking(booking.id, {
+                  onSuccess: () => {
+                    showToast({
+                      title: "Success",
+                      description: "Appointment confirmed successfully",
+                      variant: "success",
+                    });
+                  },
+                  onError: () => {
+                    showToast({
+                      title: "Error",
+                      description: "Failed to confirm appointment",
+                      variant: "error",
+                    });
+                  },
+                });
               }}
             >
               Confirm
             </Button>
           )}
-          {booking.status === "confirmed" && onComplete && (
+          {booking.status === "confirmed" && (
             <Button
               variant="primary"
-              className="flex-1 min-w-[100px] cursor-pointer"
+              className="cursor-pointer"
               onClick={() => {
-                onComplete(booking.id);
-                onClose?.();
+                completeBooking(booking.id, {
+                  onSuccess: () => {
+                    showToast({
+                      title: "Success",
+                      description: "Appointment completed successfully",
+                      variant: "success",
+                    });
+                  },
+                  onError: () => {
+                    showToast({
+                      title: "Error",
+                      description: "Failed to complete appointment",
+                      variant: "error",
+                    });
+                  },
+                });
               }}
             >
               Complete
             </Button>
           )}
-          {(booking.status === "scheduled" || booking.status === "confirmed") &&
-            onCancel && (
-              <Button
-                variant="destructive"
-                className="flex-1 min-w-[100px] cursor-pointer"
-                onClick={() => {
-                  onCancel(booking.id);
-                  onClose?.();
-                }}
-              >
-                Cancel
-              </Button>
-            )}
-          {booking.status === "confirmed" && onMarkNoShow && (
+          {(booking.status === "scheduled" || booking.status === "confirmed") && (
+            <Button
+              variant="destructive"
+              className="cursor-pointer"
+              onClick={() => {
+                cancelBooking(booking.id, {
+                  onSuccess: () => {
+                    showToast({
+                      title: "Success",
+                      description: "Appointment cancelled successfully",
+                      variant: "success",
+                    });
+                    navigate("/bookings");
+                  },
+                  onError: () => {
+                    showToast({
+                      title: "Error",
+                      description: "Failed to cancel appointment",
+                      variant: "error",
+                    });
+                  },
+                });
+              }}
+            >
+              Cancel
+            </Button>
+          )}
+          {(booking.status === "scheduled" || booking.status === "confirmed") && (
             <Button
               variant="outline"
-              className="flex-1 min-w-[100px] cursor-pointer"
+              className="cursor-pointer"
               onClick={() => {
-                onMarkNoShow(booking.id);
-                onClose?.();
+                markNoShow({ id: booking.id, reason: "" }, {
+                  onSuccess: () => {
+                    showToast({
+                      title: "Success",
+                      description: "Marked as no-show successfully",
+                      variant: "success",
+                    });
+                  },
+                  onError: () => {
+                    showToast({
+                      title: "Error",
+                      description: "Failed to mark as no-show",
+                      variant: "error",
+                    });
+                  },
+                });
               }}
             >
               No-Show
             </Button>
           )}
+          {booking.status === "completed" &&
+            booking.paymentOption === "later" &&
+            booking.paymentStatus !== "completed" ? (
+              <Button
+                variant="primary"
+                className="cursor-pointer bg-green-600 hover:bg-green-700"
+                onClick={() => navigate("/pos", { state: { bookingId: booking.id, booking } })}
+              >
+                Collect Payment
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {`Collect payment hidden: status=${booking.status}, paymentOption=${booking.paymentOption}, paymentStatus=${booking.paymentStatus}`}
+              </span>
+            )}
           <Button
             variant="outline"
-            className="flex-1 min-w-[100px] cursor-pointer"
-            onClick={onClose}
+            className="cursor-pointer"
+            onClick={() => navigate("/bookings")}
           >
             Close
           </Button>

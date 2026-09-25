@@ -30,17 +30,27 @@ export function ImageLightbox({
     }
   }, [isOpen, imageUrl]);
 
-  // Handle mouse wheel zoom
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
 
-    if (newScale !== scale) {
-      setScale(newScale);
-    }
-  };
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
+
+      if (newScale !== scale) {
+        setScale(newScale);
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [scale]);
 
   // Handle pinch zoom on touch devices
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -138,7 +148,6 @@ export function ImageLightbox({
       <div
         ref={containerRef}
         className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

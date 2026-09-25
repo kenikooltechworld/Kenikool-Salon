@@ -14,21 +14,23 @@ import { CalendarIcon, UserIcon, SettingsIcon, BuildingIcon } from "@/components
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
 import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function MyAccountPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const { showToast } = useToast();
-  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
+  const { data: appointments = [], isLoading: appointmentsLoading, refetch: refetchAppointments } = useAppointments();
   const { data: tenantSettings, isLoading: settingsLoading } = useTenantSettings();
-  const { data: customerProfile, isLoading: customerLoading } = useCustomerProfile();
+  const { data: customerProfile, isLoading: customerLoading, refetch: refetchCustomerProfile } = useCustomerProfile();
   const updateCustomerProfile = useUpdateCustomerProfile();
   const [activeTab, setActiveTab] = useState<"bookings" | "profile">(
     "bookings",
   );
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: authData, isLoading: authLoading } = useQuery({
+  const { data: authData, isLoading: authLoading, refetch: refetchAuth } = useQuery({
     queryKey: ["current-user"],
     queryFn: async () => {
       const { data } = await apiClient.get("/auth/me");
@@ -52,8 +54,16 @@ export default function MyAccountPage() {
     }
   }, [authData, setUser]);
 
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchAppointments();
+      refetchCustomerProfile();
+      refetchAuth();
+    });
+  }, [refetchAppointments, refetchCustomerProfile, refetchAuth, setRefreshHandler]);
+
   const currentUser = authData || user;
-  const isCustomer = !!customerProfile && !currentUser?.roleNames?.some(r => ["Owner", "Manager", "Staff"].includes(r));
+  const isCustomer = !!customerProfile && !currentUser?.roleNames?.some((r: string) => ["Owner", "Manager", "Staff"].includes(r));
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -84,7 +94,7 @@ export default function MyAccountPage() {
     (a: any) => a.status === "completed",
   );
 
-  const handleUpdateCustomerProfile = async (data: { first_name?: string; last_name?: string; phone?: string; address?: string }) => {
+  const handleUpdateCustomerProfile = async (data: { first_name?: string; last_name?: string; phone?: string; address?: string; notification_preferences?: Record<string, boolean> }) => {
     try {
       await updateCustomerProfile.mutateAsync(data);
       showToast({
@@ -149,10 +159,14 @@ export default function MyAccountPage() {
     <div className="w-full space-y-6 px-0 sm:px-0">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold text-foreground">My Account</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage your bookings and profile
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">My Account</h2>
+            <p className="text-sm text-muted-foreground">
+              Manage your bookings and profile
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -459,13 +473,13 @@ export default function MyAccountPage() {
                         Subscription
                       </p>
                       <p className="text-foreground capitalize">
-                        {tenantSettings.subscription_tier || "starter"}
+                        {(tenantSettings as any).subscription_tier || "starter"}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Status</p>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
-                        {tenantSettings.status || "active"}
+                        {(tenantSettings as any).status || "active"}
                       </span>
                     </div>
                   </div>

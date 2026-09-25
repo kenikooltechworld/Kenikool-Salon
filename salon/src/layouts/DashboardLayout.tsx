@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
+import { useTenantStore } from "@/stores/tenant";
 import { ThemeSelector } from "@/components/ui/theme-selector";
 import NotificationBadge from "@/components/notifications/NotificationBadge";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 import {
   MenuIcon,
   XIcon,
@@ -38,9 +41,9 @@ const menuItems = [
 
 // Role-based menu filtering
 function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
-  // Owner: Full access to all menu items
+  // Owner: Full access except My Account
   if (roleNames.includes("Owner")) {
-    return menuItems;
+    return menuItems.filter((item) => item.path !== "/my-account");
   }
 
   // Manager: Access to bookings, customers, services, staff, invoices, reports, settings
@@ -54,7 +57,6 @@ function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
         "/staff",
         "/invoices",
         "/settings",
-        "/my-account",
         "/owner/profile",
       ].includes(item.path),
     );
@@ -87,6 +89,7 @@ function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
 export function DashboardLayout() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const tenantName = useTenantStore((state) => state.tenantName());
   const logout = useAuthStore((state) => state.logout);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -98,6 +101,8 @@ export function DashboardLayout() {
   const filteredMenuItems = user?.roleNames
     ? getMenuItemsForRole(user.roleNames)
     : getMenuItemsForRole([]);
+
+  const { refreshHandler } = usePageRefresh();
 
   useEffect(() => {
     const handleResize = () => {
@@ -154,18 +159,18 @@ export function DashboardLayout() {
           !mobileMenuOpen && isMobile ? "-translate-x-full" : "translate-x-0"
         } md:translate-x-0`}
       >
-        {/* Sidebar Header */}
-        <div className="h-16 border-b border-border flex items-center justify-between px-4">
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">K</span>
-              </div>
-              <span className="font-bold text-lg text-foreground">
-                Kenikool
-              </span>
-            </div>
-          )}
+         {/* Sidebar Header */}
+         <div className="h-16 border-b border-border flex items-center justify-between px-4">
+           {sidebarOpen && (
+             <div className="flex items-center gap-2">
+               <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                 <span className="text-white font-bold text-lg">K</span>
+               </div>
+               <span className="font-bold text-lg text-foreground">
+                 {tenantName || "Kenikool"}
+               </span>
+             </div>
+           )}
           <button
             onClick={() => {
               if (isMobile) {
@@ -244,6 +249,10 @@ export function DashboardLayout() {
             <NotificationBadge
               onClick={() => setNotificationCenterOpen(true)}
             />
+
+            {refreshHandler && (
+              <RefreshButton onClick={refreshHandler} />
+            )}
 
             {/* Theme Selector */}
             <ThemeSelector variant="icon" />

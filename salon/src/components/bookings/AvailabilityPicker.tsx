@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ interface AvailabilityPickerProps {
   serviceId: string;
   serviceDuration: number;
   selectedSlot?: AvailableSlot;
+  selectedDate?: string;
   onSlotSelect: (slot: AvailableSlot) => void;
   onDateSelect?: (date: string) => void;
   onNext?: () => void;
@@ -25,6 +26,7 @@ export function AvailabilityPicker({
   serviceId,
   serviceDuration,
   selectedSlot,
+  selectedDate: selectedDateProp,
   onSlotSelect,
   onDateSelect,
   onNext,
@@ -40,8 +42,14 @@ export function AvailabilityPicker({
   };
 
   const [selectedDate, setSelectedDate] = useState<string>(
-    getLocalDateString(new Date()),
+    selectedDateProp || getLocalDateString(new Date()),
   );
+
+  useEffect(() => {
+    if (!selectedDateProp && onDateSelect) {
+      onDateSelect(selectedDate);
+    }
+  }, [selectedDate, selectedDateProp, onDateSelect]);
 
   const { data: slots = [], isLoading } = useAvailableSlots(
     staffId,

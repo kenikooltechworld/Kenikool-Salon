@@ -23,9 +23,6 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       if (onCheckedChange) {
         onCheckedChange(e.target.checked);
       }
-      if (onChange) {
-        onChange(e);
-      }
     };
 
     return (

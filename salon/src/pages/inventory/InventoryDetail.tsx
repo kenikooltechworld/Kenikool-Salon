@@ -12,13 +12,18 @@ import {
   MinusIcon,
 } from "@/components/icons";
 import { useState } from "react";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function InventoryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { inventory, deductInventory, updateInventory, isLoadingInventory } =
+  const { inventory, deductInventory, updateInventory, isLoadingInventory, refetch } =
     useInventory();
   const [quantity, setQuantity] = useState(1);
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const item = inventory.find((i: any) => i.id === id);
 
@@ -51,6 +56,10 @@ export default function InventoryDetail() {
     }
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -62,7 +71,7 @@ export default function InventoryDetail() {
         >
           <ArrowLeftIcon size={20} />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold">{item.name}</h1>
           <p className="text-gray-600">SKU: {item.sku}</p>
         </div>

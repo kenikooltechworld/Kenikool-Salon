@@ -12,6 +12,9 @@ import {
   Trash2Icon,
   TrendingDownIcon,
 } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function Inventory() {
   const {
@@ -26,10 +29,12 @@ export default function Inventory() {
     setSkip,
     limit,
     setLimit,
+    refetch,
   } = useInventory();
-
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const filteredInventory = inventory.filter(
     (item: any) =>
@@ -39,6 +44,10 @@ export default function Inventory() {
 
   const totalPages = Math.ceil(inventoryTotal / limit);
   const currentPage = Math.floor(skip / limit) + 1;
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   if (isLoadingInventory) {
     return (
@@ -58,10 +67,12 @@ export default function Inventory() {
             Track and manage your products and supplies
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="gap-2">
-          <PlusIcon size={20} />
-          Add Item
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCreateModal(true)} className="gap-2">
+            <PlusIcon size={20} />
+            Add Item
+          </Button>
+        </div>
       </div>
 
       {/* Alerts Summary */}

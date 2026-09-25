@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon } from "@/components/icons";
 
 const selectVariants = cva(
-  "flex w-full items-center justify-between rounded-[var(--radius-md)] border-2 bg-transparent px-3 py-2 text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+  "flex w-full items-center justify-between rounded-[var(--radius-md)] border-2 px-3 py-2 text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {

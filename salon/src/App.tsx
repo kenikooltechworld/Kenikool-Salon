@@ -11,8 +11,8 @@ import { queryClient } from "@/lib/react-query";
 import { useAuthStore } from "@/stores/auth";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
+import { PageRefreshProvider } from "@/contexts/PageRefreshContext";
 import { useInitializeAuth } from "@/hooks/useInitializeAuth";
-import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { setNavigationCallback } from "@/lib/utils/api";
 
 // Layouts
@@ -23,6 +23,8 @@ import { StaffLayout } from "@/layouts/StaffLayout";
 
 // Home Page
 import Home from "@/pages/Home";
+import Features from "@/pages/Features";
+import About from "@/pages/About";
 import Pricing from "@/pages/Pricing";
 
 // Auth Pages
@@ -44,6 +46,7 @@ import Dashboard from "@/pages/dashboard/Dashboard";
 import Bookings from "@/pages/bookings/Bookings";
 import CreateBooking from "@/pages/bookings/CreateBooking";
 import BookingConfirmationSuccess from "@/pages/bookings/BookingConfirmationSuccess";
+import BookingDetail from "@/pages/bookings/BookingDetail";
 import Customers from "@/pages/customers/Customers";
 import CustomerDetail from "@/pages/customers/CustomerDetail";
 import CustomerAppointments from "@/pages/customers/CustomerAppointments";
@@ -60,15 +63,12 @@ import InvoiceDetail from "@/pages/invoices/InvoiceDetail";
 import Settings from "@/pages/owner/Settings";
 import OwnerProfile from "@/pages/owner/OwnerProfile";
 import GeneralSettings from "@/pages/owner/settings/GeneralSettings";
-import SystemSettings from "@/pages/owner/settings/SystemSettings";
-import { IntegrationSettings } from "@/pages/owner/settings/IntegrationSettings";
 import FinancialSettings from "@/pages/owner/settings/FinancialSettings";
 import { OperationalSettings } from "@/pages/owner/settings/OperationalSettings";
-import { SecurityPolicies } from "@/pages/owner/settings/SecurityPolicies";
 import { CommissionSettings } from "@/pages/owner/settings/CommissionSettings";
-import CacheSettings from "@/pages/owner/settings/CacheSettings";
 import { BillingDashboard } from "@/pages/owner/settings/BillingDashboard";
 import EmailTemplates from "@/pages/owner/settings/EmailTemplates";
+import LocationsSettings from "@/pages/owner/settings/Locations";
 import StaffSettings from "@/pages/staff/Settings";
 
 // Phase 5 Pages
@@ -158,20 +158,15 @@ function RoleBasedRoute({
     return <Navigate to="/auth/login" replace />;
   }
 
-  // Get user's role names, default to empty array if not available
   const userRoleNames = user.roleNames || [];
 
-  // Check if user has any of the allowed roles
   const hasAccess = userRoleNames.some((role) => allowedRoles.includes(role));
 
   if (!hasAccess) {
-    // Redirect to appropriate dashboard based on user's role
-    if (userRoleNames.includes("Owner")) {
-      return <Navigate to="/dashboard" replace />;
-    } else if (userRoleNames.includes("Manager")) {
-      return <Navigate to="/manager" replace />;
+    if (userRoleNames.includes("Owner") || userRoleNames.includes("Manager")) {
+      return <Navigate to="/owner/profile" replace />;
     } else if (userRoleNames.includes("Staff")) {
-      return <Navigate to="/staff/appointments" replace />;
+      return <Navigate to="/staff/settings" replace />;
     } else if (userRoleNames.includes("Customer")) {
       return <Navigate to="/my-account" replace />;
     }
@@ -195,12 +190,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 // Check if accessing via public subdomain
 function isPublicSubdomain(): boolean {
   const hostname = window.location.hostname;
-  // Check if hostname is a subdomain (not localhost, not main domain)
-  // Public subdomains are like: acme-salon.kenikool.com
-  // Main domain is: kenikool.com or www.kenikool.com
   const parts = hostname.split(".");
 
-  // If it's localhost or has less than 2 parts, it's not a public subdomain
   if (
     hostname === "localhost" ||
     hostname.startsWith("localhost:") ||
@@ -209,12 +200,10 @@ function isPublicSubdomain(): boolean {
     return false;
   }
 
-  // If it's the main domain or www subdomain, it's not a public subdomain
   if (hostname === "kenikool.com" || hostname === "www.kenikool.com") {
     return false;
   }
 
-  // Otherwise, it's a public subdomain
   return true;
 }
 
@@ -224,11 +213,9 @@ function NavigationSetup() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
 
-  // Setup navigation callback after auth initialization
   useEffect(() => {
     if (!isLoading) {
       setNavigationCallback((path: string) => {
-        // Only redirect if user is not authenticated
         if (!user) {
           navigate(path);
         }
@@ -243,8 +230,6 @@ function NavigationSetup() {
 function AppContent() {
   const { isLoading } = useInitializeAuth();
 
-  // Don't show loading state - let routes handle their own loading
-  // Auth initialization happens in background
   return (
     <Router>
       <NavigationSetup />
@@ -252,6 +237,8 @@ function AppContent() {
         {/* Public Routes with PublicLayout */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/about" element={<About />} />
           <Route path="/pricing" element={<Pricing />} />
         </Route>
 
@@ -383,9 +370,7 @@ function AppContent() {
           <Route
             path="/my-account"
             element={
-              <RoleBasedRoute
-                allowedRoles={["Owner", "Manager", "Staff", "Customer"]}
-              >
+              <RoleBasedRoute allowedRoles={["Customer"]}>
                 <MyAccount />
               </RoleBasedRoute>
             }
@@ -411,6 +396,14 @@ function AppContent() {
             element={
               <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
                 <BookingConfirmationSuccess />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/bookings/:id"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <BookingDetail />
               </RoleBasedRoute>
             }
           />
@@ -551,22 +544,6 @@ function AppContent() {
             }
           />
           <Route
-            path="/settings/system"
-            element={
-              <RoleBasedRoute allowedRoles={["Owner"]}>
-                <SystemSettings />
-              </RoleBasedRoute>
-            }
-          />
-          <Route
-            path="/settings/integrations"
-            element={
-              <RoleBasedRoute allowedRoles={["Owner"]}>
-                <IntegrationSettings />
-              </RoleBasedRoute>
-            }
-          />
-          <Route
             path="/settings/financial"
             element={
               <RoleBasedRoute allowedRoles={["Owner"]}>
@@ -583,14 +560,6 @@ function AppContent() {
             }
           />
           <Route
-            path="/settings/security"
-            element={
-              <RoleBasedRoute allowedRoles={["Owner"]}>
-                <SecurityPolicies />
-              </RoleBasedRoute>
-            }
-          />
-          <Route
             path="/settings/commission"
             element={
               <RoleBasedRoute allowedRoles={["Owner"]}>
@@ -599,18 +568,18 @@ function AppContent() {
             }
           />
           <Route
-            path="/settings/cache"
-            element={
-              <RoleBasedRoute allowedRoles={["Owner"]}>
-                <CacheSettings />
-              </RoleBasedRoute>
-            }
-          />
-          <Route
             path="/settings/billing"
             element={
               <RoleBasedRoute allowedRoles={["Owner"]}>
                 <BillingDashboard />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/settings/locations"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <LocationsSettings />
               </RoleBasedRoute>
             }
           />
@@ -866,7 +835,6 @@ function PublicSubdomainApp() {
 }
 
 export default function App() {
-  // If accessing via public subdomain, render public booking app with customer auth routes
   if (isPublicSubdomain()) {
     return (
       <ThemeProvider>
@@ -879,12 +847,13 @@ export default function App() {
     );
   }
 
-  // Otherwise, render the main app with auth initialization
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <AppContent />
+          <PageRefreshProvider>
+            <AppContent />
+          </PageRefreshProvider>
         </ToastProvider>
       </QueryClientProvider>
     </ThemeProvider>

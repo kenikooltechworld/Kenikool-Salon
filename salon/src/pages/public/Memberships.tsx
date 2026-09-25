@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Crown, Star, Zap } from "@/components/icons";
+import { Check, Crown, Star, Zap, RefreshCwIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,8 @@ import {
 import { useToast } from "@/components/ui/toast";
 
 export default function Memberships() {
-  const { data: tiers, isLoading } = usePublicMembershipTiers();
-  const { data: myMembership } = useMyMembership();
+  const { data: tiers, isLoading, refetch } = usePublicMembershipTiers();
+  const { data: myMembership, refetch: refetchMyMembership } = useMyMembership();
   const subscribe = useSubscribeToMembership();
   const { showToast } = useToast();
   const [selectedTier, setSelectedTier] = useState<MembershipTier | null>(null);
@@ -42,6 +42,15 @@ export default function Memberships() {
     return Zap;
   };
 
+  const handleRefresh = () => {
+    refetch();
+    refetchMyMembership();
+    showToast({
+      title: "Refreshed",
+      description: "Membership plans updated",
+    });
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
   }
@@ -49,12 +58,18 @@ export default function Memberships() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Membership Plans</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Join our exclusive membership program and enjoy amazing benefits,
-            discounts, and priority access
-          </p>
+        <div className="flex items-center justify-between mb-12">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold mb-4">Membership Plans</h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Join our exclusive membership program and enjoy amazing benefits,
+              discounts, and priority access
+            </p>
+          </div>
+          <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         {myMembership && (

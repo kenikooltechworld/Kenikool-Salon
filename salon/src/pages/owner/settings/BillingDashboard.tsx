@@ -8,6 +8,7 @@ import {
   useCancelSubscription,
 } from "@/hooks/owner/useSubscription";
 import { AlertCircleIcon, CheckIcon, Loader2Icon } from "@/components/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function BillingDashboard() {
   const {
@@ -31,8 +32,44 @@ export function BillingDashboard() {
 
   if (subLoading || plansLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2Icon className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+        <div className="pt-20 pb-16 px-4 text-center space-y-4">
+          <Skeleton className="h-12 w-80 mx-auto" />
+          <Skeleton className="h-6 w-96 mx-auto" />
+          <Skeleton className="h-8 w-48 mx-auto" />
+        </div>
+        <div className="px-4 pb-20">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`relative ${i === 1 ? "md:scale-105" : ""}`}
+                >
+                  <div
+                    className={`rounded-lg p-8 h-full ${
+                      i === 1
+                        ? "bg-gradient-to-b from-slate-700 to-slate-800 border-2 border-cyan-500"
+                        : "bg-slate-800 border border-slate-700"
+                    }`}
+                  >
+                    <div className="space-y-4">
+                      <Skeleton className="h-6 w-32 mx-auto" />
+                      <Skeleton className="h-4 w-48 mx-auto" />
+                      <Skeleton className="h-10 w-24 mx-auto" />
+                      <Skeleton className="h-10 w-full" />
+                      <div className="space-y-2">
+                        {[...Array(4)].map((_, j) => (
+                          <Skeleton key={j} className="h-4 w-full" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

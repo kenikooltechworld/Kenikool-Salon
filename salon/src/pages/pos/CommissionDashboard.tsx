@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils/format";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function CommissionDashboard() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
@@ -20,9 +22,9 @@ export default function CommissionDashboard() {
   const { data: staffData, isLoading: staffLoading } = useStaff();
   const { data: tenantSettings } = useTenantSettings();
   const currency = tenantSettings?.currency || "USD";
-  const { data: commissionsData, isLoading: commissionsLoading } =
+  const { data: commissionsData, isLoading: commissionsLoading, refetch: refetchCommissions } =
     useCommissions(selectedStaffId, { page, pageSize: 20 });
-  const { data: payoutsData, isLoading: payoutsLoading } = useCommissionPayouts(
+  const { data: payoutsData, isLoading: payoutsLoading, refetch: refetchPayouts } = useCommissionPayouts(
     {
       staffId: selectedStaffId,
       page: 1,
@@ -31,6 +33,7 @@ export default function CommissionDashboard() {
   );
   const createPayout = useCreateCommissionPayout();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const staff = staffData || [];
   const commissions = commissionsData?.commissions || [];
@@ -71,6 +74,22 @@ export default function CommissionDashboard() {
         variant: "error",
       });
     }
+  };
+
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchCommissions();
+      refetchPayouts();
+    });
+  }, [refetchCommissions, refetchPayouts, setRefreshHandler]);
+
+  const handleRefresh = () => {
+    refetchCommissions();
+    refetchPayouts();
+    showToast({
+      title: "Refreshed",
+      description: "Commission data updated",
+    });
   };
 
   return (

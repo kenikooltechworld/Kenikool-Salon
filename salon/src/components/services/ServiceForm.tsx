@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/toast";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, XIcon } from "@/components/icons";
+import { Progress } from "@/components/ui/progress";
 import { useCreateService, useUpdateService } from "@/hooks/useServices";
 import { useServiceCategories } from "@/hooks/useServiceCategories";
 import { ServiceCategoryModal } from "@/components/services/ServiceCategoryModal";
@@ -28,6 +29,9 @@ export function ServiceForm({
   onCancel,
 }: ServiceFormProps) {
   const { showToast } = useToast();
+  const isEditing = !!service?.id;
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: service?.name || "",
     description: service?.description || "",
@@ -43,8 +47,7 @@ export function ServiceForm({
   });
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
+  const formDataRef = useRef(formData);
   const { data: categories = [] } = useServiceCategories();
   const { mutate: createService, isPending: isCreating } = useCreateService();
   const { mutate: updateService, isPending: isUpdating } = useUpdateService();
@@ -67,15 +70,48 @@ export function ServiceForm({
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    imageUpload.handleFileChange(e);
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = imageUpload.handleFileChange(e);
+    if (!file) return;
+
+    setUploadError(null);
+    try {
+      const url = await imageUpload.uploadImage(file);
+      setFormData((prev) => ({
+        ...prev,
+        public_image_url: url,
+      }));
+      showToast({
+        variant: "success",
+        title: "Success",
+        description: "Service image uploaded successfully",
+      });
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to upload service image";
+      setUploadError(errorMsg);
+      showToast({
+        variant: "error",
+        title: "Error",
+        description: errorMsg,
+      });
+    }
+  };
+
+  const handleRemoveImage = () => {
+    imageUpload.clearPreview();
+    setFormData((prev) => ({
+      ...prev,
+      public_image_url: "",
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadError(null);
 
-    // Check for duplicate service name (only when creating new service)
     if (!service) {
       const isDuplicate = existingServices.some(
         (s: Service) => s.name.toLowerCase() === formData.name.toLowerCase(),
@@ -92,55 +128,45 @@ export function ServiceForm({
     }
 
     try {
-      let imageUrl = formData.public_image_url;
+      const submitData = {
+        ...formData,
+        public_image_url: formData.public_image_url,
+      };
 
-      // Upload image to backend if a new file was selected
-      if (
-        imageUpload.preview &&
-        imageUpload.preview !== formData.public_image_url
-      ) {
-        try {
-          const fileInput = document.querySelector(
-            'input[type="file"]',
-          ) as HTMLInputElement;
-          const file = fileInput?.files?.[0];
-          if (file) {
-            imageUrl = await imageUpload.uploadImage(file);
-          }
-        } catch (error) {
-          setUploadError(
-            error instanceof Error ? error.message : "Failed to upload image",
-          );
-          return;
-        }
-      }
-
-      submitService(imageUrl);
-    } catch (error) {
-      setUploadError(
-        error instanceof Error ? error.message : "Failed to process image",
-      );
-    }
-  };
-
-  const submitService = (imageUrl: string) => {
-    const submitData = {
-      ...formData,
-      public_image_url: imageUrl,
-    };
-
-    if (service) {
-      updateService(
-        {
-          id: service.id,
-          ...submitData,
-        },
-        {
-          onSuccess: (updatedService: any) => {
+      if (service) {
+        updateService(
+          {
+            id: service.id,
+            ...submitData,
+          },
+          {
+            onSuccess: (updatedService: any) => {
+              showToast({
+                variant: "success",
+                title: "Success",
+                description: `${updatedService.name || "Service"} has been updated successfully`,
+              });
+              onSuccess?.();
+            },
+            onError: (error: any) => {
+              showToast({
+                variant: "error",
+                title: "Error",
+                description:
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to update service",
+              });
+            },
+          },
+        );
+      } else {
+        createService(submitData as any, {
+          onSuccess: (newService: any) => {
             showToast({
               variant: "success",
               title: "Success",
-              description: `${updatedService.name || "Service"} has been updated successfully`,
+              description: `${newService.name || "Service"} has been created successfully`,
             });
             onSuccess?.();
           },
@@ -151,32 +177,15 @@ export function ServiceForm({
               description:
                 error instanceof Error
                   ? error.message
-                  : "Failed to update service",
+                  : "Failed to create service",
             });
           },
-        },
+        });
+      }
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Failed to process image",
       );
-    } else {
-      createService(submitData as any, {
-        onSuccess: (newService: any) => {
-          showToast({
-            variant: "success",
-            title: "Success",
-            description: `${newService.name || "Service"} has been created successfully`,
-          });
-          onSuccess?.();
-        },
-        onError: (error: any) => {
-          showToast({
-            variant: "error",
-            title: "Error",
-            description:
-              error instanceof Error
-                ? error.message
-                : "Failed to create service",
-          });
-        },
-      });
     }
   };
 
@@ -231,6 +240,14 @@ export function ServiceForm({
                   alt="Service preview"
                   className="w-full h-full object-cover"
                 />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 bg-destructive/90 hover:bg-destructive text-white rounded-full p-1 transition"
+                  aria-label="Remove image"
+                >
+                  <XIcon size={14} />
+                </button>
               </div>
             )}
             <input
@@ -241,9 +258,12 @@ export function ServiceForm({
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
             />
             {imageUpload.isUploading && (
-              <p className="text-xs text-muted-foreground">
-                Uploading image...
-              </p>
+              <Progress
+                value={imageUpload.uploadProgress}
+                size="md"
+                variant="default"
+                showPercentage={true}
+              />
             )}
           </div>
         </div>

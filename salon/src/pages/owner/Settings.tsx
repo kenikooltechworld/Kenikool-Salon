@@ -1,15 +1,14 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
 import {
   SettingsIcon,
-  LockIcon,
   CreditCardIcon,
-  MonitorIcon,
   DollarSignIcon,
   TrendingUpIcon,
   PackageIcon,
-  ZapIcon,
   BellIcon,
   MailIcon,
 } from "@/components/icons";
@@ -33,33 +32,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     path: "/settings/general",
     allowedRoles: ["Owner", "Manager"],
     color: "text-blue-500",
-  },
-  {
-    id: "system",
-    title: "System Configuration",
-    description: "Middleware, security, and system settings",
-    icon: MonitorIcon,
-    path: "/settings/system",
-    allowedRoles: ["Owner"],
-    color: "text-purple-500",
-  },
-  {
-    id: "security",
-    title: "Security Policies",
-    description: "Access control, authentication, and security rules",
-    icon: LockIcon,
-    path: "/settings/security",
-    allowedRoles: ["Owner"],
-    color: "text-red-500",
-  },
-  {
-    id: "integrations",
-    title: "Integrations",
-    description: "SMS, payment gateways, and third-party services",
-    icon: ZapIcon,
-    path: "/settings/integrations",
-    allowedRoles: ["Owner"],
-    color: "text-yellow-500",
   },
   {
     id: "commission",
@@ -87,15 +59,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     path: "/settings/operational",
     allowedRoles: ["Owner", "Manager"],
     color: "text-orange-500",
-  },
-  {
-    id: "cache",
-    title: "Cache & Performance",
-    description: "Performance optimization and caching settings",
-    icon: ZapIcon,
-    path: "/settings/cache",
-    allowedRoles: ["Owner"],
-    color: "text-cyan-500",
   },
   {
     id: "billing",
@@ -135,10 +98,40 @@ function getSettingsNavForRole(roleNames: string[]): SettingsNavItem[] {
 export default function Settings() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredSettingsNav = user?.roleNames
     ? getSettingsNavForRole(user.roleNames)
     : [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-5 w-72" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="p-6 space-y-4">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-12 w-12 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

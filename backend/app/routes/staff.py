@@ -31,7 +31,7 @@ def get_tenant_id_from_context() -> ObjectId:
 def staff_to_response(staff: Staff, user: User = None) -> dict:
     """Convert Staff model to response."""
     if user is None:
-        user = User.objects(id=staff.user_id).first()
+        user = User.objects(id=staff.user_id, tenant_id=staff.tenant_id).first()
     
     role_ids = []
     try:
@@ -184,12 +184,13 @@ async def list_staff(
     List staff members for the tenant.
 
     Returns a paginated list of staff members with optional filtering by status and specialty.
+    By default, excludes terminated staff from active pickers.
     """
     try:
-        # Query staff members
-        query = Staff.objects(tenant_id=tenant_id)
+        # Query staff members - exclude terminated by default for active pickers
+        query = Staff.objects(tenant_id=tenant_id, status__ne="terminated")
 
-        # Apply filters
+        # Apply additional filters
         if status:
             query = query(status=status)
         
@@ -204,9 +205,15 @@ async def list_staff(
         staff_members = query.skip(skip).limit(page_size).order_by("-created_at")
 
         # Get user details for each staff member
+        user_ids = [staff.user_id for staff in staff_members]
+        users = User.objects(id__in=user_ids).only(
+            "id", "first_name", "last_name", "email", "phone", "role_ids"
+        )
+        user_map = {user.id: user for user in users}
+
         staff_list = []
         for staff in staff_members:
-            user = User.objects(id=staff.user_id).first()
+            user = user_map.get(staff.user_id)
             staff_list.append(staff_to_response(staff, user))
 
         return {
@@ -375,6 +382,8 @@ async def create_staff(
                 from app.models.tenant import Tenant
                 from app.models.role import Role
                 
+                logger.info(f"[StaffEmail] Preparing welcome email for new staff user={user_id} email={staff_data.email}")
+                
                 # Fetch tenant name and logo for email branding
                 tenant = Tenant.objects(id=tenant_id).first()
                 salon_name = tenant.name if tenant else "your salon"
@@ -395,7 +404,9 @@ async def create_staff(
                     # Fallback to frontend URL
                     login_url = f"{settings.frontend_url}/login"
                 
-                run_in_background(send_email,
+                logger.info(f"[StaffEmail] Sending welcome email to={staff_data.email} salon={salon_name} roles={role_names}")
+                
+                result = send_email(
                     to=staff_data.email,
                     subject=f"Welcome to {salon_name} - Staff Account Created",
                     template="staff_welcome",
@@ -410,10 +421,11 @@ async def create_staff(
                         "login_url": login_url,
                     }
                 )
-                logger.info(f"Sent welcome email to staff: {staff_data.email}")
+                
+                logger.info(f"[StaffEmail] Sent welcome email to staff={staff_data.email} result={result}")
             except Exception as e:
-                logger.error(f"Failed to send welcome email: {str(e)}")
-                # Don't fail the request if email fails
+                logger.error(f"[StaffEmail] Failed to send welcome email to staff={staff_data.email} error={str(e)}", exc_info=True)
+                raise
         
         # Initialize staff settings for the new staff member
         try:
@@ -578,77 +590,21 @@ async def delete_staff(
     tenant_id: ObjectId = Depends(get_tenant_id_from_context),
 ):
     """
-    Delete a staff member.
-
-    Cascade deletes the staff profile and associated user account.
-    Also cleans up related data: staff settings, appointments, shifts, time off requests, etc.
+    Soft delete a staff member by marking as terminated.
+    
+    This preserves historical appointment data while preventing
+    the staff member from being assigned to new bookings.
     """
     try:
         staff = Staff.objects(id=ObjectId(staff_id), tenant_id=tenant_id).first()
         if not staff:
             raise HTTPException(status_code=404, detail="Staff member not found")
 
-        user_id = staff.user_id
-        staff_id_str = str(staff.id)
+        staff.status = "terminated"
+        staff.save()
+        logger.info(f"Staff soft deleted (terminated): {staff_id}")
         
-        # Delete staff profile
-        staff.delete()
-        logger.info(f"Deleted staff profile: {staff_id_str}")
-        
-        # Delete associated user account
-        if user_id:
-            user = User.objects(id=user_id, tenant_id=tenant_id).first()
-            if user:
-                user.delete()
-                logger.info(f"Deleted user account: {user_id}")
-        
-        # Clean up related data
-        try:
-            # Delete staff settings
-            from app.models.staff_settings import StaffSettings
-            StaffSettings.objects(user_id=user_id, tenant_id=tenant_id).delete()
-            logger.info(f"Deleted staff settings for user: {user_id}")
-        except Exception as e:
-            logger.warning(f"Failed to delete staff settings: {str(e)}")
-        
-        try:
-            # Cancel future appointments (don't delete historical data)
-            future_appointments = Appointment.objects(
-                staff_id=ObjectId(staff_id),
-                tenant_id=tenant_id,
-                start_time__gte=datetime.utcnow(),
-                status__in=["scheduled", "confirmed"]
-            )
-            for appt in future_appointments:
-                appt.status = "cancelled"
-                appt.save()
-            logger.info(f"Cancelled {future_appointments.count()} future appointments")
-        except Exception as e:
-            logger.warning(f"Failed to cancel appointments: {str(e)}")
-        
-        try:
-            # Delete future shifts
-            Shift.objects(
-                staff_id=ObjectId(staff_id),
-                tenant_id=tenant_id,
-                start_time__gte=datetime.utcnow()
-            ).delete()
-            logger.info(f"Deleted future shifts for staff: {staff_id_str}")
-        except Exception as e:
-            logger.warning(f"Failed to delete shifts: {str(e)}")
-        
-        try:
-            # Delete pending time off requests
-            TimeOffRequest.objects(
-                staff_id=ObjectId(staff_id),
-                tenant_id=tenant_id,
-                status="pending"
-            ).delete()
-            logger.info(f"Deleted pending time off requests for staff: {staff_id_str}")
-        except Exception as e:
-            logger.warning(f"Failed to delete time off requests: {str(e)}")
-        
-        return {"message": "Staff member and associated data deleted successfully"}
+        return {"message": "Staff member terminated successfully"}
     except HTTPException:
         raise
     except Exception as e:

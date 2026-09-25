@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FinancialConfig {
   balance_enforcement_enabled: boolean;
@@ -33,6 +34,23 @@ export default function FinancialSettings() {
   const navigate = useNavigate();
   const [config, setConfig] = useState<FinancialConfig>(DEFAULT_CONFIG);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch("/api/v1/settings/financial");
+        const data = await response.json();
+        setConfig(data);
+      } catch (error) {
+        console.error("Failed to load financial settings", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -61,6 +79,26 @@ export default function FinancialSettings() {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-5 w-72" />
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4 md:p-6 space-y-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

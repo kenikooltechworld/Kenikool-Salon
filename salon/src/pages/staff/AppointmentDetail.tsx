@@ -7,6 +7,8 @@ import {
   useRescheduleAppointment,
   useUpdateAppointmentNotes,
 } from "@/hooks/useMyAppointments";
+import { useCustomer } from "@/hooks/useCustomers";
+import { useService } from "@/hooks/useServices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,9 @@ export default function AppointmentDetail() {
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
 
   const { data: appointment, isLoading, error } = useMyAppointment(id || "");
+
+  const { data: customer } = useCustomer(appointment?.customerId || "");
+  const { data: service } = useService(appointment?.serviceId || "");
 
   const completeAppointmentMutation = useCompleteAppointment();
   const cancelAppointmentMutation = useCancelAppointment();
@@ -333,9 +338,29 @@ export default function AppointmentDetail() {
             </p>
             <div className="space-y-2">
               <div>
-                <p className="text-sm text-muted-foreground">Customer ID</p>
-                <p className="font-medium">{appointment.customerId}</p>
+                <p className="text-sm text-muted-foreground">Name</p>
+                <p className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-32" />
+                  ) : customer ? (
+                    `${customer.first_name} ${customer.last_name}`
+                  ) : (
+                    <span className="text-warning">Customer no longer available</span>
+                  )}
+                </p>
               </div>
+              {customer?.email && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{customer.email}</p>
+                </div>
+              )}
+              {customer?.phone && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium">{customer.phone}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -346,9 +371,29 @@ export default function AppointmentDetail() {
             </p>
             <div className="space-y-2">
               <div>
-                <p className="text-sm text-muted-foreground">Service ID</p>
-                <p className="font-medium">{appointment.serviceId}</p>
+                <p className="text-sm text-muted-foreground">Service Name</p>
+                <p className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-32" />
+                  ) : service ? (
+                    service.name
+                  ) : (
+                    <span className="text-warning">Service no longer available</span>
+                  )}
+                </p>
               </div>
+              {service?.duration_minutes && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Duration</p>
+                  <p className="font-medium">{service.duration_minutes} minutes</p>
+                </div>
+              )}
+              {service?.price && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Price</p>
+                  <p className="font-medium">₦{service.price.toLocaleString()}</p>
+                </div>
+              )}
             </div>
           </div>
 

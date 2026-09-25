@@ -6,6 +6,7 @@ import {
   usePendingActions,
   useRevenueAnalytics,
   useStaffPerformance,
+  type UpcomingAppointment,
 } from "@/hooks/owner";
 import { useTenantSettings } from "@/hooks/owner/useTenantSettings";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -38,10 +39,8 @@ export default function Dashboard() {
   // Establish WebSocket connection for real-time updates
   useWebSocket({
     onConnect: () => {
-      console.log("Dashboard WebSocket connected");
     },
     onDisconnect: () => {
-      console.log("Dashboard WebSocket disconnected");
     },
     onError: (error) => {
       console.error("Dashboard WebSocket error:", error);
@@ -82,11 +81,7 @@ export default function Dashboard() {
   };
 
   const handleAppointmentClick = (appointment: UpcomingAppointment) => {
-    if (appointment.isPublicBooking) {
-      navigate(`/public-bookings/${appointment.id}`);
-    } else {
-      navigate(`/appointments/${appointment.id}`);
-    }
+    navigate(`/bookings/${appointment.id}`);
   };
 
   return (

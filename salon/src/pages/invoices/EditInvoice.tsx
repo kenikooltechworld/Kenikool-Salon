@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrashIcon } from "@/components/icons";
 import { formatCurrency } from "@/lib/utils/format";
 import { useState, useEffect } from "react";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 interface LineItem {
   serviceId: string;
@@ -18,7 +19,8 @@ export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { data: invoice, isLoading } = useInvoice(id || "");
+  const { setRefreshHandler } = usePageRefresh();
+  const { data: invoice, isLoading, refetch } = useInvoice(id || "");
   const updateMutation = useUpdateInvoice();
 
   const [formData, setFormData] = useState({
@@ -111,6 +113,10 @@ export default function EditInvoice() {
     }
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
@@ -136,9 +142,11 @@ export default function EditInvoice() {
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Edit Invoice</h1>
-        <Button variant="outline" onClick={() => navigate("/invoices")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/invoices")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

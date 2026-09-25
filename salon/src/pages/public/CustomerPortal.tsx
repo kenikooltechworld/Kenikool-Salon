@@ -7,6 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui";
+import { useToast } from "@/components/ui/toast";
 import BookingHistory from "@/components/public/BookingHistory";
 import CustomerProfile from "@/components/public/CustomerProfile";
 import {
@@ -19,13 +20,15 @@ import {
   UserIcon,
   LogOutIcon,
   HomeIcon,
+  RefreshCwIcon,
 } from "@/components/icons";
 
 export default function CustomerPortal() {
   const navigate = useNavigate();
   const isAuthenticated = useIsCustomerAuthenticated();
-  const { data: profile } = useCustomerProfile();
+  const { data: profile, refetch } = useCustomerProfile();
   const logout = useCustomerLogout();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("bookings");
 
   // Redirect to login if not authenticated
@@ -37,6 +40,14 @@ export default function CustomerPortal() {
   const handleLogout = async () => {
     await logout.mutateAsync();
     navigate("/public/booking");
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    showToast({
+      title: "Refreshed",
+      description: "Profile updated",
+    });
   };
 
   return (
@@ -60,6 +71,10 @@ export default function CustomerPortal() {
               >
                 <HomeIcon size={16} className="mr-2" />
                 Back to Booking
+              </Button>
+              <Button variant="outline" onClick={handleRefresh}>
+                <RefreshCwIcon size={16} className="mr-2" />
+                Refresh
               </Button>
               <Button variant="outline" onClick={handleLogout}>
                 <LogOutIcon size={16} className="mr-2" />

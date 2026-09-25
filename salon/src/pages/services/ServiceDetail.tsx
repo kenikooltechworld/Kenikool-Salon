@@ -12,10 +12,12 @@ import { ImageLightbox } from "@/components/services/ImageLightbox";
 import { ServiceForm } from "@/components/services/ServiceForm";
 import { getIconComponent } from "@/lib/utils/icon-utils";
 import { useState } from "react";
+import { useToast } from "@/components/ui/toast";
 
 export default function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -130,7 +132,22 @@ export default function ServiceDetail() {
     if (id) {
       deleteService(id, {
         onSuccess: () => {
+          showToast({
+            variant: "success",
+            title: "Success",
+            description: "Service deleted successfully",
+          });
           navigate("/services");
+        },
+        onError: (error: any) => {
+          showToast({
+            variant: "error",
+            title: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to delete service",
+          });
         },
       });
     }

@@ -16,7 +16,7 @@ from .middleware.public_booking import PublicBookingMiddleware, PublicBookingRat
 from .middleware.feature_flags import FeatureFlagMiddleware
 from .middleware_setup import setup_middleware
 from .db import init_db, close_db
-from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, commissions, billing, tenant_recovery, staff_settings, owner_dashboard, websocket_notifications, service_addons, customer_auth, customer_portal, public_waitlist, service_packages, public_service_packages, gift_cards, public_gift_cards, recommendations, availability_events, memberships, public_memberships, group_bookings, public_group_bookings, social_proof, email_templates, attendance, backups, goals, inventory, financial_reports
+from .routes import auth, tenants, registration, audit, services, availability, appointments, time_slots, staff, service_categories, media, roles, shifts, time_off_requests, customers, appointment_history, customer_preferences, invoices, payments, refunds, webhooks, notifications, resources, waiting_room, public_booking, public_booking_management, pos_transactions, pos_discounts, pos_receipts, pos_commissions, pos_reports, pos_carts, pos_refunds, service_commissions, commissions, billing, tenant_recovery, staff_settings, owner_dashboard, websocket_notifications, service_addons, customer_auth, customer_portal, public_waitlist, service_packages, public_service_packages, gift_cards, public_gift_cards, recommendations, availability_events, memberships, public_memberships, group_bookings, public_group_bookings, social_proof, email_templates, attendance, backups, goals, inventory, financial_reports, locations
 from .routes import settings as settings_router
 from .scheduler import start_scheduler, shutdown_scheduler, register_jobs
 
@@ -283,6 +283,7 @@ def create_app() -> FastAPI:
     app.include_router(websocket_notifications.router)
     app.include_router(inventory.router, prefix=settings.api_prefix)
     app.include_router(financial_reports.router, prefix=settings.api_prefix)
+    app.include_router(locations.router, prefix=settings.api_prefix)
     # Service packages routes (both public and admin)
     app.include_router(service_packages.router, prefix=settings.api_prefix)
     app.include_router(public_service_packages.router, prefix=settings.api_prefix)

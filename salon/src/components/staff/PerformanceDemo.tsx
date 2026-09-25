@@ -25,8 +25,6 @@ export function PerformanceDemo() {
   } = usePerformanceReviews();
 
   const handleViewDetails = () => {
-    console.log("View detailed report clicked");
-    // In a real app, this would navigate to a detailed report page
   };
 
   const handleSortChange = (newSortBy: "date" | "rating") => {

@@ -11,10 +11,15 @@ load_dotenv()
 # Add backend to path
 sys.path.insert(0, os.path.dirname(__file__))
 
-# Use DATABASE_URL from .env (or default to local MongoDB)
-# No need to override - the .env file already has the correct configuration
+# Use DATABASE_URL from .env
+# Load environment variables
+load_dotenv()
+
+# Add backend to path
+sys.path.insert(0, os.path.dirname(__file__))
+
 if not os.getenv('DATABASE_URL'):
-    os.environ['DATABASE_URL'] = 'mongodb://localhost:27017/kenikool-salon'
+    raise RuntimeError("DATABASE_URL is required. Set it in backend/.env")
 
 from app.db import init_db
 from app.models.pricing_plan import PricingPlan

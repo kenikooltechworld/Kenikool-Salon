@@ -8,6 +8,9 @@ import { formatDate, formatTime } from "@/lib/utils/format";
 import { ArrowLeftIcon } from "@/components/icons";
 import type { Shift } from "@/hooks/useShifts";
 import type { BadgeProps } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 const statusVariants: Record<
   Shift["status"],
@@ -29,8 +32,9 @@ const statusLabels: Record<Shift["status"], string> = {
 export default function ShiftDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
-  const { data: shift, isLoading, error } = useMyShift(id || "");
+  const { data: shift, isLoading, error, refetch } = useMyShift(id || "");
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   if (isLoading) {
     return (
@@ -101,6 +105,10 @@ export default function ShiftDetail() {
     );
   }
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   return (
     <div className="space-y-6">
       <Button
@@ -120,9 +128,11 @@ export default function ShiftDetail() {
               <CardTitle className="text-2xl">Shift Details</CardTitle>
               <p className="text-muted-foreground mt-2">ID: {shift.id}</p>
             </div>
-            <Badge variant={statusVariants[shift.status]}>
-              {statusLabels[shift.status]}
-            </Badge>
+            <div className="flex gap-2">
+              <Badge variant={statusVariants[shift.status]}>
+                {statusLabels[shift.status]}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

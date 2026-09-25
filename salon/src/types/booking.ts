@@ -37,6 +37,7 @@ export interface CreateBookingInput {
   staffId: string;
   startTime: string;
   endTime: string;
+  locationId?: string;
   notes?: string;
   paymentOption?: "now" | "later";
 }
@@ -52,6 +53,7 @@ export interface BookingFilters {
   staffId?: string;
   serviceId?: string;
   customerId?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }

@@ -1,22 +1,35 @@
 """Socket.IO event handlers and configuration."""
 
 import logging
+import re
 from typing import Dict, Any
 from socketio import AsyncServer, ASGIApp
 from fastapi import FastAPI
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Create Socket.IO server
+if settings.environment == "development":
+    _SOCKETIO_CORS = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:5173",
+    ]
+else:
+    _SOCKETIO_CORS = re.compile(r"^https?://(localhost(:\d+)?|.*\.?kenikoolsalon\.com)$")
+
 sio = AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',
-    ping_timeout=20,  # Reduced from 60 to 20 seconds
-    ping_interval=10,  # Reduced from 25 to 10 seconds
+    cors_allowed_origins=_SOCKETIO_CORS,
+    ping_timeout=20,
+    ping_interval=10,
     logger=True,
     engineio_logger=True,
-    max_http_buffer_size=1e6,  # 1MB max message size
-    allow_upgrades=True,  # Allow transport upgrades
+    max_http_buffer_size=1e6,
+    allow_upgrades=True,
 )
 
 # Track connected clients

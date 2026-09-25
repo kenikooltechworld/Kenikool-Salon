@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiClient } from "@/lib/utils/api";
+import { apiClient, TIMEOUTS } from "@/lib/utils/api";
 
 interface MediaUploadResponse {
   url: string;
@@ -120,6 +120,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
           media_type: mediaType,
           folder,
         },
+        { timeout: TIMEOUTS.UPLOAD },
       );
 
       // Clear upload interval

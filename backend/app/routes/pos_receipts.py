@@ -10,6 +10,7 @@ from app.schemas.receipt import (
     ReceiptListResponse,
 )
 from app.services.receipt_service import ReceiptService
+from app.tasks import send_email
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
 
@@ -168,7 +169,7 @@ async def email_receipt(
         raise HTTPException(status_code=401, detail="Tenant context not found")
     
     try:
-        receipt = ReceiptService.mark_receipt_emailed(
+        receipt = ReceiptService.get_receipt(
             tenant_id=tenant_id,
             receipt_id=ObjectId(receipt_id),
         )
@@ -176,7 +177,37 @@ async def email_receipt(
         if not receipt:
             raise HTTPException(status_code=404, detail="Receipt not found")
 
-        return {"status": "success", "message": "Receipt marked as emailed"}
+        recipient_email = request.email or receipt.customer_email
+        if not recipient_email:
+            raise HTTPException(status_code=400, detail="No email address provided")
+
+        items_html = "".join(
+            f"<li>{item.item_name} x {item.quantity} - ₦{float(item.line_total):,.2f}</li>"
+            for item in receipt.items
+        )
+
+        html_body = f"""
+        <h1>Receipt #{receipt.receipt_number}</h1>
+        <p>Date: {receipt.receipt_date.strftime('%Y-%m-%d %H:%M')}</p>
+        <p>Customer: {receipt.customer_name}</p>
+        <h3>Items</h3>
+        <ul>{items_html}</ul>
+        <p><strong>Total: ₦{float(receipt.total):,.2f}</strong></p>
+        <p>Payment Method: {receipt.payment_method}</p>
+        """
+
+        send_email(
+            to=recipient_email,
+            subject=f"Receipt #{receipt.receipt_number}",
+            template="custom",
+            context={"html_content": html_body},
+        )
+
+        ReceiptService.mark_receipt_emailed(tenant_id, ObjectId(receipt_id))
+
+        return {"status": "success", "message": f"Receipt emailed to {recipient_email}"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -277,7 +308,10 @@ async def download_receipt_pdf(
             doc.build(elements)
             output.seek(0)
 
-            ReceiptService.mark_receipt_printed(tenant_id, ObjectId(receipt_id))
+            try:
+                ReceiptService.mark_receipt_printed(tenant_id, ObjectId(receipt_id))
+            except Exception:
+                pass
 
             return StreamingResponse(
                 iter([output.getvalue()]),

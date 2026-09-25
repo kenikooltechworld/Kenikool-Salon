@@ -45,9 +45,17 @@ export function usePayments(filters?: PaymentFilters) {
   return useQuery({
     queryKey: ["payments", filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ payments: any[] }>("/payments", {
-        params: filters,
-      });
+      const params = new URLSearchParams();
+      if (filters?.status) params.append("status", filters.status);
+      if (filters?.customerId) params.append("customerId", filters.customerId);
+      if (filters?.method) params.append("method", filters.method);
+      if (filters?.startDate) params.append("startDate", filters.startDate);
+      if (filters?.endDate) params.append("endDate", filters.endDate);
+
+      const queryString = params.toString();
+      const { data } = await apiClient.get<{ payments: any[] }>(
+        queryString ? `/payments?${queryString}` : "/payments",
+      );
       return (data.payments || []).map((p: any) => ({
         id: p.id,
         invoiceId: p.invoiceId,
@@ -60,6 +68,7 @@ export function usePayments(filters?: PaymentFilters) {
         updatedAt: p.updatedAt,
       }));
     },
+    refetchOnMount: true,
   });
 }
 
@@ -84,6 +93,7 @@ export function usePayment(id: string) {
       };
     },
     enabled: !!id,
+    refetchOnMount: true,
   });
 }
 
@@ -107,8 +117,8 @@ export function useCreatePayment() {
       return data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.refetchQueries({ queryKey: ["payments"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["invoices"], exact: false });
     },
   });
 }
@@ -155,8 +165,8 @@ export function useRefundPayment() {
       return data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.refetchQueries({ queryKey: ["payments"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["invoices"], exact: false });
     },
   });
 }
@@ -241,8 +251,8 @@ export function useVerifyPayment() {
       };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.refetchQueries({ queryKey: ["payments"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["invoices"], exact: false });
     },
   });
 }
@@ -255,7 +265,7 @@ export function useRetryPayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      const payment = await apiClient.post<{
+      const response = await apiClient.post<{
         id: string;
         invoiceId: string;
         customerId: string;
@@ -267,6 +277,7 @@ export function useRetryPayment() {
         createdAt?: string;
         updatedAt?: string;
       }>(`/payments/${paymentId}/retry`);
+      const payment = response.data;
 
       return {
         id: payment.id,

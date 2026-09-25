@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
+import { Link } from "react-router-dom";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -62,9 +63,9 @@ export function LandingFooter() {
             </h4>
             <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-foreground transition">
+                <Link to="/about" className="hover:text-foreground transition">
                   About
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-foreground transition">

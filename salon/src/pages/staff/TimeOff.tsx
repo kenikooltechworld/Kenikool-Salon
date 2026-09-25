@@ -11,15 +11,16 @@ import { StaffTimeOffList } from "@/components/staff/StaffTimeOffList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
-import { RefreshCwIcon } from "@/components/icons";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
-const ALLOCATED_DAYS = 20; // Default allocated days
+const ALLOCATED_DAYS = 20;
 
 export default function StaffTimeOff() {
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch time off requests
   const {
     data: requests = [],
     isLoading,
@@ -27,8 +28,11 @@ export default function StaffTimeOff() {
     refetch,
   } = useMyTimeOffRequests();
 
-  // Create time off request mutation
   const createTimeOffMutation = useCreateMyTimeOffRequest();
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   // Handle form submission
   const handleSubmitTimeOff = async (formData: TimeOffFormData) => {
@@ -126,10 +130,6 @@ export default function StaffTimeOff() {
             Submit and manage your time off requests
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
-          <RefreshCwIcon size={16} />
-          Refresh
-        </Button>
       </div>
 
       {/* Time Off Balance Card */}

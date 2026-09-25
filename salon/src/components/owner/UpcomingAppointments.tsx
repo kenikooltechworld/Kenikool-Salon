@@ -17,19 +17,19 @@ interface UpcomingAppointmentsProps {
 const getStatusStyle = (status: string): React.CSSProperties => {
   const styles: Record<string, React.CSSProperties> = {
     confirmed: {
-      backgroundColor: "var(--success-bg, #dcfce7)",
-      color: "var(--success, #22c55e)",
+      backgroundColor: "var(--success-bg)",
+      color: "var(--success)",
     },
     pending: {
-      backgroundColor: "var(--warning-bg, #fef3c7)",
-      color: "var(--warning, #f59e0b)",
+      backgroundColor: "var(--warning-bg)",
+      color: "var(--warning)",
     },
     completed: {
-      backgroundColor: "var(--info-bg, #dbeafe)",
-      color: "var(--info, #3b82f6)",
+      backgroundColor: "var(--info-bg)",
+      color: "var(--info)",
     },
     cancelled: {
-      backgroundColor: "var(--destructive-bg, #fee2e2)",
+      backgroundColor: "var(--destructive-bg)",
       color: "var(--destructive)",
     },
   };

@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function ReceiptHistory() {
   const [page, setPage] = useState(1);
@@ -22,8 +24,9 @@ export default function ReceiptHistory() {
     null,
   );
   const [emailAddress, setEmailAddress] = useState("");
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: receiptsData, isLoading } = useReceipts({
+  const { data: receiptsData, isLoading, refetch } = useReceipts({
     customerId: customerId || undefined,
     page,
     pageSize: 20,
@@ -35,6 +38,10 @@ export default function ReceiptHistory() {
 
   const receipts = receiptsData?.receipts || [];
   const total = receiptsData?.total || 0;
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const handlePrint = async (receiptId: string) => {
     try {
@@ -125,9 +132,11 @@ export default function ReceiptHistory() {
     <div className="space-y-4 md:space-y-6">
       {/* Filters */}
       <Card className="p-4 md:p-6">
-        <h3 className="text-base md:text-lg font-semibold text-foreground mb-4">
-          Filters
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base md:text-lg font-semibold text-foreground">
+            Filters
+          </h3>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div>
             <label className="block text-xs md:text-sm font-medium text-foreground mb-2">

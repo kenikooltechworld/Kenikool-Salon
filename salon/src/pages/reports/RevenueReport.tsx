@@ -4,11 +4,15 @@ import { useRevenueReport } from "@/hooks/useFinancialReport";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { DownloadIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function RevenueReport() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  // Convert local date to YYYY-MM-DD format (not UTC)
   const getLocalDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -21,43 +25,26 @@ export default function RevenueReport() {
     end: getLocalDateString(new Date()),
   });
 
-  const { data: report, isLoading } = useRevenueReport(
+  const { data: report, isLoading, refetch } = useRevenueReport(
     dateRange.start,
     dateRange.end,
   );
 
   const reportData = report as any;
 
-  const handleExportCSV = () => {
-    if (!reportData) return;
-
-    const headers = ["Date", "Revenue", "Transactions"];
-    const rows = (reportData.breakdown || []).map((item: any) => [
-      item.date,
-      item.revenue,
-      item.transactions,
-    ]);
-
-    const csv = [
-      headers.join(","),
-      ...rows.map((row: any) => row.join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `revenue-report-${dateRange.start}-to-${dateRange.end}.csv`;
-    a.click();
-  };
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Revenue Report</h1>
-        <Button variant="outline" onClick={() => navigate("/reports")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/reports")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Filter */}

@@ -26,6 +26,11 @@ export function useStaff(filters?: StaffFilters) {
       });
       return response.staff || [];
     },
+    staleTime: 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 }
 
@@ -40,6 +45,11 @@ export function useStaffMember(id: string) {
       return response || null;
     },
     enabled: !!id,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 }
 
@@ -53,11 +63,13 @@ export function useCreateStaff() {
     mutationFn: async (
       staff: Omit<Staff, "id" | "createdAt" | "updatedAt">,
     ) => {
+      console.log("[StaffCreate] API request payload:", staff);
       const response = await post<Staff>("/staff", staff);
+      console.log("[StaffCreate] API response:", response);
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
+    onSuccess: (newStaff) => {
+      queryClient.refetchQueries({ queryKey: ["staff"] });
     },
   });
 }
@@ -73,11 +85,8 @@ export function useUpdateStaff() {
       const response = await put<Staff>(`/staff/${id}`, updates);
       return response;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
-      queryClient.invalidateQueries({
-        queryKey: ["staff", "detail", (data as any).id],
-      });
+    onSuccess: (updatedStaff) => {
+      queryClient.refetchQueries({ queryKey: ["staff"] });
     },
   });
 }
@@ -92,8 +101,8 @@ export function useDeleteStaff() {
     mutationFn: async (id: string) => {
       await del(`/staff/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
+    onSuccess: (_, deletedId) => {
+      queryClient.refetchQueries({ queryKey: ["staff"] });
     },
   });
 }

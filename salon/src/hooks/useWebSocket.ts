@@ -93,14 +93,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
         // Set up event listeners
         socket.on("connect", () => {
-          console.log("Socket.IO connected");
           if (onConnect) {
             onConnect();
           }
         });
 
         socket.on("disconnect", () => {
-          console.log("Socket.IO disconnected");
           if (onDisconnect) {
             onDisconnect();
           }
@@ -108,8 +106,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
         socket.on("connect_error", (error) => {
           console.error("Socket.IO connection error:", error);
-          // Don't call onError for connection errors - they're expected during network issues
-          // Just log them and let Socket.IO handle reconnection
         });
 
         socket.on("connect_timeout", () => {

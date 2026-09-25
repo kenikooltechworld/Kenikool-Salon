@@ -11,14 +11,17 @@ import {
 } from "@/components/icons";
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { data: invoice, isLoading, error } = useInvoice(id || "");
+  const { data: invoice, isLoading, error, refetch } = useInvoice(id || "");
   const updateInvoice = useUpdateInvoice();
   const issueInvoice = useIssueInvoice();
   const markPaid = useMarkInvoicePaid();
@@ -61,6 +64,10 @@ export default function InvoiceDetail() {
       }
     }
   };
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

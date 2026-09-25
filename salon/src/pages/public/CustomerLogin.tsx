@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, Button, Input, Label, Alert, Spinner } from "@/components/ui";
+import { useToast } from "@/components/ui/toast";
 import { useCustomerLogin } from "@/hooks/useCustomerAuth";
+import { RefreshCwIcon } from "@/components/icons";
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const login = useCustomerLogin();
 
   const [formData, setFormData] = useState({
@@ -58,7 +61,6 @@ export default function CustomerLogin() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -68,14 +70,32 @@ export default function CustomerLogin() {
     }
   };
 
+  const handleRefresh = () => {
+    showToast({
+      title: "Refreshed",
+      description: "Login page updated",
+    });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="max-w-md w-full p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-          <p className="text-gray-600">
-            Sign in to manage your bookings and preferences
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="text-center flex-1">
+            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
+            <p className="text-gray-600">
+              Sign in to manage your bookings and preferences
+            </p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         {errors.submit && (

@@ -5,23 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { UserIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function StaffCommissionDashboardPage() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
-  const { data: staff, isLoading: staffLoading } = useStaff();
+  const { data: staff, isLoading: staffLoading, refetch } = useStaff();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const selectedStaff = staff?.find((s: any) => s.id === selectedStaffId);
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">
-          Staff Commissions
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Track and manage staff commission earnings
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">
+            Staff Commissions
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Track and manage staff commission earnings
+          </p>
+        </div>
       </div>
 
       {/* Staff Selection */}

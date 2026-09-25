@@ -514,22 +514,26 @@ class OwnerDashboardService:
             from app.models.customer import Customer
             from app.models.user import User
             from app.models.service import Service
+            from app.models.staff import Staff
 
             now = datetime.utcnow()
+
+            # Pre-limit each source so we do not pull the full history into Python
+            fetch_limit = max(limit * 3, 50)
 
             # Get internal appointments
             internal_appointments = list(Appointment.objects(
                 tenant_id=tenant_id,
                 start_time__gte=now,
                 status__in=["scheduled", "confirmed", "in_progress"]
-            ).order_by("start_time"))
+            ).order_by("start_time").limit(fetch_limit))
 
             # Get public bookings
             public_bookings = list(PublicBooking.objects(
                 tenant_id=tenant_id,
                 booking_date__gte=now.date(),
                 status__in=["pending", "confirmed"]
-            ).order_by("booking_date", "booking_time"))
+            ).order_by("booking_date", "booking_time").limit(fetch_limit))
 
             # Batch fetch related objects for internal appointments
             customer_ids = [appt.customer_id for appt in internal_appointments if appt.customer_id]

@@ -13,6 +13,7 @@ from app.schemas.appointment import (
     AppointmentConfirmRequest,
     AppointmentCollectPaymentRequest,
     AppointmentResponse,
+    AppointmentDetailResponse,
     AppointmentListResponse,
     AvailableSlotsResponse,
     AvailableSlot,
@@ -28,6 +29,8 @@ from app.services.invoice_service import InvoiceService
 from app.models.appointment import Appointment
 from app.models.customer import Customer
 from app.models.service import Service
+from app.models.staff import Staff
+from app.models.user import User
 from app.middleware.tenant_context import get_tenant_id
 from app.decorators.tenant_isolated import tenant_isolated
 from app.routes.auth import get_current_user_dependency
@@ -119,6 +122,7 @@ async def create_appointment(
             location_id=location_id,
             notes=request.notes,
             payment_option=request.payment_option,
+            price=request.price,
         )
         
         return AppointmentResponse(
@@ -132,6 +136,8 @@ async def create_appointment(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
@@ -171,6 +177,8 @@ async def get_appointment(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
@@ -180,6 +188,89 @@ async def get_appointment(
             created_at=appointment.created_at.isoformat(),
             updated_at=appointment.updated_at.isoformat(),
         )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{appointment_id}/detail", response_model=AppointmentDetailResponse)
+async def get_appointment_detail(
+    appointment_id: str,
+    tenant_id: ObjectId = Depends(get_tenant_id),
+):
+    """Get an appointment with related customer, service, and staff details."""
+    try:
+        appt_id = ObjectId(appointment_id)
+        appointment = AppointmentService.get_appointment(tenant_id, appt_id)
+        
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        
+        customer_data = None
+        service_data = None
+        staff_data = None
+        
+        if appointment.customer_id:
+            customer = Customer.objects(tenant_id=tenant_id, id=appointment.customer_id).first()
+            if customer:
+                customer_data = {
+                    "id": str(customer.id),
+                    "first_name": customer.first_name,
+                    "last_name": customer.last_name,
+                    "email": customer.email,
+                    "phone": customer.phone,
+                }
+        
+        service = Service.objects(tenant_id=tenant_id, id=appointment.service_id).first()
+        if service:
+            service_data = {
+                "id": str(service.id),
+                "name": service.name,
+                "description": service.description,
+                "duration_minutes": service.duration_minutes,
+                "price": float(service.price) if service.price else None,
+            }
+        
+        staff = Staff.objects(tenant_id=tenant_id, id=appointment.staff_id).first()
+        if staff:
+            user = User.objects(id=staff.user_id, tenant_id=tenant_id).first()
+            staff_data = {
+                "id": str(staff.id),
+                "user_id": str(staff.user_id),
+                "first_name": user.first_name if user else "",
+                "last_name": user.last_name if user else "",
+                "email": user.email if user else "",
+                "phone": user.phone if user else "",
+            }
+        
+        return AppointmentDetailResponse(
+            id=str(appointment.id),
+            customer_id=str(appointment.customer_id) if appointment.customer_id else None,
+            staff_id=str(appointment.staff_id),
+            service_id=str(appointment.service_id),
+            location_id=str(appointment.location_id) if appointment.location_id else None,
+            start_time=appointment.start_time.isoformat(),
+            end_time=appointment.end_time.isoformat(),
+            status=appointment.status,
+            notes=appointment.notes,
+            price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
+            cancellation_reason=appointment.cancellation_reason,
+            cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
+            cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
+            no_show_reason=appointment.no_show_reason,
+            marked_no_show_at=appointment.marked_no_show_at.isoformat() if appointment.marked_no_show_at else None,
+            confirmed_at=appointment.confirmed_at.isoformat() if appointment.confirmed_at else None,
+            created_at=appointment.created_at.isoformat(),
+            updated_at=appointment.updated_at.isoformat(),
+            customer=customer_data,
+            service=service_data,
+            staff=staff_data,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -364,6 +455,7 @@ async def list_appointments(
     status: Optional[str] = Query(None),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     tenant_id: ObjectId = Depends(get_tenant_id),
@@ -376,6 +468,7 @@ async def list_appointments(
     - **status**: Filter by status (scheduled, confirmed, completed, cancelled, no_show)
     - **start_date**: Filter by start date (ISO format)
     - **end_date**: Filter by end date (ISO format)
+    - **search**: Search by booking ID, time, service name, staff name, or customer name
     - **page**: Page number (1-indexed)
     - **page_size**: Number of results per page
     """
@@ -384,8 +477,9 @@ async def list_appointments(
         staff_id_obj = ObjectId(staff_id) if staff_id else None
         start_date_obj = datetime.fromisoformat(start_date) if start_date else None
         end_date_obj = datetime.fromisoformat(end_date) if end_date else None
+        search_term = search.strip() if search else None
         
-        logger.info(f"[Appointments] Listing appointments: customer_id={customer_id}, staff_id={staff_id}, status={status}, page={page}, page_size={page_size}")
+        logger.info(f"[Appointments] Listing appointments: customer_id={customer_id}, staff_id={staff_id}, status={status}, search={search_term}, page={page}, page_size={page_size}")
         
         appointments, total = AppointmentService.list_appointments(
             tenant_id=tenant_id,
@@ -394,6 +488,7 @@ async def list_appointments(
             status=status,
             start_date=start_date_obj,
             end_date=end_date_obj,
+            search=search_term,
             page=page,
             page_size=page_size,
         )
@@ -471,6 +566,8 @@ async def confirm_appointment(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
@@ -517,6 +614,8 @@ async def cancel_appointment(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
@@ -845,6 +944,8 @@ async def mark_no_show(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,
@@ -905,6 +1006,8 @@ async def update_appointment(
             status=appointment.status,
             notes=appointment.notes,
             price=appointment.price,
+            payment_option=appointment.payment_option,
+            payment_status=appointment.payment_status,
             cancellation_reason=appointment.cancellation_reason,
             cancelled_at=appointment.cancelled_at.isoformat() if appointment.cancelled_at else None,
             cancelled_by=str(appointment.cancelled_by) if appointment.cancelled_by else None,

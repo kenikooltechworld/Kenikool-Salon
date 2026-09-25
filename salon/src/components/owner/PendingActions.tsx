@@ -20,16 +20,16 @@ interface PendingActionsProps {
 const getPriorityStyle = (priority: string): React.CSSProperties => {
   const styles: Record<string, React.CSSProperties> = {
     high: {
-      backgroundColor: "var(--destructive-bg, #fee2e2)",
+      backgroundColor: "var(--destructive-bg)",
       color: "var(--destructive)",
     },
     medium: {
-      backgroundColor: "var(--warning-bg, #fef3c7)",
-      color: "var(--warning, #f59e0b)",
+      backgroundColor: "var(--warning-bg)",
+      color: "var(--warning)",
     },
     low: {
-      backgroundColor: "var(--info-bg, #dbeafe)",
-      color: "var(--info, #3b82f6)",
+      backgroundColor: "var(--info-bg)",
+      color: "var(--info)",
     },
   };
   return styles[priority] || {};

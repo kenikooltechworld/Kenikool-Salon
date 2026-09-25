@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, Button, Spinner } from "@/components/ui";
+import { useToast } from "@/components/ui/toast";
 import { apiClient } from "@/lib/utils/api";
 import { formatDate } from "@/lib/utils/format";
-import { CheckCircleIcon, AlertCircleIcon } from "@/components/icons";
+import { CheckCircleIcon, AlertCircleIcon, RefreshCwIcon } from "@/components/icons";
 
 interface BookingDetails {
   id: string;
@@ -21,11 +22,13 @@ interface BookingDetails {
 export default function BookingStatus() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const {
     data: booking,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["public-booking", bookingId],
     queryFn: async () => {
@@ -71,15 +74,34 @@ export default function BookingStatus() {
   const isCompleted = booking.status === "completed";
   const isCancelled = booking.status === "cancelled";
 
+  const handleRefresh = () => {
+    refetch();
+    showToast({
+      title: "Refreshed",
+      description: "Booking status updated",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Booking Status</h1>
-          <p className="text-gray-600">
-            Confirmation #{booking.id.substring(0, 8).toUpperCase()}
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Booking Status</h1>
+            <p className="text-gray-600">
+              Confirmation #{booking.id.substring(0, 8).toUpperCase()}
+            </p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         {/* Status Card */}

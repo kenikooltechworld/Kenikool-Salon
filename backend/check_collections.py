@@ -6,8 +6,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get database configuration from environment
-database_name = os.getenv('DATABASE_NAME', 'kenikool-salon')
-database_url = os.getenv('DATABASE_URL', 'mongodb://localhost:27017/kenikool-salon')
+database_name = os.getenv('DATABASE_NAME')
+database_url = os.getenv('DATABASE_URL')
+
+if not database_url or not database_name:
+    raise RuntimeError("DATABASE_URL and DATABASE_NAME are required. Set them in backend/.env")
 
 client = MongoClient(database_url)
 database = client[database_name]

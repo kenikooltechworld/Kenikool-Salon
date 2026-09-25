@@ -11,12 +11,10 @@ export default function BookingConfirmationSuccess() {
   const [booking, setBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
-    // Get booking data from location state
     const state = location.state as { booking?: Booking };
     if (state?.booking) {
       setBooking(state.booking);
     } else {
-      // If no booking data, redirect to bookings list
       navigate("/bookings");
     }
   }, [location, navigate]);
@@ -29,21 +27,19 @@ export default function BookingConfirmationSuccess() {
   const bookingRef = booking.id.slice(-8).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg">
         <div className="p-8 text-center space-y-6">
-          {/* Success Icon */}
           <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute inset-0 bg-green-100 rounded-full animate-pulse" />
+              <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
               <CheckCircleIcon
                 size={64}
-                className="text-green-600 relative z-10"
+                className="text-primary relative z-10"
               />
             </div>
           </div>
 
-          {/* Success Message */}
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
               Booking Confirmed!
@@ -53,8 +49,7 @@ export default function BookingConfirmationSuccess() {
             </p>
           </div>
 
-          {/* Booking Reference */}
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
             <p className="text-xs text-muted-foreground mb-1">
               Booking Reference
             </p>
@@ -63,8 +58,7 @@ export default function BookingConfirmationSuccess() {
             </p>
           </div>
 
-          {/* Booking Details */}
-          <div className="space-y-3 text-left bg-gray-50 rounded-lg p-4">
+          <div className="space-y-3 text-left bg-muted/50 rounded-lg p-4">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Date</span>
               <span className="text-sm font-semibold text-foreground">
@@ -87,26 +81,24 @@ export default function BookingConfirmationSuccess() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Status</span>
-              <span className="text-sm font-semibold text-green-600">
+              <span className="text-sm font-semibold text-primary">
                 {booking.status.charAt(0).toUpperCase() +
                   booking.status.slice(1)}
               </span>
             </div>
           </div>
 
-          {/* Next Steps */}
-          <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <p className="text-xs font-semibold text-amber-900 mb-2">
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
+            <p className="text-xs font-semibold text-foreground mb-2">
               Next Steps
             </p>
-            <ul className="text-xs text-amber-800 space-y-1">
+            <ul className="text-xs text-muted-foreground space-y-1">
               <li>• Check your email for confirmation details</li>
               <li>• Arrive 5-10 minutes early</li>
               <li>• You can reschedule anytime from your bookings</li>
             </ul>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-4">
             <Button
               onClick={() => navigate("/bookings")}

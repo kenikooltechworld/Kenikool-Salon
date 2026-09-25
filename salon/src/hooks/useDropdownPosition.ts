@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 
 type Alignment = "left" | "center" | "right";
 
@@ -12,6 +12,7 @@ interface PositionResult {
   alignment: Alignment;
   shouldFlip: boolean;
   style: React.CSSProperties;
+  recalculate: () => void;
 }
 
 export function useDropdownPosition(
@@ -20,13 +21,15 @@ export function useDropdownPosition(
   options: PositionOptions = {},
 ): PositionResult {
   const { align = "left", offset = 8, viewportPadding = 8 } = options;
-  const [position, setPosition] = useState<PositionResult>({
+  const [position, setPosition] = useState<PositionResult>(() => ({
     alignment: align,
     shouldFlip: false,
     style: {},
-  });
+  }));
 
-  useEffect(() => {
+  const updatePosition = useRef<(() => void) | null>(null);
+
+  useLayoutEffect(() => {
     function update() {
       if (!triggerRef.current || !contentRef.current) return;
 
@@ -75,14 +78,25 @@ export function useDropdownPosition(
       });
     }
 
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
+    updatePosition.current = update;
   }, [triggerRef, contentRef, align, offset, viewportPadding]);
 
-  return position;
+  useEffect(() => {
+    function handleUpdate() {
+      updatePosition.current?.();
+    }
+
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
+    return () => {
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
+    };
+  }, []);
+
+  const recalculate = useCallback(() => {
+    updatePosition.current?.();
+  }, []);
+
+  return { ...position, recalculate };
 }

@@ -6,6 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { DownloadIcon, FilterIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function AuditLogs() {
   const {
@@ -16,11 +19,13 @@ export default function AuditLogs() {
     setSkip,
     limit,
     exportAuditLogs,
+    refetch,
   } = useAuditLogs();
-
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEventType, setFilterEventType] = useState("");
   const [filterResource, setFilterResource] = useState("");
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const filteredLogs = logs.filter((log: any) => {
     const matchesSearch =
@@ -42,6 +47,10 @@ export default function AuditLogs() {
     return "bg-gray-100 text-gray-800";
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   if (isLoadingLogs) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -60,20 +69,22 @@ export default function AuditLogs() {
             Track all system activities and changes
           </p>
         </div>
-        <Button
-          onClick={() =>
-            exportAuditLogs({
-              startDate: new Date(
-                Date.now() - 30 * 24 * 60 * 60 * 1000,
-              ).toISOString(),
-              endDate: new Date().toISOString(),
-            })
-          }
-          className="gap-2"
-        >
-          <DownloadIcon size={20} />
-          Export
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() =>
+              exportAuditLogs({
+                startDate: new Date(
+                  Date.now() - 30 * 24 * 60 * 60 * 1000,
+                ).toISOString(),
+                endDate: new Date().toISOString(),
+              })
+            }
+            className="gap-2"
+          >
+            <DownloadIcon size={20} />
+            Export
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

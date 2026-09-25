@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
+import { useTenantStore } from "@/stores/tenant";
 import { ThemeSelector } from "@/components/ui/theme-selector";
 import NotificationBadge from "@/components/notifications/NotificationBadge";
 import StaffNotificationCenter from "@/components/staff/StaffNotificationCenter";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 import {
   MenuIcon,
   XIcon,
@@ -43,6 +46,7 @@ const staffMenuItems = [
 export function StaffLayout() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const tenantName = useTenantStore((state) => state.tenantName());
   const logout = useAuthStore((state) => state.logout);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -52,6 +56,8 @@ export function StaffLayout() {
 
   // Get unread message count
   const { data: unreadCount = 0 } = useUnreadMessageCount();
+
+  const { refreshHandler } = usePageRefresh();
 
   useEffect(() => {
     const handleResize = () => {
@@ -106,7 +112,7 @@ export function StaffLayout() {
                 <span className="text-white font-bold text-lg">K</span>
               </div>
               <span className="font-bold text-lg text-foreground">
-                Kenikool
+                {tenantName || "Kenikool"}
               </span>
             </div>
           )}
@@ -197,6 +203,10 @@ export function StaffLayout() {
             <NotificationBadge
               onClick={() => setNotificationCenterOpen(true)}
             />
+
+            {refreshHandler && (
+              <RefreshButton onClick={refreshHandler} />
+            )}
 
             {/* Theme Selector */}
             <ThemeSelector variant="icon" />

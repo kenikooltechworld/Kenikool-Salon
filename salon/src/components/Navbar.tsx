@@ -44,24 +44,24 @@ export function Navbar() {
           {/* Center Links - Desktop */}
           {!user && (
             <div className="hidden md:flex gap-8">
-              <a
-                href="#features"
+              <Link
+                to="/features"
                 className="text-sm text-muted-foreground hover:text-foreground transition"
               >
                 Features
-              </a>
-              <a
-                href="#pricing"
+              </Link>
+              <Link
+                to="/pricing"
                 className="text-sm text-muted-foreground hover:text-foreground transition"
               >
                 Pricing
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to="/about"
                 className="text-sm text-muted-foreground hover:text-foreground transition"
               >
                 About
-              </a>
+              </Link>
             </div>
           )}
 
@@ -142,27 +142,27 @@ export function Navbar() {
             <div className="px-2 pt-2 pb-3 space-y-1">
               {!user && (
                 <>
-                  <a
-                    href="#features"
+                  <Link
+                    to="/features"
                     onClick={() => setIsMenuOpen(false)}
                     className="block px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition"
                   >
                     Features
-                  </a>
-                  <a
-                    href="#pricing"
+                  </Link>
+                  <Link
+                    to="/pricing"
                     onClick={() => setIsMenuOpen(false)}
                     className="block px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition"
                   >
                     Pricing
-                  </a>
-                  <a
-                    href="#"
+                  </Link>
+                  <Link
+                    to="/about"
                     onClick={() => setIsMenuOpen(false)}
                     className="block px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition"
                   >
                     About
-                  </a>
+                  </Link>
                   <div className="border-t border-border my-2"></div>
                 </>
               )}

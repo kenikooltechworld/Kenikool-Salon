@@ -20,6 +20,7 @@ class AppointmentCreateRequest(BaseModel):
     end_time: str = Field(..., alias="endTime", description="Appointment end time (local timezone, ISO format)")
     notes: Optional[str] = Field(None, max_length=1000, description="Appointment notes")
     payment_option: Optional[str] = Field(None, alias="paymentOption", description="Payment option: 'now' or 'later'")
+    price: Optional[float] = Field(None, description="Appointment price")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -84,6 +85,34 @@ class AppointmentResponse(BaseModel):
 
         from_attributes = True
         populate_by_name = True
+
+
+class AppointmentDetailResponse(BaseModel):
+    """Response schema for appointment details with related data."""
+
+    id: str
+    customer_id: Optional[str]
+    staff_id: str
+    service_id: str
+    location_id: Optional[str]
+    start_time: str
+    end_time: str
+    status: str
+    notes: Optional[str]
+    price: Optional[Decimal]
+    payment_option: Optional[str]
+    payment_status: Optional[str]
+    cancellation_reason: Optional[str]
+    cancelled_at: Optional[str]
+    cancelled_by: Optional[str]
+    no_show_reason: Optional[str]
+    marked_no_show_at: Optional[str]
+    confirmed_at: Optional[str]
+    created_at: str
+    updated_at: str
+    customer: Optional[dict] = None
+    service: Optional[dict] = None
+    staff: Optional[dict] = None
 
 
 class AppointmentListResponse(BaseModel):

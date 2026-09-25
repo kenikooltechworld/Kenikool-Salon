@@ -122,9 +122,10 @@ async def list_services(
     List services for the tenant.
 
     Returns a paginated list of services with optional filtering by category and status.
+    By default, excludes inactive services from active pickers.
     """
     try:
-        query = Service.objects(tenant_id=tenant_id)
+        query = Service.objects(tenant_id=tenant_id, is_active=True)
 
         # Apply filters
         if category:
@@ -193,18 +194,20 @@ async def delete_service(
     tenant_id: ObjectId = Depends(get_tenant_id_from_context),
 ):
     """
-    Delete a service.
-
-    Deletes the service from the system.
+    Soft delete a service by marking it inactive.
+    
+    This preserves historical appointment data while preventing
+    the service from being assigned to new bookings.
     """
     try:
         service = Service.objects(id=ObjectId(service_id), tenant_id=tenant_id).first()
         if not service:
             raise HTTPException(status_code=404, detail="Service not found")
 
-        service.delete()
-        logger.info(f"Service deleted: {service_id} for tenant {tenant_id}")
-        return {"message": "Service deleted successfully"}
+        service.is_active = False
+        service.save()
+        logger.info(f"Service soft deleted (inactive): {service_id}")
+        return {"message": "Service deactivated successfully"}
     except Exception as e:
         if isinstance(e, HTTPException):
             raise

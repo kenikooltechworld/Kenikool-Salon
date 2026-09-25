@@ -7,11 +7,16 @@ import {
   AlertCircleIcon,
   ClockIcon,
 } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function RefundStatus() {
   const { refundId } = useParams<{ refundId: string }>();
   const navigate = useNavigate();
-  const { data: refund, isLoading } = useRefund(refundId || "");
+  const { data: refund, isLoading, refetch } = useRefund(refundId || "");
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -52,6 +57,10 @@ export default function RefundStatus() {
     }
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   if (isLoading) {
     return <div className="text-center py-8">Loading refund details...</div>;
   }
@@ -66,9 +75,11 @@ export default function RefundStatus() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Refund Status</h1>
-        <Button variant="outline" onClick={() => navigate("/payments")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/payments")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       {/* Status Card */}

@@ -59,8 +59,13 @@ export const useTenantStore = create<TenantState>()(
       },
 
       tenantName: () => {
-        const { currentTenant } = get();
-        return currentTenant?.name || null;
+        const { currentTenant, settings } = get();
+        return (
+          settings?.salon_name ||
+          settings?.tenant_name ||
+          currentTenant?.name ||
+          null
+        );
       },
 
       isFeatureEnabled: (feature: string) => {

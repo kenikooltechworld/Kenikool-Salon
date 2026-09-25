@@ -26,14 +26,6 @@ export function initializeSocket(): Socket {
   });
 
   // Connection event handlers
-  socket.on("connect", () => {
-    console.log("Socket.io connected");
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Socket.io disconnected");
-  });
-
   socket.on("connect_error", (error) => {
     console.error("Socket.io connection error:", error);
   });

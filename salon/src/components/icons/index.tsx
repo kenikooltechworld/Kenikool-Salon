@@ -594,6 +594,30 @@ export const DollarSignIcon = ({
   </svg>
 );
 
+export const NairaSignIcon = ({
+  size = 24,
+  className,
+  ...props
+}: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <text x="4" y="18" fontSize="20" fill="currentColor" stroke="none" fontFamily="Arial, sans-serif">
+      ₦
+    </text>
+  </svg>
+);
+
 export const PackageIcon = ({ size = 24, className, ...props }: IconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -2482,6 +2506,7 @@ export const Edit = EditIcon;
 export const TrendingDown = TrendingDownIcon;
 export const Package = PackageIcon;
 export const DollarSign = DollarSignIcon;
+export const NairaSign = NairaSignIcon;
 export const AlertCircle = AlertCircleIcon;
 export const CheckCircle = CheckCircleIcon;
 export const RefreshCcw = RefreshCcwIcon;

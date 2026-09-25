@@ -50,7 +50,7 @@ class AppointmentReminderService:
                 return notifications
 
             # Schedule 24-hour reminder
-            reminder_24h = NotificationService.create_notification(
+            reminder_24h_sms = NotificationService.create_notification(
                 recipient_id=str(appointment.customer_id),
                 recipient_type="customer",
                 notification_type="appointment_reminder_24h",
@@ -61,11 +61,25 @@ class AppointmentReminderService:
                 appointment_id=str(appointment_id),
                 subject="Appointment Reminder - 24 Hours",
             )
-            notifications.append(reminder_24h)
-            logger.info(f"Scheduled 24h reminder for appointment {appointment_id}")
+            notifications.append(reminder_24h_sms)
+            logger.info(f"Scheduled 24h SMS reminder for appointment {appointment_id}")
+
+            reminder_24h_email = NotificationService.create_notification(
+                recipient_id=str(appointment.customer_id),
+                recipient_type="customer",
+                notification_type="appointment_reminder_24h",
+                channel="email",
+                content=f"Reminder: Your appointment is scheduled for tomorrow at {appointment.start_time.strftime('%I:%M %p')}",
+                recipient_email=customer_email,
+                recipient_phone=customer_phone,
+                appointment_id=str(appointment_id),
+                subject="Appointment Reminder - 24 Hours",
+            )
+            notifications.append(reminder_24h_email)
+            logger.info(f"Scheduled 24h email reminder for appointment {appointment_id}")
 
             # Schedule 1-hour reminder
-            reminder_1h = NotificationService.create_notification(
+            reminder_1h_sms = NotificationService.create_notification(
                 recipient_id=str(appointment.customer_id),
                 recipient_type="customer",
                 notification_type="appointment_reminder_1h",
@@ -76,8 +90,22 @@ class AppointmentReminderService:
                 appointment_id=str(appointment_id),
                 subject="Appointment Reminder - 1 Hour",
             )
-            notifications.append(reminder_1h)
-            logger.info(f"Scheduled 1h reminder for appointment {appointment_id}")
+            notifications.append(reminder_1h_sms)
+            logger.info(f"Scheduled 1h SMS reminder for appointment {appointment_id}")
+
+            reminder_1h_email = NotificationService.create_notification(
+                recipient_id=str(appointment.customer_id),
+                recipient_type="customer",
+                notification_type="appointment_reminder_1h",
+                channel="email",
+                content=f"Reminder: Your appointment is in 1 hour at {appointment.start_time.strftime('%I:%M %p')}",
+                recipient_email=customer_email,
+                recipient_phone=customer_phone,
+                appointment_id=str(appointment_id),
+                subject="Appointment Reminder - 1 Hour",
+            )
+            notifications.append(reminder_1h_email)
+            logger.info(f"Scheduled 1h email reminder for appointment {appointment_id}")
 
         except Exception as e:
             logger.error(f"Error scheduling reminders for appointment {appointment_id}: {str(e)}")

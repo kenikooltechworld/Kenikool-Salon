@@ -1,23 +1,20 @@
 import { StaffAttendanceTracker } from "@/components/staff/StaffAttendanceTracker";
 import { AttendanceHistory } from "@/components/staff/AttendanceHistory";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCwIcon } from "@/components/icons";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function StaffAttendance() {
-  const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { setRefreshHandler } = usePageRefresh();
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["my-attendance"] });
-    queryClient.invalidateQueries({ queryKey: ["current-attendance-status"] });
-    queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
-    showToast({
-      title: "Refreshed",
-      description: "Attendance data updated",
+  useEffect(() => {
+    setRefreshHandler(() => {
+      queryClient.invalidateQueries({ queryKey: ["my-attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["current-attendance-status"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
     });
-  };
+  }, [queryClient, setRefreshHandler]);
 
   return (
     <div className="space-y-6">
@@ -28,10 +25,6 @@ export default function StaffAttendance() {
             Track your work hours and attendance history
           </p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
-          <RefreshCwIcon size={16} />
-          Refresh
-        </Button>
       </div>
 
       {/* Clock In/Out Tracker */}

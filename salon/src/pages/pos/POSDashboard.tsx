@@ -27,12 +27,14 @@ import CommissionDashboard from "./CommissionDashboard";
 import DiscountManagement from "./DiscountManagement";
 import ReceiptHistory from "./ReceiptHistory";
 import { formatCurrency } from "@/lib/utils/format";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function POSDashboard() {
   const [activeTab, setActiveTab] = useState("transaction");
   const [selectedTransactionId, setSelectedTransactionId] = useState<string>();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const { data: transactionsData, isLoading } = useTransactions({
+  const { data: transactionsData, isLoading, refetch } = useTransactions({
     pageSize: 10,
   });
   const { isOffline, pendingTransactions, syncStatus } = usePOSStore();
@@ -40,6 +42,8 @@ export default function POSDashboard() {
   const { mutate: verifyPOSPayment } = useVerifyPOSPayment();
   const { mutate: generateReceipt } = useGenerateReceipt();
   const currency = tenantSettings?.currency || "USD";
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   // Handle Paystack payment callback
   useEffect(() => {
@@ -70,6 +74,10 @@ export default function POSDashboard() {
       }
     }
   }, [verifyPOSPayment, generateReceipt]);
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const transactions = transactionsData?.transactions || [];
   const todaysTransactions = transactions.filter((t) => {

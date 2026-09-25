@@ -21,6 +21,8 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -48,10 +50,16 @@
     --success-foreground: #fafafa;
     --warning: #f59e0b;
     --warning-foreground: #fafafa;
+    --info: #3b82f6;
+    --info-foreground: #fafafa;
     --border: #e5e5e5;
     --input: #e5e5e5;
     --ring: #171717;
     --radius: 0.5rem;
+    --success-bg: color-mix(in srgb, var(--success) 10%, transparent);
+    --warning-bg: color-mix(in srgb, var(--warning) 10%, transparent);
+    --info-bg: color-mix(in srgb, var(--info) 10%, transparent);
+    --destructive-bg: color-mix(in srgb, var(--destructive) 10%, transparent);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -76,9 +84,15 @@
       --success-foreground: #ededed;
       --warning: #d97706;
       --warning-foreground: #ededed;
+      --info: #3b82f6;
+      --info-foreground: #ededed;
       --border: #262626;
       --input: #262626;
       --ring: #d4d4d4;
+      --success-bg: color-mix(in srgb, var(--success) 10%, transparent);
+      --warning-bg: color-mix(in srgb, var(--warning) 10%, transparent);
+      --info-bg: color-mix(in srgb, var(--info) 10%, transparent);
+      --destructive-bg: color-mix(in srgb, var(--destructive) 10%, transparent);
     }
   }
 }

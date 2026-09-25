@@ -30,14 +30,11 @@ export function usePendingActions() {
         error: any;
       }>("/owner/dashboard/pending-actions");
       const extracted = (Array.isArray(data?.data?.actions) ? data.data.actions : []) || [];
-      console.log("[DashboardHook][usePendingActions] raw response:", data);
-      console.log("[DashboardHook][usePendingActions] extracted count:", extracted.length);
       return extracted;
     },
-    refetchInterval: 30 * 1000, // 30 seconds
-    staleTime: 30 * 1000, // 30 seconds
-    retry: false, // Don't retry - fail fast
-    placeholderData: (previousData) => previousData, // Keep old data while refetching
+    refetchInterval: 30 * 1000,
+    staleTime: 30 * 1000,
+    retry: false,
   });
 
   const markCompleteMutation = useMutation({

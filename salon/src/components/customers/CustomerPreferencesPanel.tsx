@@ -190,7 +190,7 @@ export function CustomerPreferencesPanel({
           </div>
           {isEditing ? (
             <div className="space-y-2">
-              {staff?.staff?.map((member: any) => (
+              {staff?.map((member: any) => (
                 <label
                   key={member.id}
                   className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted"
@@ -225,7 +225,7 @@ export function CustomerPreferencesPanel({
             <div className="flex flex-wrap gap-2">
               {formData.preferred_staff_ids.length > 0 ? (
                 formData.preferred_staff_ids.map((staffId) => {
-                  const member = staff?.staff?.find((s: any) => s.id === staffId);
+                  const member = staff?.find((s: any) => s.id === staffId);
                   return member ? (
                     <Badge key={staffId} variant="secondary">
                       {member.firstName} {member.lastName}
@@ -247,7 +247,7 @@ export function CustomerPreferencesPanel({
           </div>
           {isEditing ? (
             <div className="space-y-2">
-              {services?.services?.map((service: any) => (
+              {services?.map((service: any) => (
                 <label
                   key={service.id}
                   className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted"
@@ -283,7 +283,7 @@ export function CustomerPreferencesPanel({
             <div className="flex flex-wrap gap-2">
               {formData.preferred_service_ids.length > 0 ? (
                 formData.preferred_service_ids.map((serviceId) => {
-                  const service = services?.services?.find((s: any) => s.id === serviceId);
+                  const service = services?.find((s: any) => s.id === serviceId);
                   return service ? (
                     <Badge key={serviceId} variant="secondary">
                       {service.name}

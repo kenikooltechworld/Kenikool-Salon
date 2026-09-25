@@ -62,7 +62,6 @@ export function AddStaffModal({
       </ModalHeader>
       <div className="px-6 py-4">
         <StaffForm
-          key={isOpen ? "open" : "closed"}
           onSubmit={handleSubmit}
           isLoading={isLoading}
           initialData={initialData}

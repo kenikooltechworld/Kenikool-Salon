@@ -21,16 +21,19 @@ import {
   StarIcon,
 } from "@/components/icons";
 import { useNavigate } from "react-router-dom";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function ServicePackages() {
   const navigate = useNavigate();
+  const { setRefreshHandler } = usePageRefresh();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     is_active?: boolean;
     is_featured?: boolean;
   }>({});
 
-  const { data, isLoading, error } = useServicePackages({
+  const { data, isLoading, error, refetch } = useServicePackages({
     page,
     page_size: 20,
     ...filters,
@@ -66,6 +69,10 @@ export default function ServicePackages() {
     }
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -94,10 +101,12 @@ export default function ServicePackages() {
             Manage bundled service packages
           </p>
         </div>
-        <Button onClick={() => navigate("/owner/service-packages/create")}>
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Create Package
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => navigate("/owner/service-packages/create")}>
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Create Package
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

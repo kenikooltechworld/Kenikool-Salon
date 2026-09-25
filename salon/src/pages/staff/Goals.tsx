@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   TargetIcon,
-  RefreshCwIcon,
   TrophyIcon,
   GiftIcon,
   AlertCircleIcon,
@@ -19,6 +18,8 @@ import {
   useBonusIncentives,
   usePerformanceVsTargets,
 } from "@/hooks/useGoals";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 /**
  * Goals page for staff members
@@ -36,7 +37,8 @@ import {
  * Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7
  */
 export default function Goals() {
-  // Fetch goals data
+  const { setRefreshHandler } = usePageRefresh();
+
   const {
     data: goalsData,
     isLoading: goalsLoading,
@@ -44,7 +46,6 @@ export default function Goals() {
     refetch: refetchGoals,
   } = useGoals();
 
-  // Fetch goal achievements
   const {
     data: achievements = [],
     isLoading: achievementsLoading,
@@ -52,7 +53,6 @@ export default function Goals() {
     refetch: refetchAchievements,
   } = useGoalAchievements();
 
-  // Fetch bonus incentives
   const {
     data: bonuses = [],
     isLoading: bonusesLoading,
@@ -60,7 +60,6 @@ export default function Goals() {
     refetch: refetchBonuses,
   } = useBonusIncentives();
 
-  // Fetch performance vs targets
   const {
     data: performanceData,
     isLoading: performanceLoading,
@@ -68,12 +67,20 @@ export default function Goals() {
     refetch: refetchPerformance,
   } = usePerformanceVsTargets();
 
-  const handleRefreshAll = () => {
-    refetchGoals();
-    refetchAchievements();
-    refetchBonuses();
-    refetchPerformance();
-  };
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchGoals();
+      refetchAchievements();
+      refetchBonuses();
+      refetchPerformance();
+    });
+  }, [
+    refetchGoals,
+    refetchAchievements,
+    refetchBonuses,
+    refetchPerformance,
+    setRefreshHandler,
+  ]);
 
   const isLoading =
     goalsLoading || achievementsLoading || bonusesLoading || performanceLoading;
@@ -90,18 +97,6 @@ export default function Goals() {
           <p className="text-muted-foreground mt-1">
             Track your progress toward sales and commission targets
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefreshAll}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-            className="self-start sm:self-auto"
-          >
-            <RefreshCwIcon size={16} className="mr-2" />
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -218,8 +213,17 @@ export default function Goals() {
         </CardHeader>
         <CardContent>
           {bonusesLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
+            <div className="space-y-3">
+              <div className="p-4 border border-border rounded-lg space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <div className="p-4 border border-border rounded-lg space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
             </div>
           ) : bonusesError ? (
             <div className="text-center py-8">
@@ -329,8 +333,15 @@ export default function Goals() {
         </CardHeader>
         <CardContent>
           {achievementsLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
+            <div className="space-y-3">
+              <div className="p-4 border border-border rounded-lg space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <div className="p-4 border border-border rounded-lg space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-32" />
+              </div>
             </div>
           ) : achievementsError ? (
             <div className="text-center py-8">

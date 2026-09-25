@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Spinner, ToastProvider } from "@/components/ui";
 import ServiceSelector from "@/components/public/ServiceSelector";
@@ -26,7 +26,8 @@ import {
   useCustomerProfile,
 } from "@/hooks/useCustomerAuth";
 import { apiClient } from "@/lib/utils/api";
-import { UserIcon, LogInIcon } from "@/components/icons";
+import { UserIcon, LogInIcon, RefreshCwIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
 
 type BookingStep = "service" | "staff" | "time" | "form" | "confirmation";
 
@@ -54,6 +55,8 @@ interface SalonInfo {
 
 export default function PublicBookingApp() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState<BookingStep>("service");
   const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
   const [confirmationData, setConfirmationData] = useState<any>(null);
@@ -63,7 +66,7 @@ export default function PublicBookingApp() {
   const { data: customerProfile } = useCustomerProfile();
 
   // Fetch salon info from subdomain
-  const { data: salonInfo, isLoading: salonLoading } = useQuery({
+  const { data: salonInfo, isLoading: salonLoading, refetch } = useQuery({
     queryKey: ["salon-info"],
     queryFn: async () => {
       const { data } = await apiClient.get<SalonInfo>("/public/salon-info");
@@ -98,6 +101,14 @@ export default function PublicBookingApp() {
 
   const handleBookNowClick = () => {
     bookingFormRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    showToast({
+      title: "Refreshed",
+      description: "Salon information updated",
+    });
   };
 
   const handleServiceSelect = (serviceId: string, durationMinutes: number) => {
@@ -197,6 +208,15 @@ export default function PublicBookingApp() {
                 <h1 className="text-xl font-bold">{salonInfo?.name}</h1>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleRefresh}
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <RefreshCwIcon size={16} />
+                  Refresh
+                </Button>
                 {isAuthenticated && customerProfile ? (
                   <>
                     <Button

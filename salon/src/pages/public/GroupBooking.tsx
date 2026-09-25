@@ -6,19 +6,26 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useCreatePublicGroupBooking,
   type GroupBookingParticipant,
 } from "@/hooks/usePublicGroupBookings";
 import { useServices } from "@/hooks/useServices";
 import { useStaff } from "@/hooks/useStaff";
-import { Users, Plus, Trash2, DollarSign, Info } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { Users, Plus, Trash2, NairaSign, Info, RefreshCwIcon } from "@/components/icons";
 
 export default function GroupBooking() {
   const navigate = useNavigate();
-  const { data: services } = useServices();
-  const { data: staff } = useStaff();
+  const { showToast } = useToast();
+  const { data: services, isLoading: servicesLoading, refetch: refetchServices } =
+    useServices();
+  const { data: staff, isLoading: staffLoading, refetch: refetchStaff } =
+    useStaff();
   const createBooking = useCreatePublicGroupBooking();
+
+  const isOptionsLoading = servicesLoading || staffLoading;
 
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState("other");
@@ -79,10 +86,75 @@ export default function GroupBooking() {
 
   const pricing = calculatePricing();
 
+  if (isOptionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center mb-8">
+            <Skeleton className="h-12 w-12 mx-auto mb-4 rounded-full" />
+            <Skeleton className="h-8 w-64 mx-auto mb-2" />
+            <Skeleton className="h-4 w-96 mx-auto" />
+          </div>
+
+          <Card className="p-6 space-y-4">
+            <Skeleton className="h-6 w-32" />
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </Card>
+
+          <Card className="p-6 space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full md:col-span-2" />
+            </div>
+          </Card>
+
+          <Card className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+            <div className="space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <Card key={i} className="p-4 bg-gray-50 space-y-3">
+                  <Skeleton className="h-5 w-24" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-6 space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </Card>
+
+          <div className="flex gap-4">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 flex-1" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (
       !groupName ||
       !organizerName ||
@@ -120,21 +192,41 @@ export default function GroupBooking() {
         special_requests: specialRequests || undefined,
       });
 
-      navigate(`/public/group-booking-confirmation/${result.id}`);
+      navigate(`/public/group-booking-confirmation/₦{result.id}`);
     } catch (error: any) {
       alert(error.response?.data?.detail || "Failed to create group booking");
     }
   };
 
+  const handleRefresh = () => {
+    refetchServices();
+    refetchStaff();
+    showToast({
+      title: "Refreshed",
+      description: "Services and staff updated",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <Users size={48} className="mx-auto mb-4 text-blue-600" />
-          <h1 className="text-3xl font-bold mb-2">Group Booking</h1>
-          <p className="text-gray-600">
-            Book for multiple people and save with group discounts
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="text-center flex-1">
+            <Users size={48} className="mx-auto mb-4 text-blue-600" />
+            <h1 className="text-3xl font-bold mb-2">Group Booking</h1>
+            <p className="text-gray-600">
+              Book for multiple people and save with group discounts
+            </p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -278,11 +370,14 @@ export default function GroupBooking() {
                           updateParticipant(index, "service_id", e.target.value)
                         }
                         required
+                        disabled={isOptionsLoading}
                       >
-                        <SelectItem value="">Select service</SelectItem>
+                        <SelectItem value="">
+                          {servicesLoading ? "Loading services..." : "Select service"}
+                        </SelectItem>
                         {services?.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
-                            {service.name} - ${service.price}
+                            {service.name} - ₦{service.price}
                           </SelectItem>
                         ))}
                       </Select>
@@ -296,8 +391,11 @@ export default function GroupBooking() {
                         onChange={(e) =>
                           updateParticipant(index, "staff_id", e.target.value)
                         }
+                        disabled={isOptionsLoading}
                       >
-                        <SelectItem value="">Any available</SelectItem>
+                        <SelectItem value="">
+                          {staffLoading ? "Loading staff..." : "Any available"}
+                        </SelectItem>
                         {staff?.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.firstName} {s.lastName}
@@ -326,28 +424,28 @@ export default function GroupBooking() {
           {/* Pricing Summary */}
           <Card className="p-6 bg-blue-50">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <DollarSign size={20} className="mr-2" />
+              <NairaSign size={20} className="mr-2" />
               Pricing Summary
             </h2>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Base Total:</span>
-                <span>${pricing.baseTotal.toFixed(2)}</span>
+                <span>₦{pricing.baseTotal.toFixed(2)}</span>
               </div>
               {pricing.discountPct > 0 && (
                 <>
                   <div className="flex justify-between text-green-600">
                     <span>Group Discount ({pricing.discountPct}%):</span>
-                    <span>-${pricing.discountAmount.toFixed(2)}</span>
+                    <span>-₦{pricing.discountAmount.toFixed(2)}</span>
                   </div>
                   <Badge variant="default" className="w-full justify-center">
-                    You save ${pricing.discountAmount.toFixed(2)}!
+                    You save ₦{pricing.discountAmount.toFixed(2)}!
                   </Badge>
                 </>
               )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                 <span>Final Total:</span>
-                <span>${pricing.finalTotal.toFixed(2)}</span>
+                <span>₦{pricing.finalTotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -382,6 +480,7 @@ export default function GroupBooking() {
               variant="outline"
               onClick={() => navigate("/public")}
               className="flex-1"
+              disabled={createBooking.isPending}
             >
               Cancel
             </Button>

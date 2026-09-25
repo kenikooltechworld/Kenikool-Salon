@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircleIcon } from "@/components/icons";
 import { usePricingPlans } from "@/hooks/owner/useSubscription";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 const defaultPricing = [
   {
@@ -163,7 +166,13 @@ const itemVariants = {
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
-  const { data: apiPlans, isLoading } = usePricingPlans();
+  const { data: apiPlans, isLoading, refetch } = usePricingPlans();
+  const { setRefreshHandler } = usePageRefresh();
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+  const { showToast } = useToast();
 
   // Transform API plans to UI format
   const pricing = (apiPlans || defaultPricing).map((plan: any) => ({
@@ -191,23 +200,26 @@ export default function Pricing() {
     <div className="min-h-screen bg-background">
       <div className="pt-24 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground mb-4">
-                Simple, Transparent Pricing
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-                Choose the perfect plan for your salon business
-              </p>
-            </motion.div>
+          <div className="flex items-center justify-between mb-16">
+            <div className="text-center flex-1">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground mb-4">
+                  Simple, Transparent Pricing
+                </h1>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+                  Choose the perfect plan for your salon business
+                </p>
+               </motion.div>
+             </div>
+           </div>
 
-            <div className="flex items-center justify-center gap-4 mb-12">
-              <motion.span
+           <div className="flex items-center justify-center gap-4 mb-8">
+            <motion.span
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -252,11 +264,10 @@ export default function Pricing() {
                 >
                   Save 20%
                 </motion.span>
-              )}
-            </div>
-          </div>
+               )}
+             </div>
 
-          {isLoading ? (
+           {isLoading ? (
             <div className="col-span-full text-center py-12">
               <p className="text-muted-foreground">Loading pricing plans...</p>
             </div>

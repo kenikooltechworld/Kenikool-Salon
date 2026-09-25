@@ -4,11 +4,16 @@ import { useOutstandingBalanceReport } from "@/hooks/useFinancialReport";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { AlertCircleIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function CustomerBalance() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: report, isLoading } = useOutstandingBalanceReport();
+  const { data: report, isLoading, refetch } = useOutstandingBalanceReport();
 
   const filteredCustomers = (report?.customers || []).filter(
     (customer: any) =>
@@ -17,13 +22,19 @@ export default function CustomerBalance() {
       customer.email.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Customer Balance</h1>
-        <Button variant="outline" onClick={() => navigate("/reports")}>
-          Back
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/reports")}>
+            Back
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

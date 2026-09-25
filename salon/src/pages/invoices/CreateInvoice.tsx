@@ -10,10 +10,13 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@/components/icons";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +30,8 @@ export default function CreateInvoice() {
     notes: "",
   });
 
-  const { data: customersData, isLoading: isLoadingCustomers } = useCustomers();
+  const { data: customersData, isLoading: isLoadingCustomers, refetch } =
+    useCustomers();
   const customers = Array.isArray(customersData?.customers)
     ? customersData.customers
     : [];
@@ -83,6 +87,10 @@ export default function CreateInvoice() {
       ),
     }));
   };
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const handleSubmit = async (e: React.FormEvent, shouldIssue = false) => {
     e.preventDefault();
@@ -145,9 +153,9 @@ export default function CreateInvoice() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <h1 className="text-3xl font-bold text-foreground mb-6">
-        Create Invoice
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-foreground">Create Invoice</h1>
+      </div>
 
       {showSuccess && (
         <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">

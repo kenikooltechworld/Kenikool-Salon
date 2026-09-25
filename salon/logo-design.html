@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kenikool — 15 Logo Concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 48px 24px;
+    }
+
+    .wrap { max-width: 1200px; margin: 0 auto; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .page-header .icon {
+      width: 52px;
+      height: 52px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 30px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 36px;
+      font-size: 14px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card.dark {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card.dark .card-title { color: #94a3b8; }
+
+    .badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.05);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .card.dark .badge {
+      background: rgba(255,255,255,0.08);
+      color: #cbd5e1;
+    }
+
+    .preview {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0) 100%);
+      border-radius: 12px;
+      min-height: 96px;
+    }
+
+    .card.dark .preview {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 100%);
+    }
+
+    .preview.col {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card.dark .meta { color: #94a3b8; }
+
+    .palette {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .card.dark .swatch {
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+
+    .card.dark .divider {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+      .row-2, .row-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="page-header">
+      <svg class="icon" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="56" height="56" rx="14" fill="#0ea5e9" />
+        <path d="M16 16L28 28L16 40" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M28 16L40 28L28 40" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>Kenikool — Logo Concepts</h1>
+    </div>
+    <p class="subtitle">15 directions inspired by current salon, beauty, and monogram trends from Canva, Adobe Express, LogoLounge, and 99designs.</p>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#0c4a6e"></div> Luxury</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div> Elegant</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0ea5e9"></div> Modern</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#d946ef"></div> Playful</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#334155"></div> Minimal</div>
+    </div>
+
+    <div class="grid">
+
+      <!-- 1 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">01 — Circled Monogram</div><div class="badge">Luxury</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="30" stroke="#0c4a6e" stroke-width="2"/>
+            <path d="M20 20L32 32L20 44" stroke="#0c4a6e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 20L44 32L32 44" stroke="#0c4a6e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Playfair Display, serif" font-size="30" font-weight="700" fill="#0f172a">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Monogram inside a precise ring. Works as app icon, stamp, and social avatar.</div>
+        <div class="palette"><div class="swatch" style="background:#0c4a6e"></div><div class="swatch" style="background:#f0f9ff"></div><div class="swatch" style="background:#ffffff"></div></div>
+      </div>
+
+      <!-- 2 -->
+      <div class="card dark">
+        <div class="card-header"><div class="card-title">02 — Gold on Deep</div><div class="badge">Premium</div></div>
+        <div class="preview">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="56" height="56" rx="12" fill="#0f172a"/>
+            <path d="M16 16L28 28L16 40" stroke="#f5d06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M28 16L40 28L28 40" stroke="#f5d06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="190" height="40" viewBox="0 0 190 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Playfair Display, serif" font-size="30" font-weight="700" fill="#f5d06b">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Dark backdrop with gold wordmark. Signals exclusivity for high-end salons.</div>
+        <div class="palette"><div class="swatch" style="background:#f5d06b"></div><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#1e293b"></div></div>
+      </div>
+
+      <!-- 3 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">03 — Serif Wordmark</div><div class="badge">Elegant</div></div>
+        <div class="preview col">
+          <svg width="220" height="60" viewBox="0 0 220 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="42" font-family="Playfair Display, serif" font-size="42" font-weight="700" fill="#0f172a">Kenikool</text>
+          </svg>
+          <div class="palette"><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#f0f9ff"></div><div class="swatch" style="background:#7c3aed"></div></div>
+        </div>
+        <div class="meta">High-contrast serif. Typography-first identity for heritage and trust.</div>
+      </div>
+
+      <!-- 4 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">04 — Sans Wordmark</div><div class="badge">Modern</div></div>
+        <div class="preview col">
+          <svg width="220" height="54" viewBox="0 0 220 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="40" font-family="Inter, sans-serif" font-size="36" font-weight="700" fill="#0f172a" letter-spacing="-0.5">Kenikool</text>
+          </svg>
+          <div class="palette"><div class="swatch" style="background:#0ea5e9"></div><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#f0f9ff"></div></div>
+        </div>
+        <div class="meta">Clean geometric sans-serif. Confident, contemporary, and scalable.</div>
+      </div>
+
+      <!-- 5 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">05 — Botanical K</div><div class="badge">Natural</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M32 12C32 12 44 24 44 32C44 40 32 52 32 52C32 52 20 40 20 32C20 24 32 12 32 12Z" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M28 28L36 36" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M36 28L28 36" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <svg width="170" height="40" viewBox="0 0 170 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Inter, sans-serif" font-size="28" font-weight="600" fill="#0f172a">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Organic leaf shape with hidden K crossbar. Natural beauty positioning.</div>
+        <div class="palette"><div class="swatch" style="background:#10b981"></div><div class="swatch" style="background:#f0f9ff"></div><div class="swatch" style="background:#064e3b"></div></div>
+      </div>
+
+      <!-- 6 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">06 — Split Letter K</div><div class="badge">Editorial</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="8" width="48" height="48" rx="12" fill="#0f172a"/>
+            <path d="M22 16V48" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M22 32L42 16" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 32L42 48" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="22" y1="32" x2="42" y2="32" stroke="#0f172a" stroke-width="2.5"/>
+          </svg>
+          <svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Inter, sans-serif" font-size="30" font-weight="700" fill="#0f172a">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Split K with tension line. Contemporary, distinctive, fashion-forward.</div>
+        <div class="palette"><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#ffffff"></div><div class="swatch" style="background:#d946ef"></div></div>
+      </div>
+
+      <!-- 7 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">07 — Crown Accent</div><div class="badge">Luxury</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 44L22 24L28 36L36 20L44 38L52 22" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 48H44" stroke="#7c3aed" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <svg width="190" height="44" viewBox="0 0 190 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="32" font-family="Playfair Display, serif" font-size="34" font-weight="700" fill="#3b0764">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Minimal crown above the name. Prestige without heaviness.</div>
+        <div class="palette"><div class="swatch" style="background:#7c3aed"></div><div class="swatch" style="background:#faf5ff"></div><div class="swatch" style="background:#3b0764"></div></div>
+      </div>
+
+      <!-- 8 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">08 — Single Line K</div><div class="badge">Minimal</div></div>
+        <div class="preview">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 14V42" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M14 28L42 14" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 28L42 42" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="170" height="38" viewBox="0 0 170 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="28" font-family="Inter, sans-serif" font-size="28" font-weight="500" fill="#0f172a" letter-spacing="4">KENIKOOL</text>
+          </svg>
+        </div>
+        <div class="meta">Monoline K with wide-tracked caps. Quiet confidence.</div>
+        <div class="palette"><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#ffffff"></div><div class="swatch" style="background:#e2e8f0"></div></div>
+      </div>
+
+      <!-- 9 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">09 — Gradient K</div><div class="badge">Modern</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="16" fill="url(#g1)"/>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop stop-color="#0ea5e9"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs>
+            <path d="M18 18L32 32L18 46" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 18L46 32L32 46" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Inter, sans-serif" font-size="30" font-weight="700" fill="url(#g2)">Kenikool</text>
+            <defs><linearGradient id="g2" x1="0" y1="0" x2="180" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#0ea5e9"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div class="meta">Gradient mark and wordmark. Digital-first, energetic, youthful.</div>
+        <div class="palette"><div class="swatch" style="background:#0ea5e9"></div><div class="swatch" style="background:#d946ef"></div><div class="swatch" style="background:#f0f9ff"></div></div>
+      </div>
+
+      <!-- 10 -->
+      <div class="card dark">
+        <div class="card-header"><div class="card-title">10 — Playful Pop</div><div class="badge">Bold</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="14" fill="#d946ef"/>
+            <path d="M18 18L32 32L18 46" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 18L46 32L32 46" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="48" cy="16" r="6" fill="#f97316"/>
+          </svg>
+          <svg width="190" height="44" viewBox="0 0 190 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="32" font-family="Inter, sans-serif" font-size="34" font-weight="800" fill="#ffffff">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">High-contrast pop. Extra dot accent for energy and memorability.</div>
+        <div class="palette"><div class="swatch" style="background:#d946ef"></div><div class="swatch" style="background:#f97316"></div><div class="swatch" style="background:#ffffff"></div></div>
+      </div>
+
+      <!-- 11 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">11 — Hand-drawn Script</div><div class="badge">Warm</div></div>
+        <div class="preview col">
+          <svg width="220" height="70" viewBox="0 0 220 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="50" font-family="Brush Script MT, cursive" font-size="48" fill="#7c3aed">Kenikool</text>
+          </svg>
+          <div class="palette"><div class="swatch" style="background:#7c3aed"></div><div class="swatch" style="background:#f3e8ff"></div><div class="swatch" style="background:#1e1b4b"></div></div>
+        </div>
+        <div class="meta">Warm script wordmark. Personal brand, boutique, approachable.</div>
+      </div>
+
+      <!-- 12 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">12 — Two-Letter Monogram</div><div class="badge">Minimal</div></div>
+        <div class="preview">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="10" y="52" font-family="Playfair Display, serif" font-size="56" font-weight="700" fill="#0f172a">KK</text>
+          </svg>
+          <svg width="170" height="38" viewBox="0 0 170 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="28" font-family="Inter, sans-serif" font-size="26" font-weight="500" fill="#0f172a" letter-spacing="3">KENIKOOL</text>
+          </svg>
+        </div>
+        <div class="meta">Restrained doubled initial. Founder-led, boutique, memorable.</div>
+        <div class="palette"><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#ffffff"></div><div class="swatch" style="background:#e2e8f0"></div></div>
+      </div>
+
+      <!-- 13 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">13 — Geometric Badge</div><div class="badge">Modern</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="4" width="56" height="56" rx="14" stroke="#0f172a" stroke-width="2.5"/>
+            <path d="M20 20L32 32L20 44" stroke="#0f172a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 20L44 32L32 44" stroke="#0f172a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Inter, sans-serif" font-size="30" font-weight="700" fill="#0f172a">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Enclosed mark with sharp corners. Structured, confident, architectural.</div>
+        <div class="palette"><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#f0f9ff"></div><div class="swatch" style="background:#0ea5e9"></div></div>
+      </div>
+
+      <!-- 14 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">14 — Asymmetric Lockup</div><div class="badge">Editorial</div></div>
+        <div class="preview col">
+          <div style="display:flex;align-items:center;gap:12px;width:100%">
+            <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="50" height="50" rx="12" fill="#0f172a"/>
+              <path d="M15 15L26 26L15 37" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M26 15L37 26L26 37" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <div style="font-family:Inter,sans-serif;font-weight:800;font-size:26px;color:#0f172a;line-height:1">Kenikool</div>
+              <div style="font-family:Inter,sans-serif;font-weight:500;font-size:11px;color:#64748b;letter-spacing:2;margin-top:4px">SALON & SPA</div>
+            </div>
+          </div>
+        </div>
+        <div class="meta">Bold icon + uppercase wordmark + descriptor. Clear hierarchy, commercial confidence.</div>
+        <div class="palette"><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#ffffff"></div><div class="swatch" style="background:#0ea5e9"></div></div>
+      </div>
+
+      <!-- 15 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">15 — Outline Mark</div><div class="badge">Minimal</div></div>
+        <div class="preview">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="62" height="62" rx="16" stroke="#0f172a" stroke-width="1.5"/>
+            <path d="M20 20L32 32L20 44" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 20L44 32L32 44" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="30" font-family="Inter, sans-serif" font-size="30" font-weight="600" fill="#0f172a">Kenikool</text>
+          </svg>
+        </div>
+        <div class="meta">Outline container with monoline mark. Light, airy, contemporary.</div>
+        <div class="palette"><div class="swatch" style="background:#ffffff"></div><div class="swatch" style="background:#0f172a"></div><div class="swatch" style="background:#e2e8f0"></div></div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

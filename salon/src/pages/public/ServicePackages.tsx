@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
+import { RefreshCwIcon } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
 
 export default function ServicePackages() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+  const { showToast } = useToast();
 
-  const { data, isLoading, error } = usePublicServicePackages({
+  const { data, isLoading, error, refetch } = usePublicServicePackages({
     page,
     page_size: 12,
     is_featured: showFeaturedOnly || undefined,
@@ -21,6 +24,14 @@ export default function ServicePackages() {
   const handleSelectPackage = (pkg: ServicePackage) => {
     // Navigate to booking page with package pre-selected
     navigate("/book", { state: { packageId: pkg.id } });
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    showToast({
+      title: "Refreshed",
+      description: "Service packages updated",
+    });
   };
 
   if (isLoading) {
@@ -45,11 +56,17 @@ export default function ServicePackages() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Service Packages</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Save more with our bundled service packages
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Service Packages</h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Save more with our bundled service packages
+            </p>
+          </div>
+          <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         {/* Filters */}

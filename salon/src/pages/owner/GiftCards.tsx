@@ -46,6 +46,9 @@ import {
   Ban,
 } from "@/components/icons";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function GiftCards() {
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -55,8 +58,10 @@ export default function GiftCards() {
   );
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: giftCardsData, isLoading } = useGiftCards(
+  const { data: giftCardsData, isLoading, refetch } = useGiftCards(
     statusFilter || undefined,
   );
   const { data: selectedGiftCard } = useGiftCard(selectedGiftCardId);
@@ -89,6 +94,10 @@ export default function GiftCards() {
       gc.recipient_email?.toLowerCase().includes(query)
     );
   });
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const handleCancelGiftCard = async () => {
     if (!selectedGiftCardId || !cancelReason.trim()) return;

@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 interface DiscountForm {
   discountCode: string;
@@ -33,16 +35,21 @@ export default function DiscountManagement() {
     applicableTo: "transaction",
   });
 
-  const { data: discountsData, isLoading } = useDiscounts({
+  const { data: discountsData, isLoading, refetch } = useDiscounts({
     page,
     pageSize: 20,
   });
   const createDiscount = useCreateDiscount();
   const updateDiscount = useUpdateDiscount();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const discounts = discountsData?.discounts || [];
   const total = discountsData?.total || 0;
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,21 +126,23 @@ export default function DiscountManagement() {
         <h2 className="text-xl md:text-2xl font-bold text-foreground">
           Discount Management
         </h2>
-        <Button
-          onClick={() => {
-            setShowForm(!showForm);
-            setEditingId(null);
-            setFormData({
-              discountCode: "",
-              discountType: "percentage",
-              discountValue: 0,
-              applicableTo: "transaction",
-            });
-          }}
-          className="w-full sm:w-auto text-sm md:text-base"
-        >
-          {showForm ? "Cancel" : "New Discount"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              setShowForm(!showForm);
+              setEditingId(null);
+              setFormData({
+                discountCode: "",
+                discountType: "percentage",
+                discountValue: 0,
+                applicableTo: "transaction",
+              });
+            }}
+            className="w-full sm:w-auto text-sm md:text-base"
+          >
+            {showForm ? "Cancel" : "New Discount"}
+          </Button>
+        </div>
       </div>
 
       {/* Create/Edit Form */}

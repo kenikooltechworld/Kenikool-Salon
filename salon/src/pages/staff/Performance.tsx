@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   StarIcon,
   UsersIcon,
   CalendarIcon,
   TrendingUpIcon,
-  RefreshCwIcon,
   AlertCircleIcon,
   FilterIcon,
   InfoIcon,
@@ -18,6 +17,8 @@ import {
   usePerformanceMetrics,
   usePerformanceReviews,
 } from "@/hooks/usePerformanceMetrics";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 /**
  * Performance & Ratings page for staff members
@@ -36,8 +37,8 @@ import {
  */
 export default function Performance() {
   const [sortBy, setSortBy] = useState<"date" | "rating">("date");
+  const { setRefreshHandler } = usePageRefresh();
 
-  // Fetch performance data
   const {
     data: metrics,
     isLoading: metricsLoading,
@@ -52,14 +53,16 @@ export default function Performance() {
     refetch: refetchReviews,
   } = usePerformanceReviews();
 
-  const handleRefresh = () => {
-    refetchMetrics();
-    refetchReviews();
-  };
-
   const handleSortChange = (newSortBy: "date" | "rating") => {
     setSortBy(newSortBy);
   };
+
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchMetrics();
+      refetchReviews();
+    });
+  }, [refetchMetrics, refetchReviews, setRefreshHandler]);
 
   const isLoading = metricsLoading || reviewsLoading;
   const hasReviews = reviews && reviews.length > 0;
@@ -77,18 +80,6 @@ export default function Performance() {
             Track your performance metrics and customer feedback
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-            className="self-start sm:self-auto"
-          >
-            <RefreshCwIcon size={16} className="mr-2" />
-            Refresh
-          </Button>
-        </div>
       </div>
 
       {/* Performance Summary Cards */}
@@ -103,11 +94,9 @@ export default function Performance() {
           </CardHeader>
           <CardContent>
             {metricsLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : metricsError ? (
               <div className="flex items-center gap-2">
@@ -139,11 +128,9 @@ export default function Performance() {
           </CardHeader>
           <CardContent>
             {metricsLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : metricsError ? (
               <div className="flex items-center gap-2">
@@ -173,11 +160,9 @@ export default function Performance() {
           </CardHeader>
           <CardContent>
             {metricsLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : metricsError ? (
               <div className="flex items-center gap-2">
@@ -207,11 +192,9 @@ export default function Performance() {
           </CardHeader>
           <CardContent>
             {metricsLoading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Loading...
-                </span>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
               </div>
             ) : metricsError ? (
               <div className="flex items-center gap-2">

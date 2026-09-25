@@ -35,16 +35,19 @@ interface AppointmentFilters {
  * Fetch all appointments with optional filters
  */
 export function useAppointments(filters?: AppointmentFilters) {
+  const queryKey = React.useMemo(() => {
+    const normalizedFilters = filters || {};
+    return ["appointments", normalizedFilters] as const;
+  }, [filters]);
+
   return useQuery({
-    queryKey: ["appointments", filters],
+    queryKey,
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Appointment[] }>(
+      const { data } = await apiClient.get<{ appointments: Appointment[] }>(
         "/appointments",
-        {
-          params: filters,
-        },
+        { params: filters || {} },
       );
-      return data.data;
+      return data.appointments;
     },
   });
 }
@@ -56,10 +59,10 @@ export function useAppointment(id: string) {
   return useQuery({
     queryKey: ["appointments", id],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Appointment }>(
+      const { data } = await apiClient.get<{ appointment: Appointment }>(
         `/appointments/${id}`,
       );
-      return data.data;
+      return data.appointment;
     },
     enabled: !!id,
   });

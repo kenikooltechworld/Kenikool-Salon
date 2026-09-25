@@ -23,7 +23,7 @@ export function D3BarChart({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !data || data.length === 0) return;
+    if (!svgRef.current) return;
 
     // Clear previous chart
     d3.select(svgRef.current).selectAll("*").remove();
@@ -47,7 +47,7 @@ export function D3BarChart({
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Parse dates and get revenue values
-    const formattedData = data.map((d) => ({
+    const formattedData = (data || []).map((d) => ({
       date: new Date(d.date),
       revenue: d.revenue,
       label: d.label || d.date,
@@ -60,9 +60,10 @@ export function D3BarChart({
       .range([0, chartWidth])
       .padding(0.2);
 
+    const yMax = d3.max(formattedData, (d) => d.revenue);
     const yScale = d3
       .scaleLinear()
-      .domain([0, d3.max(formattedData, (d) => d.revenue) || 0])
+      .domain([0, yMax ? Math.max(yMax, 1) : 100])
       .nice()
       .range([chartHeight, 0]);
 
@@ -79,28 +80,6 @@ export function D3BarChart({
       getComputedStyle(document.documentElement)
         .getPropertyValue("--border")
         .trim() || "#e5e7eb";
-
-    // Create axes
-    const xAxis = d3
-      .axisBottom(xScale)
-      .tickFormat((d: d3.AxisDomain) => {
-        const label = d as string;
-        return label;
-      })
-      .tickSizeOuter(0);
-
-    const yAxis = d3
-      .axisLeft(yScale)
-      .ticks(5)
-      .tickFormat((d: d3.NumberValue) => {
-        const formatter = new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: currency,
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        });
-        return formatter.format(d as number);
-      });
 
     // Add horizontal grid lines
     g.append("g")
@@ -119,6 +98,14 @@ export function D3BarChart({
       .style("opacity", 0.5);
 
     // Add X axis
+    const xAxis = d3
+      .axisBottom(xScale)
+      .tickFormat((d: d3.AxisDomain) => {
+        const label = d as string;
+        return label;
+      })
+      .tickSizeOuter(0);
+
     const xAxisGroup = g
       .append("g")
       .attr("class", "x-axis")
@@ -137,6 +124,19 @@ export function D3BarChart({
     xAxisGroup.selectAll(".tick line").style("stroke", borderColor);
 
     // Add Y axis
+    const yAxis = d3
+      .axisLeft(yScale)
+      .ticks(5)
+      .tickFormat((d: d3.NumberValue) => {
+        const formatter = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: currency,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
+        return formatter.format(d as number);
+      });
+
     const yAxisGroup = g.append("g").attr("class", "y-axis").call(yAxis);
 
     yAxisGroup
@@ -148,129 +148,121 @@ export function D3BarChart({
     yAxisGroup.select(".domain").style("stroke", borderColor);
     yAxisGroup.selectAll(".tick line").style("stroke", borderColor);
 
-    // Create tooltip
-    const tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("class", "d3-tooltip")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background-color", "rgba(15, 23, 42, 0.95)")
-      .style("color", "white")
-      .style("padding", "12px 16px")
-      .style("border-radius", "8px")
-      .style("font-size", "13px")
-      .style("font-weight", "500")
-      .style("pointer-events", "none")
-      .style("z-index", "1000")
-      .style("box-shadow", "0 10px 25px rgba(0, 0, 0, 0.2)")
-      .style("backdrop-filter", "blur(8px)");
+    // Add bars only if data exists
+    if (formattedData.length > 0) {
+      // Create tooltip
+      const tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "d3-tooltip")
+        .style("position", "absolute")
+        .style("visibility", "hidden")
+        .style("background-color", "rgba(15, 23, 42, 0.95)")
+        .style("color", "white")
+        .style("padding", "12px 16px")
+        .style("border-radius", "8px")
+        .style("font-size", "13px")
+        .style("font-weight", "500")
+        .style("pointer-events", "none")
+        .style("z-index", "1000")
+        .style("box-shadow", "0 10px 25px rgba(0, 0, 0, 0.2)")
+        .style("backdrop-filter", "blur(8px)");
 
-    // Add bars with gradient
-    const defs = svg.append("defs");
-    const gradient = defs
-      .append("linearGradient")
-      .attr("id", "bar-gradient")
-      .attr("x1", "0%")
-      .attr("y1", "0%")
-      .attr("x2", "0%")
-      .attr("y2", "100%");
+      // Add bars with gradient
+      const defs = svg.append("defs");
+      const gradient = defs
+        .append("linearGradient")
+        .attr("id", "bar-gradient")
+        .attr("x1", "0%")
+        .attr("y1", "0%")
+        .attr("x2", "0%")
+        .attr("y2", "100%");
 
-    gradient
-      .append("stop")
-      .attr("offset", "0%")
-      .attr("stop-color", primaryColor)
-      .attr("stop-opacity", 1);
+      gradient
+        .append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", primaryColor)
+        .attr("stop-opacity", 1);
 
-    gradient
-      .append("stop")
-      .attr("offset", "100%")
-      .attr("stop-color", primaryColor)
-      .attr("stop-opacity", 0.7);
+      gradient
+        .append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", primaryColor)
+        .attr("stop-opacity", 0.7);
 
-    // Add bars
-    g.selectAll(".bar")
-      .data(formattedData)
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .attr(
-        "x",
-        (d: { label: string; revenue: number }) =>
-          xScale(d.label) || 0,
-      )
-      .attr("y", chartHeight)
-      .attr("width", xScale.bandwidth())
-      .attr("height", 0)
-      .attr("fill", "url(#bar-gradient)")
-      .attr("rx", 6)
-      .style("cursor", "pointer")
-      .style("transition", "all 0.2s ease")
-      .on(
-        "mouseover",
-        function (_event: MouseEvent, d: { date: Date; revenue: number }) {
+      // Add bars
+      g.selectAll(".bar")
+        .data(formattedData)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr(
+          "x",
+          (d: { label: string; revenue: number }) =>
+            xScale(d.label) || 0,
+        )
+        .attr("y", chartHeight)
+        .attr("width", xScale.bandwidth())
+        .attr("height", 0)
+        .attr("fill", "url(#bar-gradient)")
+        .attr("rx", 6)
+        .style("cursor", "pointer")
+        .style("transition", "all 0.2s ease")
+        .on(
+          "mouseover",
+          function (_event: MouseEvent, d: { date: Date; revenue: number }) {
+            d3.select(this as SVGRectElement)
+              .transition()
+              .duration(200)
+              .attr("opacity", 0.85)
+              .attr("transform", "translateY(-2)");
+
+            const formatter = new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: currency,
+            });
+            tooltip.style("visibility", "visible").html(
+              `<div style="line-height: 1.6;">
+                  <div style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">${d.label}</div>
+                  <div style="font-size: 16px; font-weight: 600;">${formatter.format(d.revenue)}</div>
+                </div>`,
+            );
+          },
+        )
+        .on("mousemove", function (event: MouseEvent) {
+          tooltip
+            .style("top", event.pageY - 70 + "px")
+            .style("left", event.pageX - 60 + "px");
+        })
+        .on("mouseout", function () {
           d3.select(this as SVGRectElement)
             .transition()
             .duration(200)
-            .attr("opacity", 0.85)
-            .attr("transform", "translateY(-2)");
+            .attr("opacity", 1)
+            .attr("transform", "translateY(0)");
+          tooltip.style("visibility", "hidden");
+        })
+        .transition()
+        .duration(800)
+        .delay((_d: { label: string; revenue: number }, i: number) => i * 50)
+        .ease(d3.easeCubicOut)
+        .attr("y", (d: { label: string; revenue: number }) => yScale(d.revenue))
+        .attr(
+          "height",
+          (d: { label: string; revenue: number }) => chartHeight - yScale(d.revenue),
+        );
 
-          const formatter = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: currency,
-          });
-          tooltip.style("visibility", "visible").html(
-            `<div style="line-height: 1.6;">
-                <div style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">${d.label}</div>
-                <div style="font-size: 16px; font-weight: 600;">${formatter.format(d.revenue)}</div>
-              </div>`,
-          );
-        },
-      )
-      .on("mousemove", function (event: MouseEvent) {
-        tooltip
-          .style("top", event.pageY - 70 + "px")
-          .style("left", event.pageX - 60 + "px");
-      })
-      .on("mouseout", function () {
-        d3.select(this as SVGRectElement)
-          .transition()
-          .duration(200)
-          .attr("opacity", 1)
-          .attr("transform", "translateY(0)");
-        tooltip.style("visibility", "hidden");
-      })
-      .transition()
-      .duration(800)
-      .delay((_d: { label: string; revenue: number }, i: number) => i * 50)
-      .ease(d3.easeCubicOut)
-      .attr("y", (d: { label: string; revenue: number }) => yScale(d.revenue))
-      .attr(
-        "height",
-        (d: { label: string; revenue: number }) => chartHeight - yScale(d.revenue),
-      );
-
-    // Cleanup tooltip on unmount
-    return () => {
-      tooltip.remove();
-    };
+      // Cleanup tooltip on unmount
+      return () => {
+        tooltip.remove();
+      };
+    }
   }, [data, width, height, currency]);
-
-  if (!data || data.length === 0) {
-    return (
-      <div
-        className="h-64 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: "var(--muted)" }}
-      >
-        <p style={{ color: "var(--muted-foreground)" }}>No data available</p>
-      </div>
-    );
-  }
 
   return (
     <div
       ref={containerRef}
-      className="w-full rounded-lg"
+      className="w-full rounded-lg relative"
       style={{ backgroundColor: "var(--card)" }}
     >
       <svg ref={svgRef} className="w-full" style={{ overflow: "visible" }} />

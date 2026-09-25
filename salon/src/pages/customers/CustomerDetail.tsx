@@ -11,7 +11,7 @@ import {
   MailIcon,
   UserIcon,
   SettingsIcon,
-  DollarSignIcon,
+  WalletIcon,
 } from "@/components/icons";
 import {
   useCustomerBalance,
@@ -27,6 +27,8 @@ import { CustomerBalance } from "@/components/customers/CustomerBalance";
 import { CustomerPreferencesPanel } from "@/components/customers/CustomerPreferencesPanel";
 import { useToast } from "@/components/ui/toast";
 import { useState } from "react";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 const APPOINTMENTS_PREVIEW_LIMIT = 5;
 
@@ -34,10 +36,11 @@ export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const { data: customer, isLoading } = useCustomerProfile(id || "");
+  const { data: customer, isLoading, refetch } = useCustomerProfile(id || "");
   const { mutate: deleteCustomer, isPending: isDeleting } = useDeleteCustomer();
   const { mutate: resendInvitation, isPending: isSendingInvite } = useResendPortalInvitation();
 
@@ -63,6 +66,10 @@ export default function CustomerDetail() {
       },
     });
   };
+
+  useEffect(() => {
+    setRefreshHandler(() => refetch);
+  }, [refetch, setRefreshHandler]);
 
   if (isLoading) {
     return (
@@ -253,7 +260,7 @@ export default function CustomerDetail() {
                 <span className="hidden sm:inline">Profile</span>
               </TabsTrigger>
               <TabsTrigger value="balance" className="gap-2">
-                <DollarSignIcon size={16} />
+                <WalletIcon size={16} />
                 <span className="hidden sm:inline">Balance</span>
               </TabsTrigger>
               <TabsTrigger value="preferences" className="gap-2">
@@ -336,7 +343,7 @@ export default function CustomerDetail() {
 
             <TabsContent value="history" className="space-y-4 mt-6">
               {/* Appointment History */}
-              {customer!.history && customer!.history.length > 0 && (
+              {customer!.history && customer!.history.length > 0 ? (
                 <Card className="p-4 sm:p-6">
                   <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
                     Appointment History ({customer!.history.length})
@@ -384,6 +391,12 @@ export default function CustomerDetail() {
                       View All Appointments ({customer!.history.length})
                     </Button>
                   )}
+                </Card>
+              ) : (
+                <Card className="p-4 sm:p-6">
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No appointment history yet</p>
+                  </div>
                 </Card>
               )}
             </TabsContent>

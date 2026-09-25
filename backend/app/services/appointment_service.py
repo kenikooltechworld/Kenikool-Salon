@@ -1,5 +1,6 @@
 """Service for managing appointments."""
 
+import hashlib
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
@@ -11,6 +12,8 @@ from app.models.service import Service
 from app.models.time_slot import TimeSlot
 from app.models.customer import Customer
 from app.models.payment import Payment
+from app.models.staff import Staff
+from app.models.user import User
 from app.tasks import queue_notification
 
 logger = logging.getLogger(__name__)
@@ -38,6 +41,8 @@ class AppointmentService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
         selected_addons: Optional[List[dict]] = None,
+        price: Optional[float] = None,
+        addons_total: Optional[float] = None,
     ) -> Appointment:
         """
         Create a new appointment - handles both internal and public bookings.
@@ -71,13 +76,21 @@ class AppointmentService:
             ValueError: If appointment overlaps or customer has outstanding balance
         """
         # Handle idempotency - check if this booking already exists
-        if idempotency_key:
-            existing = Appointment.objects(
-                tenant_id=tenant_id,
-                idempotency_key=idempotency_key
-            ).first()
-            if existing:
-                return existing
+        if not idempotency_key:
+            key_data = f"{customer_id}:{staff_id}:{service_id}:{start_time.isoformat()}:{end_time.isoformat()}"
+            idempotency_key = hashlib.sha256(key_data.encode()).hexdigest()
+        
+        existing = Appointment.objects(
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key
+        ).first()
+        if existing:
+            return existing
+        
+        # Prevent booking in the past
+        now = datetime.utcnow()
+        if start_time < now:
+            raise ValueError("Cannot book appointments in the past. Please select a future date and time.")
         
         # Check for double-booking
         AppointmentService._check_double_booking(tenant_id, staff_id, start_time, end_time)
@@ -85,9 +98,8 @@ class AppointmentService:
         # Determine if this is a guest booking
         is_guest = bool(guest_name)
         
-        # For internal bookings, check customer balance
-        if not is_guest and customer_id:
-            AppointmentService._check_customer_balance(tenant_id, customer_id)
+        # Note: Outstanding customer balances no longer block booking creation.
+        # Payment can be collected later via POS/cash or online payment.
         
         # For guest bookings, get or create guest customer
         if is_guest and guest_email:
@@ -95,9 +107,10 @@ class AppointmentService:
                 tenant_id, guest_name, guest_email, guest_phone
             )
         
-        # Get service to capture price
+        # Get service to capture price if not provided
         service = Service.objects(tenant_id=tenant_id, id=service_id).first()
-        price = service.price if service else None
+        if price is None:
+            price = float(service.price) if service and service.price else None
         
         # Calculate addons total
         import json
@@ -270,51 +283,50 @@ class AppointmentService:
     ) -> None:
         """
         Check if customer has outstanding balance.
-        
+
         Args:
             tenant_id: Tenant ID
             customer_id: Customer ID
-            
+
         Raises:
             ValueError: If customer has outstanding balance
         """
         from app.models.invoice import Invoice
         from app.models.staff import Staff
-        from decimal import Decimal
-        
-        # Get customer
+        from mongoengine import Q
+
         customer = Customer.objects(
             tenant_id=tenant_id,
             id=customer_id
         ).first()
-        
-        # If customer doesn't exist, check if they're a staff member
-        # (staff members can book for themselves without a customer record)
+
         if not customer:
             staff = Staff.objects(
                 tenant_id=tenant_id,
                 id=customer_id
             ).first()
-            
+
             if not staff:
                 raise ValueError(f"Customer {customer_id} not found")
-            
-            # Staff members can book without balance check
+
             logger.info(f"[BalanceCheck] Staff member {customer_id} booking for themselves - skipping balance check")
             return
-        
-        # Get unpaid invoices
-        unpaid_invoices = Invoice.objects(
+
+        result = Invoice.objects(
             tenant_id=tenant_id,
             customer_id=customer_id,
             status__in=["issued", "overdue"],
-        )
-        
-        # Calculate outstanding balance
-        outstanding_balance = Decimal("0")
-        for invoice in unpaid_invoices:
-            outstanding_balance += invoice.total
-        
+        ).aggregate([
+            {"$match": {"tenant_id": tenant_id, "customer_id": customer_id, "status": {"$in": ["issued", "overdue"]}}},
+            {"$group": {"_id": None, "total": {"$sum": "$total"}}},
+        ])
+
+        try:
+            doc = next(result, None)
+            outstanding_balance = float(doc["total"]) if doc and doc.get("total") is not None else 0.0
+        except Exception:
+            outstanding_balance = 0.0
+
         if outstanding_balance > 0:
             raise ValueError(
                 f"Customer has outstanding balance of {outstanding_balance}. "
@@ -378,25 +390,23 @@ class AppointmentService:
     ) -> List[Tuple[datetime, datetime]]:
         """
         Calculate available time slots for a staff member on a given date.
-        
+
         Args:
             tenant_id: Tenant ID
             staff_id: Staff member ID
             service_id: Service ID
             date: Date to get slots for (date only, time ignored)
             slot_duration_minutes: Duration of each slot in minutes (default 30)
-            
+
         Returns:
             List of (start_time, end_time) tuples for available slots
         """
-        # Get service duration
         service = Service.objects(tenant_id=tenant_id, id=service_id).first()
         if not service:
             return []
-        
+
         service_duration = service.duration_minutes
-        
-        # Get staff availability for this day of week
+
         day_of_week = date.weekday()
         availabilities = Availability.objects(
             Q(tenant_id=tenant_id) &
@@ -407,23 +417,35 @@ class AppointmentService:
             Q(effective_from__lte=date.date()) &
             (Q(effective_to__gte=date.date()) | Q(effective_to=None))
         )
-        
+
         if not availabilities:
             return []
-        
+
+        # Get all booked slots for this staff on this date in one query
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        booked_appointments = Appointment.objects(
+            tenant_id=tenant_id,
+            staff_id=staff_id,
+            status__ne="cancelled",
+            start_time__gte=day_start,
+            start_time__lt=day_end,
+        )
+
+        booked_ranges = [
+            (appt.start_time, appt.end_time) for appt in booked_appointments
+        ]
+
         available_slots = []
-        
-        # Process each availability window
+
         for availability in availabilities:
-            # Parse availability times
             start_hour, start_min, start_sec = map(int, availability.start_time.split(":"))
             end_hour, end_min, end_sec = map(int, availability.end_time.split(":"))
-            
-            # Create datetime objects for the availability window
+
             window_start = date.replace(hour=start_hour, minute=start_min, second=start_sec)
             window_end = date.replace(hour=end_hour, minute=end_min, second=end_sec)
-            
-            # Subtract breaks from availability window
+
             breaks = availability.breaks or []
             break_periods = []
             for break_item in breaks:
@@ -440,35 +462,28 @@ class AppointmentService:
                     hour=break_end_hour, minute=break_end_min, second=break_end_sec
                 )
                 break_periods.append((break_start, break_end))
-            
-            # Generate slots for this availability window
+
             current_time = window_start
             while current_time + timedelta(minutes=service_duration) <= window_end:
                 slot_end = current_time + timedelta(minutes=service_duration)
-                
-                # Check if slot overlaps with any breaks
+
                 slot_in_break = False
                 for break_start, break_end in break_periods:
                     if current_time < break_end and slot_end > break_start:
                         slot_in_break = True
                         break
-                
+
                 if not slot_in_break:
-                    # Check if slot is already booked
-                    booked = Appointment.objects(
-                        tenant_id=tenant_id,
-                        staff_id=staff_id,
-                        status__ne="cancelled",
-                        start_time__lt=slot_end,
-                        end_time__gt=current_time,
-                    ).count()
-                    
-                    if booked == 0:
+                    overlaps_booked = any(
+                        current_time < booked_end and slot_end > booked_start
+                        for booked_start, booked_end in booked_ranges
+                    )
+
+                    if not overlaps_booked:
                         available_slots.append((current_time, slot_end))
-                
-                # Move to next slot
+
                 current_time += timedelta(minutes=slot_duration_minutes)
-        
+
         return available_slots
 
     @staticmethod
@@ -699,6 +714,7 @@ class AppointmentService:
         status: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        search: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
     ) -> Tuple[List[Appointment], int]:
@@ -712,33 +728,95 @@ class AppointmentService:
             status: Optional status filter
             start_date: Optional start date filter
             end_date: Optional end date filter
+            search: Optional search term to match across ID, service, staff, customer, notes, time
             page: Page number (1-indexed)
             page_size: Number of results per page
             
         Returns:
             Tuple of (appointments list, total count)
         """
-        query = Q(tenant_id=tenant_id)
+        query = Appointment.objects(tenant_id=tenant_id)
         
         if customer_id:
-            query &= Q(customer_id=customer_id)
+            query = query(customer_id=customer_id)
         
         if staff_id:
-            query &= Q(staff_id=staff_id)
+            query = query(staff_id=staff_id)
         
         if status:
-            query &= Q(status=status)
+            query = query(status=status)
         
         if start_date:
-            query &= Q(start_time__gte=start_date)
+            query = query(start_time__gte=start_date)
         
         if end_date:
-            query &= Q(end_time__lte=end_date)
+            query = query(end_time__lte=end_date)
         
-        total = Appointment.objects(query).count()
+        # Search across multiple fields - same __raw__ regex pattern as customer search
+        if search:
+            search_term = search.strip()
+            
+            # Build OR conditions list, following customer search pattern exactly
+            or_conditions = [
+                {"notes": {"$regex": search_term, "$options": "i"}},
+                {"guest_name": {"$regex": search_term, "$options": "i"}},
+                {"guest_email": {"$regex": search_term, "$options": "i"}},
+                {"guest_phone": {"$regex": search_term, "$options": "i"}},
+            ]
+            
+            # Search by service name using same pattern as customer search
+            matching_services = list(Service.objects(
+                tenant_id=tenant_id,
+                __raw__={"name": {"$regex": search_term, "$options": "i"}}
+            ).only('id'))
+            if matching_services:
+                service_ids = [s.id for s in matching_services]
+                or_conditions.append({"service_id": {"$in": service_ids}})
+            
+            # Search by staff name (via User model) using same __raw__ pattern
+            matching_users = list(User.objects(
+                tenant_id=tenant_id,
+                __raw__={
+                    "$or": [
+                        {"first_name": {"$regex": search_term, "$options": "i"}},
+                        {"last_name": {"$regex": search_term, "$options": "i"}},
+                        {"email": {"$regex": search_term, "$options": "i"}},
+                    ]
+                }
+            ).only('id'))
+            if matching_users:
+                user_ids = [u.id for u in matching_users]
+                matching_staff = list(Staff.objects(
+                    tenant_id=tenant_id,
+                    user_id__in=user_ids
+                ).only('id'))
+                if matching_staff:
+                    staff_ids = [s.id for s in matching_staff]
+                    or_conditions.append({"staff_id": {"$in": staff_ids}})
+            
+            # Search by customer name using same __raw__ pattern as customer search
+            matching_customers = list(Customer.objects(
+                tenant_id=tenant_id,
+                __raw__={
+                    "$or": [
+                        {"first_name": {"$regex": search_term, "$options": "i"}},
+                        {"last_name": {"$regex": search_term, "$options": "i"}},
+                        {"email": {"$regex": search_term, "$options": "i"}},
+                        {"phone": {"$regex": search_term, "$options": "i"}},
+                    ]
+                }
+            ).only('id'))
+            if matching_customers:
+                customer_ids = [c.id for c in matching_customers]
+                or_conditions.append({"customer_id": {"$in": customer_ids}})
+            
+            # Apply the OR filter using same pattern as customer search
+            query = query(__raw__={"$or": or_conditions})
+        
+        total = query.count()
         
         skip = (page - 1) * page_size
-        appointments = Appointment.objects(query).skip(skip).limit(page_size).order_by("-start_time")
+        appointments = query.skip(skip).limit(page_size).order_by("-start_time")
         
         return list(appointments), total
 

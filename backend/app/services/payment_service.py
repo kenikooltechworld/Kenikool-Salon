@@ -7,9 +7,13 @@ from decimal import Decimal
 from typing import Dict, Any, Optional
 from bson import ObjectId
 from app.models.payment import Payment
+from app.models.transaction import Transaction
+from app.models.receipt import Receipt
 from app.models.invoice import Invoice
 from app.models.customer import Customer
+from app.models.appointment import Appointment
 from app.services.paystack_service import PaystackService
+from app.services.appointment_service import AppointmentService
 from app.context import get_tenant_id
 
 logger = logging.getLogger(__name__)
@@ -447,44 +451,116 @@ class PaymentService:
     ) -> Dict[str, Any]:
         """
         List payments with optional filtering.
+        Includes both online payments (Payment model) and POS transactions (Transaction model).
 
         Args:
             customer_id: Filter by customer ID
             invoice_id: Filter by invoice ID
             status: Filter by status
             skip: Number of records to skip
-            limit: Number of records to return
+            limit: Number of results per page
 
         Returns:
-            Dictionary with total count and list of payments
+            Dictionary with total count and list of unified payment records
         """
         tenant_id = get_tenant_id()
         
-        query = Payment.objects(tenant_id=ObjectId(tenant_id))
+        # Query online payments
+        payment_query = Payment.objects(tenant_id=ObjectId(tenant_id))
 
         if customer_id:
             try:
-                query = query.filter(customer_id=ObjectId(customer_id))
+                payment_query = payment_query.filter(customer_id=ObjectId(customer_id))
             except Exception:
                 pass
 
         if invoice_id:
             try:
-                query = query.filter(invoice_id=ObjectId(invoice_id))
+                payment_query = payment_query.filter(invoice_id=ObjectId(invoice_id))
             except Exception:
                 pass
 
         if status:
-            query = query.filter(status=status)
+            payment_query = payment_query.filter(status=status)
 
-        total = query.count()
-        payments = query.skip(skip).limit(limit).order_by("-created_at")
+        payments = list(payment_query.order_by("-created_at"))
+
+        # Query POS transactions
+        transaction_query = Transaction.objects(tenant_id=ObjectId(tenant_id))
+
+        if customer_id:
+            try:
+                transaction_query = transaction_query.filter(customer_id=ObjectId(customer_id))
+            except Exception:
+                pass
+
+        if invoice_id:
+            try:
+                transaction_query = transaction_query.filter(invoice_id=ObjectId(invoice_id))
+            except Exception:
+                pass
+
+        if status:
+            # Map payment status to transaction payment_status
+            status_map = {
+                "success": "completed",
+                "pending": "pending",
+                "failed": "failed",
+                "cancelled": "refunded",
+            }
+            transaction_status = status_map.get(status)
+            if transaction_status:
+                transaction_query = transaction_query.filter(payment_status=transaction_status)
+
+        transactions = list(transaction_query.order_by("-created_at"))
+
+        # Combine and sort by date
+        combined = []
+        for p in payments:
+            combined.append({
+                "id": str(p.id),
+                "amount": p.amount,
+                "status": p.status,
+                "payment_method": p.payment_method,
+                "reference": p.reference,
+                "customer_id": str(p.customer_id),
+                "invoice_id": str(p.invoice_id),
+                "created_at": p.created_at,
+                "updated_at": p.updated_at,
+                "type": "payment",
+            })
+        for t in transactions:
+            # Look up receipt for this transaction
+            receipt = Receipt.objects(
+                tenant_id=ObjectId(tenant_id),
+                transaction_id=t.id
+            ).first()
+            
+            combined.append({
+                "id": str(t.id),
+                "amount": t.total,
+                "status": t.payment_status,
+                "payment_method": t.payment_method,
+                "reference": t.reference_number,
+                "customer_id": str(t.customer_id),
+                "invoice_id": str(t.invoice_id) if t.invoice_id else None,
+                "created_at": t.created_at,
+                "updated_at": t.updated_at,
+                "type": "transaction",
+                "receipt_id": str(receipt.id) if receipt else None,
+            })
+
+        # Sort by created_at descending
+        combined.sort(key=lambda x: x["created_at"], reverse=True)
+
+        total = len(combined)
+        paginated = combined[skip:skip + limit]
 
         return {
             "total": total,
             "skip": skip,
             "limit": limit,
-            "payments": list(payments),
+            "payments": paginated,
         }
 
     def retry_payment(self, payment_id: str) -> Dict[str, Any]:

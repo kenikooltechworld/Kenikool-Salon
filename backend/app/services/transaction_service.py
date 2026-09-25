@@ -167,6 +167,21 @@ class TransactionService:
         )
         transaction.save()
 
+        # Update invoice status to paid if this is a completed payment
+        if invoice_id and transaction.payment_status == "completed":
+            try:
+                invoice = Invoice.objects(
+                    tenant_id=tenant_id,
+                    id=ObjectId(invoice_id)
+                ).first()
+                if invoice and invoice.status != "paid":
+                    invoice.status = "paid"
+                    invoice.paid_at = datetime.utcnow()
+                    invoice.save()
+                    logger.info(f"Invoice {invoice.id} marked as paid from transaction {transaction.id}")
+            except Exception as e:
+                logger.error(f"Error updating invoice status: {e}")
+
         # Deduct inventory for product items
         try:
             InventoryDeductionService.deduct_inventory(tenant_id, transaction.id, items)

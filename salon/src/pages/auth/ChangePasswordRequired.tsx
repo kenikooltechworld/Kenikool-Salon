@@ -83,12 +83,10 @@ export default function ChangePasswordRequired() {
 
           // Determine redirect path based on role
           let redirectPath = "/dashboard";
-          if (roleNames.includes("Owner")) {
-            redirectPath = "/dashboard";
-          } else if (roleNames.includes("Manager")) {
-            redirectPath = "/manager";
+          if (roleNames.includes("Owner") || roleNames.includes("Manager")) {
+            redirectPath = "/owner/profile";
           } else if (roleNames.includes("Staff")) {
-            redirectPath = "/staff/dashboard";
+            redirectPath = "/staff/settings";
           } else if (roleNames.includes("Customer")) {
             redirectPath = "/my-account";
           }

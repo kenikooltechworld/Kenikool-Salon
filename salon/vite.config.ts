@@ -17,33 +17,25 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    host: "0.0.0.0",
+    host: true,
     middlewareMode: false,
-    hmr: {
-      host: "localhost",
-      port: 3000,
-      protocol: "ws",
-    },
     proxy: {
       "/api": {
         target: "http://localhost:8000",
-        changeOrigin: true,
+        changeOrigin: false,
         rewrite: (path) => path,
         configure: (proxy, _options) => {
           proxy.on("proxyReq", (proxyReq, req, _res) => {
-            // Ensure X-Forwarded-Host is set to preserve subdomain
             const host = req.headers.host || "localhost:3000";
             proxyReq.setHeader("X-Forwarded-Host", host);
             proxyReq.setHeader("X-Forwarded-Proto", "http");
 
-            // Forward cookies from the original request
             if (req.headers.cookie) {
               proxyReq.setHeader("Cookie", req.headers.cookie);
             }
           });
 
           proxy.on("proxyRes", (proxyRes, _req, res) => {
-            // Forward Set-Cookie headers from backend to client
             const setCookieHeaders = proxyRes.headers["set-cookie"];
             if (setCookieHeaders) {
               res.setHeader("Set-Cookie", setCookieHeaders);
@@ -53,7 +45,7 @@ export default defineConfig({
       },
       "/ws": {
         target: "http://localhost:8000",
-        changeOrigin: true,
+        changeOrigin: false,
         ws: true,
       },
     },

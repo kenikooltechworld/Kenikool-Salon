@@ -31,19 +31,15 @@ export function useUpcomingAppointments(limit: number = 10) {
         };
       }>("/owner/dashboard/appointments", { params: { limit } });
 
-      // Extract appointments array from response
-      let extracted: UpcomingAppointment[] = [];
-      if (Array.isArray(data)) extracted = data;
-      else if (Array.isArray(data?.data)) extracted = data.data;
-      else if (Array.isArray(data?.data?.appointments)) extracted = data.data.appointments;
+      const extracted: UpcomingAppointment[] = [];
+      if (Array.isArray(data)) extracted.push(...data);
+      else if (Array.isArray(data?.data)) extracted.push(...data.data);
+      else if (Array.isArray(data?.data?.appointments)) extracted.push(...data.data.appointments);
       
-      console.log("[DashboardHook][useUpcomingAppointments] raw response:", data);
-      console.log("[DashboardHook][useUpcomingAppointments] extracted count:", extracted.length);
-      return extracted || [];
+      return extracted;
     },
-    refetchInterval: 30 * 1000, // 30 seconds
-    staleTime: 30 * 1000, // 30 seconds
-    retry: false, // Don't retry - fail fast
-    placeholderData: (previousData) => previousData, // Keep old data while refetching
+    refetchInterval: 30 * 1000,
+    staleTime: 30 * 1000,
+    retry: false,
   });
 }

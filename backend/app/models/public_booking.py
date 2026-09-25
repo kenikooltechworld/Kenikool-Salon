@@ -78,9 +78,10 @@ class PublicBooking(Document):
     meta = {
         "collection": "public_bookings",
         "indexes": [
-            ("tenant_id", "created_at"),
             ("tenant_id", "booking_date"),
+            ("tenant_id", "booking_date", "booking_time"),
             ("tenant_id", "status"),
+            ("tenant_id", "status", "booking_date"),
             ("tenant_id", "customer_email"),
             ("tenant_id", "service_id"),
             ("tenant_id", "staff_id"),

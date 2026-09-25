@@ -1,6 +1,6 @@
 """Service Add-on Routes"""
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
+from typing import List, Optional
 from bson import ObjectId
 
 from app.schemas.service_addon import (
@@ -44,15 +44,20 @@ admin_router = APIRouter(prefix="/service-addons", tags=["Service Addons Managem
 
 @admin_router.get("/", response_model=List[ServiceAddonResponse])
 async def list_addons(
-    is_active: bool = None,
+    is_active: Optional[bool] = Query(None),
+    category: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user_dependency)
 ):
     """List all service addons (admin only)"""
-    tenant_id = current_user.get("tenant_id")
+    try:
+        tenant_id = ObjectId(current_user.get("tenant_id")) if current_user.get("tenant_id") else None
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid tenant ID")
     
     addons = ServiceAddonService.get_all_addons(
         tenant_id=tenant_id,
-        is_active=is_active
+        is_active=is_active,
+        category=category,
     )
     
     return [ServiceAddonResponse(**addon.to_dict()) for addon in addons]
@@ -64,9 +69,8 @@ async def get_addon(
     current_user: dict = Depends(get_current_user_dependency)
 ):
     """Get specific addon by ID (admin only)"""
-    tenant_id = current_user.get("tenant_id")
-    
     try:
+        tenant_id = ObjectId(current_user.get("tenant_id")) if current_user.get("tenant_id") else None
         addon_oid = ObjectId(addon_id)
     except Exception:
         raise HTTPException(
@@ -91,7 +95,10 @@ async def create_addon(
     current_user: dict = Depends(get_current_user_dependency)
 ):
     """Create a new service addon (admin only)"""
-    tenant_id = current_user.get("tenant_id")
+    try:
+        tenant_id = ObjectId(current_user.get("tenant_id")) if current_user.get("tenant_id") else None
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid tenant ID")
     
     addon = ServiceAddonService.create_addon(
         tenant_id=tenant_id,

@@ -184,20 +184,53 @@ export function RevenueChart({
     );
   }
 
-  if (!data) {
+  const chartData =
+    period === "daily"
+      ? data.dailyRevenue
+      : period === "weekly"
+        ? data.weeklyRevenue
+        : data.monthlyRevenue;
+
+  if (!chartData || chartData.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3Icon size={20} />
-            Revenue Analytics
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3Icon size={20} />
+              Revenue Analytics
+            </CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={period === "daily" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handlePeriodChange("daily")}
+              >
+                Daily
+              </Button>
+              <Button
+                variant={period === "weekly" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handlePeriodChange("weekly")}
+              >
+                Weekly
+              </Button>
+              <Button
+                variant={period === "monthly" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handlePeriodChange("monthly")}
+              >
+                Monthly
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <BarChart3Icon size={48} className="text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No revenue data available
+          <div className="text-center py-12 text-muted-foreground">
+            <BarChart3Icon size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">No revenue data available yet</p>
+            <p className="text-sm mt-2">
+              Revenue data will appear here once you have completed appointments
             </p>
           </div>
         </CardContent>
@@ -213,7 +246,7 @@ export function RevenueChart({
             <BarChart3Icon size={20} />
             Revenue Analytics
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={period === "daily" ? "primary" : "outline"}
               size="sm"

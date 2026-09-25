@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 from pydantic import field_validator, Field
 
-_env_path = Path("/app/.env")
+_env_path = Path(__file__).resolve().parent.parent / ".env"
 
 
 class Settings(BaseSettings):

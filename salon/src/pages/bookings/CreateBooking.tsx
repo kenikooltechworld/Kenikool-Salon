@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,28 +31,48 @@ interface BookingFormData {
   staffId?: string;
   selectedSlot?: AvailableSlot;
   selectedDate?: string;
+  notes?: string;
+  locationId?: string;
 }
 
 export default function CreateBooking() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const [step, setStep] = useState<WizardStep>("customer");
+  const [step, setStep] = useState<WizardStep>(() => {
+    const saved = localStorage.getItem("bookingWizardStep");
+    return (saved as WizardStep) || "customer";
+  });
   const [paymentOption, setPaymentOption] = useState<"now" | "later">("later");
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<BookingFormData>(() => {
-    // Load from localStorage on mount
     const saved = localStorage.getItem("bookingFormData");
-    return saved ? JSON.parse(saved) : { customerMode: "existing" };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.selectedDate) {
+        const selectedDate = new Date(parsed.selectedDate + "T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          delete parsed.selectedDate;
+          delete parsed.selectedSlot;
+          localStorage.setItem("bookingFormData", JSON.stringify(parsed));
+        }
+      }
+      return parsed;
+    }
+    return { customerMode: "existing" };
   });
   const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: staff = [], isLoading: staffLoading } = useStaff({
     status: "active",
   });
-  const { data: customersData, isLoading: customersLoading } = useCustomers();
+  const { data: locations = [], isLoading: locationsLoading } = useLocations();
+  const { data: customersData, isLoading: customersLoading } = useCustomers({
+    enabled: formData.customerMode === "existing",
+  });
   const customers = customersData?.customers || [];
   const { mutate: createBooking, isPending } = useCreateBooking();
 
-  // Auto-save form data to localStorage
   const updateFormData = (updates: Partial<BookingFormData>) => {
     setFormData((prev) => {
       const updated = { ...prev, ...updates };
@@ -60,6 +80,10 @@ export default function CreateBooking() {
       return updated;
     });
   };
+
+  useEffect(() => {
+    localStorage.setItem("bookingWizardStep", step);
+  }, [step]);
 
   const selectedService = services.find(
     (s: Service) => s.id === formData.serviceId,
@@ -195,16 +219,6 @@ export default function CreateBooking() {
   };
 
   const handleConfirmBooking = async () => {
-    console.log("[CreateBooking] handleConfirmBooking called");
-    console.log("[CreateBooking] paymentOption:", paymentOption);
-    console.log("[CreateBooking] formData:", {
-      serviceId: formData.serviceId,
-      selectedSlot: formData.selectedSlot,
-      staffId: formData.staffId,
-      customerId: formData.customerId,
-      selectedDate: formData.selectedDate,
-    });
-
     if (
       formData.serviceId &&
       formData.selectedSlot &&
@@ -212,17 +226,8 @@ export default function CreateBooking() {
       formData.customerId &&
       formData.selectedDate
     ) {
-      // Send times as local timezone strings (YYYY-MM-DD and HH:MM format)
-      // Backend will store and work with local times
       const startTimeStr = `${formData.selectedDate}T${formData.selectedSlot.start_time}:00`;
       const endTimeStr = `${formData.selectedDate}T${formData.selectedSlot.end_time}:00`;
-
-      console.log("[CreateBooking] Sending appointment (local timezone):");
-      console.log("  selectedDate:", formData.selectedDate);
-      console.log("  startTime:", formData.selectedSlot.start_time);
-      console.log("  endTime:", formData.selectedSlot.end_time);
-      console.log("  startTimeStr:", startTimeStr);
-      console.log("  endTimeStr:", endTimeStr);
 
       const bookingPayload = {
         customerId:
@@ -232,21 +237,16 @@ export default function CreateBooking() {
         customerPhone: formData.customerPhone || "",
         serviceId: formData.serviceId || "",
         staffId: formData.staffId || "",
+        locationId: formData.locationId || "",
         startTime: startTimeStr,
         endTime: endTimeStr,
+        notes: formData.notes || "",
         paymentOption: paymentOption,
+        price: selectedService?.price || 0,
       };
 
-      // If "Pay Now" is selected, redirect to payment page
       if (paymentOption === "now") {
-        console.log(
-          "[CreateBooking] Pay Now selected - redirecting to payment page",
-        );
-        // Save booking payload to localStorage for payment page
         localStorage.setItem("pendingBooking", JSON.stringify(bookingPayload));
-        console.log("[CreateBooking] Saved booking payload to localStorage");
-        // Redirect to booking payment page
-        console.log("[CreateBooking] Navigating to /payments/booking-payment");
         navigate("/payments/booking-payment", {
           state: {
             bookingData: bookingPayload,
@@ -260,8 +260,8 @@ export default function CreateBooking() {
       // If "Pay Later", create booking immediately
       createBooking(bookingPayload, {
         onSuccess: (bookingData) => {
-          // Clear saved form data on successful booking
           localStorage.removeItem("bookingFormData");
+          localStorage.removeItem("bookingWizardStep");
           setError(null);
 
           showToast({
@@ -398,8 +398,8 @@ export default function CreateBooking() {
       {/* Content */}
       <Card className="p-6">
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
         {step === "customer" && (
@@ -632,6 +632,7 @@ export default function CreateBooking() {
             serviceId={formData.serviceId || ""}
             serviceDuration={selectedService.duration_minutes || 0}
             selectedSlot={formData.selectedSlot}
+            selectedDate={formData.selectedDate}
             onSlotSelect={handleSlotSelect}
             onDateSelect={handleDateSelect}
             onNext={handleContinueToConfirmation}
@@ -651,7 +652,7 @@ export default function CreateBooking() {
               {/* Booking Summary with Images */}
               <div className="space-y-4">
                 {/* Customer Section */}
-                <div className="border rounded-lg p-4 space-y-3 bg-blue-50">
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
                   <h4 className="font-semibold text-foreground">Customer</h4>
                   <div className="space-y-2">
                     {formData.customerName && (
@@ -799,6 +800,42 @@ export default function CreateBooking() {
                   </div>
                 </div>
 
+                {/* Notes & Location Section */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold text-foreground">Additional Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Location</label>
+                      <select
+                        value={formData.locationId || ""}
+                        onChange={(e) =>
+                          updateFormData({ locationId: e.target.value || undefined })
+                        }
+                        className="mt-1 w-full p-2 border border-border rounded-md bg-background text-foreground text-sm"
+                      >
+                        <option value="">Select location</option>
+                        {locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-muted-foreground">Notes</label>
+                      <textarea
+                        value={formData.notes || ""}
+                        onChange={(e) =>
+                          updateFormData({ notes: e.target.value })
+                        }
+                        placeholder="Any special requests or information"
+                        maxLength={1000}
+                        className="mt-1 w-full p-2 border border-border rounded-md bg-background text-foreground text-sm min-h-[80px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Payment Section */}
                 <div className="border rounded-lg p-4 space-y-4 bg-primary/5">
                   <div className="flex items-center justify-between">
@@ -871,9 +908,6 @@ export default function CreateBooking() {
                 </Button>
                 <Button
                   onClick={() => {
-                    console.log(
-                      "[CreateBooking] Confirm Booking button clicked",
-                    );
                     handleConfirmBooking();
                   }}
                   disabled={isPending}

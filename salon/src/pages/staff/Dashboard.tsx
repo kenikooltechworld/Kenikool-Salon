@@ -13,13 +13,14 @@ import {
   ClockIcon,
   DollarIcon,
   BriefcaseIcon,
-  RefreshCwIcon,
 } from "@/components/icons";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function StaffDashboard() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
   const {
     data: metrics,
@@ -59,10 +60,12 @@ export default function StaffDashboard() {
     }
   }, [activitiesError, showToast]);
 
-  const handleRefreshAll = () => {
-    refetchMetrics();
-    refetchActivities();
-  };
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchMetrics();
+      refetchActivities();
+    });
+  }, [refetchMetrics, refetchActivities, setRefreshHandler]);
 
   return (
     <div className="space-y-6">
@@ -77,16 +80,6 @@ export default function StaffDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <NetworkStatus />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshAll}
-            disabled={metricsLoading || activitiesLoading}
-            className="gap-2"
-          >
-            <RefreshCwIcon size={16} />
-            Refresh
-          </Button>
         </div>
       </div>
 

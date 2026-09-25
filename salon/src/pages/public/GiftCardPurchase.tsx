@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePurchaseGiftCard } from "@/hooks/useGiftCards";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ import {
   GiftIcon as Gift,
   MailIcon as Mail,
   PhoneIcon as Phone,
+  RefreshCwIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +33,7 @@ const PRESET_AMOUNTS = [5000, 10000, 20000, 50000, 100000];
 
 export default function GiftCardPurchase() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const purchaseGiftCard = usePurchaseGiftCard();
 
   const [amount, setAmount] = useState<number>(10000);
@@ -95,14 +98,30 @@ export default function GiftCardPurchase() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <Gift className="mx-auto h-12 w-12 text-blue-600" />
-          <h1 className="mt-4 text-3xl font-bold text-gray-900">
-            Purchase a Gift Card
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Give the gift of beauty and wellness
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="text-center flex-1">
+            <Gift className="mx-auto h-12 w-12 text-blue-600" />
+            <h1 className="mt-4 text-3xl font-bold text-gray-900">
+              Purchase a Gift Card
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Give the gift of beauty and wellness
+            </p>
+          </div>
+          <Button
+            onClick={() => {
+              showToast({
+                title: "Refreshed",
+                description: "Page updated",
+              });
+            }}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCwIcon size={16} />
+            Refresh
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

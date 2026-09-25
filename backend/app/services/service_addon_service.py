@@ -12,6 +12,15 @@ class ServiceAddonService:
     """Service for managing service add-ons"""
     
     @staticmethod
+    def _to_object_id(value: Optional[str]) -> Optional[ObjectId]:
+        if not value:
+            return None
+        try:
+            return ObjectId(value)
+        except Exception:
+            return None
+    
+    @staticmethod
     def get_addons_for_service(tenant_id: ObjectId, service_id: ObjectId) -> List[ServiceAddon]:
         """Get all active addons applicable to a service"""
         return list(ServiceAddon.objects(
@@ -29,11 +38,15 @@ class ServiceAddonService:
         ).first()
     
     @staticmethod
-    def get_all_addons(tenant_id: ObjectId, is_active: Optional[bool] = None) -> List[ServiceAddon]:
+    def get_all_addons(tenant_id: Optional[ObjectId], is_active: Optional[bool] = None, category: Optional[str] = None) -> List[ServiceAddon]:
         """Get all addons for a tenant"""
-        query = {"tenant_id": tenant_id}
+        query = {}
+        if tenant_id is not None:
+            query["tenant_id"] = tenant_id
         if is_active is not None:
             query["is_active"] = is_active
+        if category is not None:
+            query["category"] = category
         
         return list(ServiceAddon.objects(**query).order_by("display_order"))
     

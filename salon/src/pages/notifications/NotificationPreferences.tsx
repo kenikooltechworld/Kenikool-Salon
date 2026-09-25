@@ -3,14 +3,17 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from "@/hooks/useNotifications";
-import { CheckCircleIcon, AlertCircleIcon } from "@/components/icons";
+import { CheckCircleIcon, AlertCircleIcon, RefreshCwIcon } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 
 export default function NotificationPreferences() {
-  const { data: preferences = [], isLoading } = useNotificationPreferences();
+  const { data: preferences = [], isLoading, refetch } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
   const [localPreferences, setLocalPreferences] = useState<any[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (preferences.length > 0) {
@@ -49,14 +52,48 @@ export default function NotificationPreferences() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="h-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-            />
-          ))}
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-6 py-3 text-left">
+                    <Skeleton className="h-4 w-32" />
+                  </th>
+                  {[...Array(4)].map((_, i) => (
+                    <th
+                      key={i}
+                      className="px-6 py-3 text-center"
+                    >
+                      <Skeleton className="h-4 w-12 mx-auto" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(5)].map((_, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-gray-200 dark:border-gray-700"
+                  >
+                    <td className="px-6 py-4">
+                      <Skeleton className="h-4 w-40" />
+                    </td>
+                    {[...Array(4)].map((_, j) => (
+                      <td key={j} className="px-6 py-4 text-center">
+                        <Skeleton className="h-5 w-5 mx-auto" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -64,9 +101,11 @@ export default function NotificationPreferences() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-        Notification Preferences
-      </h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Notification Preferences
+        </h1>
+      </div>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
         Manage how and when you receive notifications
       </p>

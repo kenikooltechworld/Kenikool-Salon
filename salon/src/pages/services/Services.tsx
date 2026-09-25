@@ -22,7 +22,7 @@ export default function Services() {
     isOpen: false,
   });
   const { data: services = [], isLoading, refetch } = useServices();
-  const { mutate: deleteService } = useDeleteService();
+  const { mutate: deleteService, isPending: isDeleting } = useDeleteService();
 
   // Refetch services when form closes
   useEffect(() => {
@@ -43,12 +43,15 @@ export default function Services() {
 
   const handleConfirmDelete = () => {
     if (deleteConfirm.serviceId) {
+      const serviceToDelete = services.find(
+        (service) => service.id === deleteConfirm.serviceId,
+      );
       deleteService(deleteConfirm.serviceId, {
-        onSuccess: (deletedService: any) => {
+        onSuccess: () => {
           showToast({
             variant: "success",
             title: "Success",
-            description: `${deletedService.name || "Service"} has been deleted successfully`,
+            description: `${serviceToDelete?.name || "Service"} has been deleted successfully`,
           });
           setDeleteConfirm({ isOpen: false });
         },
@@ -262,6 +265,7 @@ export default function Services() {
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"
+        isLoading={isDeleting}
       />
     </div>
   );

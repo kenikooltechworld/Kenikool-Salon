@@ -7,7 +7,7 @@ import type { Service, ServiceFilters } from "@/types/service";
  */
 export function useServices(filters?: ServiceFilters) {
   return useQuery({
-    queryKey: ["services", filters],
+    queryKey: ["services", filters || {}],
     queryFn: async () => {
       try {
         const response = await get<{
@@ -18,14 +18,13 @@ export function useServices(filters?: ServiceFilters) {
         }>("/services", {
           params: filters,
         });
-        // get() helper returns response.data which contains { services: [...], total, page, page_size }
         return response.services || [];
       } catch (error) {
         console.error("Error fetching services:", error);
         return [];
       }
     },
-    staleTime: 0, // Always refetch to ensure fresh data
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 }
 
@@ -55,12 +54,13 @@ export function useCreateService() {
       service: Omit<Service, "id" | "createdAt" | "updatedAt">,
     ) => {
       const response = await post<Service>("/services", service);
-      // post() helper returns response.data which is the service object
       return response;
     },
-    onSuccess: () => {
-      // Invalidate all services queries regardless of filters
-      queryClient.invalidateQueries({ queryKey: ["services"] });
+    onSuccess: (newService) => {
+      queryClient.setQueryData(
+        ["services", {}],
+        (oldData: Service[] = []) => [newService, ...oldData],
+      );
     },
   });
 }
@@ -77,14 +77,20 @@ export function useUpdateService() {
       ...updates
     }: Partial<Service> & { id: string }) => {
       const response = await put<Service>(`/services/${id}`, updates);
-      // put() helper returns response.data which is the service object
       return response;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["services"] });
-      queryClient.invalidateQueries({
-        queryKey: ["services", (data as any).id],
-      });
+    onSuccess: (updatedService) => {
+      queryClient.setQueryData(
+        ["services", updatedService.id],
+        updatedService,
+      );
+      queryClient.setQueryData(
+        ["services", {}],
+        (oldData: Service[] = []) =>
+          oldData.map((service) =>
+            service.id === updatedService.id ? updatedService : service,
+          ),
+      );
     },
   });
 }
@@ -97,10 +103,15 @@ export function useDeleteService() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await del(`/services/${id}`);
+      const result = await del<{ message?: string }>(`/services/${id}`);
+      return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["services"] });
+    onSuccess: (_, deletedId) => {
+      queryClient.setQueryData(
+        ["services", {}],
+        (oldData: Service[] = []) =>
+          oldData.filter((service) => service.id !== deletedId),
+      );
     },
   });
 }

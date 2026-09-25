@@ -11,23 +11,28 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { useToast } from "@/components/ui/toast";
+import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useEffect } from "react";
 
 export default function POSReports() {
   const [activeTab, setActiveTab] = useState("sales");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const { showToast } = useToast();
+  const { setRefreshHandler } = usePageRefresh();
 
-  const { data: salesReport, isLoading: salesLoading } = useSalesReport({
+  const { data: salesReport, isLoading: salesLoading, refetch: refetchSales } = useSalesReport({
     startDate,
     endDate,
   });
-  const { data: revenueReport, isLoading: revenueLoading } = useRevenueReport({
+  const { data: revenueReport, isLoading: revenueLoading, refetch: refetchRevenue } = useRevenueReport({
     startDate,
     endDate,
   });
-  const { data: inventoryReport, isLoading: inventoryLoading } =
+  const { data: inventoryReport, isLoading: inventoryLoading, refetch: refetchInventory } =
     useInventoryReport();
-  const { data: paymentReport, isLoading: paymentLoading } = usePaymentReport({
+  const { data: paymentReport, isLoading: paymentLoading, refetch: refetchPayment } = usePaymentReport({
     startDate,
     endDate,
   });
@@ -40,11 +45,22 @@ export default function POSReports() {
     });
   };
 
+  useEffect(() => {
+    setRefreshHandler(() => {
+      refetchSales();
+      refetchRevenue();
+      refetchInventory();
+      refetchPayment();
+    });
+  }, [refetchSales, refetchRevenue, refetchInventory, refetchPayment, setRefreshHandler]);
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Date Filters */}
       <Card className="p-4 md:p-6">
-        <h3 className="text-base md:text-lg font-semibold mb-4">Filters</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base md:text-lg font-semibold">Filters</h3>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <div>
             <Label htmlFor="start-date" className="text-sm">
