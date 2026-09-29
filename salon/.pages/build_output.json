@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "config": {
+    "build_output_dir": "dist"
+  },
+  "routes": [
+    {
+      "include": [
+        "/api/*"
+      ],
+      "exclude": []
+    }
+  ]
+}

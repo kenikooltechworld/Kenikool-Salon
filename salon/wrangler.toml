@@ -1,0 +1,25 @@
+# Cloudflare Pages configuration
+name = "kenikool-salon-frontend"
+compatibility_date = "2024-03-01"
+
+[env.production]
+  # Environment variables for production
+  # These will be set in the Cloudflare dashboard
+  
+[build]
+  command = "npm run build"
+  cwd = "."
+  
+[build.environment]
+  # Build environment
+  NODE_VERSION = "20"
+
+# Custom headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

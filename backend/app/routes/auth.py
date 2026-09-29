@@ -27,6 +27,23 @@ from app.middleware.enumeration_prevention import (
 
 logger = logging.getLogger(__name__)
 
+
+def _is_secure_request(request: Request) -> bool:
+    try:
+        return request.url.scheme == "https"
+    except Exception:
+        return settings.environment != "development"
+
+
+def _cookie_kwargs(request: Request) -> dict:
+    is_secure = _is_secure_request(request)
+    return {
+        "secure": is_secure,
+        "httponly": True,
+        "samesite": "None" if is_secure else "Lax",
+        "path": "/",
+    }
+
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
@@ -85,7 +102,7 @@ async def get_current_user_dependency(
     Returns user data dict with id, email, tenant_id, role_ids, role_names, etc.
     Raises HTTPException if user is not authenticated.
     """
-    is_secure = settings.environment != "development"
+    cookie_kwargs = _cookie_kwargs(request)
     
     # Get tokens from cookies
     access_token = request.cookies.get("access_token")
@@ -101,11 +118,8 @@ async def get_current_user_dependency(
             new_access_token = auth_service.refresh_access_token(refresh_token)
             if not new_access_token:
                 # Clear all invalid tokens immediately
-                response.delete_cookie("refresh_token", path="/", secure=is_secure, httponly=True)
-                response.delete_cookie("access_token", path="/", secure=is_secure, httponly=True)
-                response.delete_cookie("session_id", path="/", secure=is_secure, httponly=True)
-                response.delete_cookie("tenant_id", path="/", secure=is_secure, httponly=True)
-                response.delete_cookie("user_id", path="/", secure=is_secure, httponly=True)
+                for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
+                    response.delete_cookie(name, **cookie_kwargs)
                 raise HTTPException(status_code=401, detail="Unauthorized")
 
             # Set new access token in response cookie
@@ -113,31 +127,22 @@ async def get_current_user_dependency(
                 "access_token",
                 new_access_token,
                 max_age=auth_service.access_token_expire_minutes * 60,
-                httponly=True,
-                secure=is_secure,
-                samesite="Lax" if not is_secure else "Strict",
-                path="/",
+                **cookie_kwargs,
             )
             access_token = new_access_token
         except Exception as e:
             logger.error(f"Token refresh failed: {str(e)}", exc_info=True)
             # Clear all invalid tokens on refresh failure
-            response.delete_cookie("refresh_token", path="/", secure=is_secure, httponly=True)
-            response.delete_cookie("access_token", path="/", secure=is_secure, httponly=True)
-            response.delete_cookie("session_id", path="/", secure=is_secure, httponly=True)
-            response.delete_cookie("tenant_id", path="/", secure=is_secure, httponly=True)
-            response.delete_cookie("user_id", path="/", secure=is_secure, httponly=True)
+            for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
+                response.delete_cookie(name, **cookie_kwargs)
             raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Verify token and extract claims
     payload = auth_service.verify_token(access_token)
     if not payload:
         # Token is invalid or expired - clear all cookies
-        response.delete_cookie("refresh_token", path="/", secure=is_secure, httponly=True)
-        response.delete_cookie("access_token", path="/", secure=is_secure, httponly=True)
-        response.delete_cookie("session_id", path="/", secure=is_secure, httponly=True)
-        response.delete_cookie("tenant_id", path="/", secure=is_secure, httponly=True)
-        response.delete_cookie("user_id", path="/", secure=is_secure, httponly=True)
+        for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
+            response.delete_cookie(name, **cookie_kwargs)
         raise HTTPException(status_code=401, detail="Invalid token")
 
     user_id = payload.get("sub")
@@ -349,36 +354,28 @@ async def login(
                     
                     response = JSONResponse(content=response_data, status_code=403)
                     
+                    cookie_kwargs = _cookie_kwargs(request)
+                    
                     # Set limited access token cookie
-                    is_secure = settings.environment != "development"
                     response.set_cookie(
                         key="access_token",
                         value=access_token,
                         max_age=15 * 60,  # 15 minutes
-                        secure=is_secure,
-                        httponly=True,
-                        samesite="Lax" if not is_secure else "Strict",
-                        path="/",
+                        **cookie_kwargs,
                     )
                     
                     response.set_cookie(
                         key="tenant_id",
                         value=tenant_id,
                         max_age=15 * 60,
-                        secure=is_secure,
-                        httponly=True,
-                        samesite="Lax" if not is_secure else "Strict",
-                        path="/",
+                        **cookie_kwargs,
                     )
                     
                     response.set_cookie(
                         key="user_id",
                         value=str(user_data["user_id"]),
                         max_age=15 * 60,
-                        secure=is_secure,
-                        httponly=True,
-                        samesite="Lax" if not is_secure else "Strict",
-                        path="/",
+                        **cookie_kwargs,
                     )
                     
                     return response
@@ -468,61 +465,21 @@ async def login(
         
         response = JSONResponse(content=response_data, status_code=200)
 
-        # Set secure httpOnly cookies
-        # In development, allow insecure cookies for HTTP localhost
-        is_secure = settings.environment != "development"
-        
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            max_age=auth_service.access_token_expire_minutes * 60,
-            secure=is_secure,  # Only send over HTTPS in production
-            httponly=True,  # Not accessible from JavaScript
-            samesite="Lax" if not is_secure else "Strict",  # Lax for dev, Strict for prod
-            path="/",
-        )
+        cookie_kwargs = _cookie_kwargs(request)
 
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            max_age=(auth_service.refresh_token_expire_days * 24 * 60 * 60) if not login_request.remember_me else (7 * 24 * 60 * 60),  # 7 days if remember_me
-            secure=is_secure,
-            httponly=True,
-            samesite="Lax" if not is_secure else "Strict",
-            path="/",
-        )
-
-        response.set_cookie(
-            key="session_id",
-            value=session_id,
-            max_age=auth_service.access_token_expire_minutes * 60,
-            secure=is_secure,
-            httponly=True,
-            samesite="Lax" if not is_secure else "Strict",
-            path="/",
-        )
-
-        # Set tenant_id cookie
-        response.set_cookie(
-            key="tenant_id",
-            value=tenant_id,
-            max_age=auth_service.access_token_expire_minutes * 60,
-            secure=is_secure,
-            httponly=True,
-            samesite="Lax" if not is_secure else "Strict",
-            path="/",
-        )
-
-        # Set user_id cookie
-        response.set_cookie(
-            key="user_id",
-            value=str(user_data["user_id"]),
-            max_age=auth_service.access_token_expire_minutes * 60,
-            secure=is_secure,
-            httponly=True,
-            samesite="Lax" if not is_secure else "Strict",
-            path="/",
-        )
+        for key, value, max_age in [
+            ("access_token", access_token, auth_service.access_token_expire_minutes * 60),
+            ("refresh_token", refresh_token, (auth_service.refresh_token_expire_days * 24 * 60 * 60) if not login_request.remember_me else (7 * 24 * 60 * 60)),
+            ("session_id", session_id, auth_service.access_token_expire_minutes * 60),
+            ("tenant_id", tenant_id, auth_service.access_token_expire_minutes * 60),
+            ("user_id", str(user_data["user_id"]), auth_service.access_token_expire_minutes * 60),
+        ]:
+            response.set_cookie(
+                key=key,
+                value=value,
+                max_age=max_age,
+                **cookie_kwargs,
+            )
 
         return response
         
@@ -561,45 +518,11 @@ async def logout(
         auth_service.invalidate_session(session_id, tenant_id)
 
     # Clear ALL authentication cookies immediately
-    # In development, allow insecure cookies for HTTP localhost
-    is_secure = settings.environment != "development"
+    cookie_kwargs = _cookie_kwargs(request)
     
     # Delete all auth-related cookies with proper settings
-    response.delete_cookie(
-        key="access_token",
-        path="/",
-        secure=is_secure,
-        httponly=True,
-        samesite="Lax" if not is_secure else "Strict",
-    )
-    response.delete_cookie(
-        key="refresh_token",
-        path="/",
-        secure=is_secure,
-        httponly=True,
-        samesite="Lax" if not is_secure else "Strict",
-    )
-    response.delete_cookie(
-        key="session_id",
-        path="/",
-        secure=is_secure,
-        httponly=True,
-        samesite="Lax" if not is_secure else "Strict",
-    )
-    response.delete_cookie(
-        key="tenant_id",
-        path="/",
-        secure=is_secure,
-        httponly=True,
-        samesite="Lax" if not is_secure else "Strict",
-    )
-    response.delete_cookie(
-        key="user_id",
-        path="/",
-        secure=is_secure,
-        httponly=True,
-        samesite="Lax" if not is_secure else "Strict",
-    )
+    for name in ["access_token", "refresh_token", "session_id", "tenant_id", "user_id"]:
+        response.delete_cookie(key=name, **cookie_kwargs)
 
     logger.info(f"User logged out from tenant: {tenant_id}")
 
@@ -663,17 +586,13 @@ async def refresh_token(
     )
 
     # Set new access token cookie
-    # In development, allow insecure cookies for HTTP localhost
-    is_secure = settings.environment != "development"
+    cookie_kwargs = _cookie_kwargs(request)
     
     response.set_cookie(
         key="access_token",
         value=access_token,
         max_age=auth_service.access_token_expire_minutes * 60,
-        secure=is_secure,
-        httponly=True,
-        samesite="Lax" if not is_secure else "Strict",
-        path="/",
+        **cookie_kwargs,
     )
 
     logger.info(f"Token refreshed for user: {user_id}")
@@ -937,58 +856,21 @@ async def change_password_required(
             
             response = JSONResponse(content=response_data, status_code=200)
 
-            # Set full authentication cookies
-            is_secure = settings.environment != "development"
-            
-            response.set_cookie(
-                key="access_token",
-                value=access_token,
-                max_age=auth_service.access_token_expire_minutes * 60,
-                secure=is_secure,
-                httponly=True,
-                samesite="Lax" if not is_secure else "Strict",
-                path="/",
-            )
+            cookie_kwargs = _cookie_kwargs(request)
 
-            response.set_cookie(
-                key="refresh_token",
-                value=refresh_token,
-                max_age=auth_service.refresh_token_expire_days * 24 * 60 * 60,
-                secure=is_secure,
-                httponly=True,
-                samesite="Lax" if not is_secure else "Strict",
-                path="/",
-            )
-
-            response.set_cookie(
-                key="session_id",
-                value=session_id,
-                max_age=auth_service.access_token_expire_minutes * 60,
-                secure=is_secure,
-                httponly=True,
-                samesite="Lax" if not is_secure else "Strict",
-                path="/",
-            )
-
-            response.set_cookie(
-                key="tenant_id",
-                value=tenant_id,
-                max_age=auth_service.access_token_expire_minutes * 60,
-                secure=is_secure,
-                httponly=True,
-                samesite="Lax" if not is_secure else "Strict",
-                path="/",
-            )
-
-            response.set_cookie(
-                key="user_id",
-                value=str(user_id),
-                max_age=auth_service.access_token_expire_minutes * 60,
-                secure=is_secure,
-                httponly=True,
-                samesite="Lax" if not is_secure else "Strict",
-                path="/",
-            )
+            for key, value, max_age in [
+                ("access_token", access_token, auth_service.access_token_expire_minutes * 60),
+                ("refresh_token", refresh_token, auth_service.refresh_token_expire_days * 24 * 60 * 60),
+                ("session_id", session_id, auth_service.access_token_expire_minutes * 60),
+                ("tenant_id", tenant_id, auth_service.access_token_expire_minutes * 60),
+                ("user_id", str(user_id), auth_service.access_token_expire_minutes * 60),
+            ]:
+                response.set_cookie(
+                    key=key,
+                    value=value,
+                    max_age=max_age,
+                    **cookie_kwargs,
+                )
 
             return response
         

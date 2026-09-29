@@ -1,0 +1,8 @@
+# SPA fallback for React Router
+/*    /index.html   200
+
+# API proxy (if needed for development)
+/api/*  https://kenikool-salon-backend.fly.dev/api/:splat  200
+
+# WebSocket proxy
+/socket.io/*  https://kenikool-salon-backend.fly.dev/socket.io/:splat  200

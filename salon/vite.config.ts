@@ -21,8 +21,8 @@ export default defineConfig({
     middlewareMode: false,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
-        changeOrigin: false,
+        target: "https://kenikool-salon-backend.fly.dev",
+        changeOrigin: true,
         rewrite: (path) => path,
         configure: (proxy, _options) => {
           proxy.on("proxyReq", (proxyReq, req, _res) => {
@@ -43,12 +43,29 @@ export default defineConfig({
           });
         },
       },
-      "/ws": {
-        target: "http://localhost:8000",
-        changeOrigin: false,
+      "/socket.io": {
+        target: "https://kenikool-salon-backend.fly.dev",
+        changeOrigin: true,
         ws: true,
       },
     },
     ...getSecurityHeadersConfig(),
+  },
+  // Production build configuration
+  build: {
+    outDir: "dist",
+    sourcemap: false, // Disable sourcemaps in production for security
+    minify: "terser",
+    target: "es2022",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          query: ['@tanstack/react-query'],
+          ui: ['motion', 'clsx', 'tailwind-merge'],
+        }
+      }
+    }
   },
 });
