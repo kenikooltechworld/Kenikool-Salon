@@ -56,7 +56,7 @@ export function usePayments(filters?: PaymentFilters) {
       const { data } = await apiClient.get<{ payments: any[] }>(
         queryString ? `/payments?${queryString}` : "/payments",
       );
-      return (data.payments || []).map((p: any) => ({
+      return (data?.payments || []).map((p: any) => ({
         id: p.id,
         invoiceId: p.invoiceId,
         customerId: p.customerId,

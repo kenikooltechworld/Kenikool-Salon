@@ -112,7 +112,7 @@ export function useCreateInvoice() {
       // Transform camelCase to snake_case for API
       const payload = {
         customer_id: invoice.customerId,
-        line_items: invoice.lineItems.map((item) => ({
+        line_items: (invoice.lineItems || []).map((item) => ({
           service_id: item.serviceId,
           service_name: item.serviceName,
           quantity: item.quantity,

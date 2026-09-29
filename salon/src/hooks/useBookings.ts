@@ -23,7 +23,7 @@ export function useBookings(filters?: BookingFilters) {
         `/appointments?${params}`,
       );
 
-      return (data.appointments || []).map((appt: any) => ({
+      return (data?.appointments || []).map((appt: any) => ({
         id: appt.id,
         customerId: appt.customer_id,
         staffId: appt.staff_id,

@@ -15,12 +15,10 @@ let deferredPrompt: BeforeInstallPromptEvent | null = null;
  */
 export function initPWAInstall(): void {
   window.addEventListener("beforeinstallprompt", (e: Event) => {
-    // Prevent the mini-infobar from appearing on mobile
-    e.preventDefault();
-    // Stash the event so it can be triggered later
-    deferredPrompt = e as BeforeInstallPromptEvent;
-
-    // Dispatch custom event to notify app
+    const event = e as BeforeInstallPromptEvent;
+    if (!event.prompt) return;
+    event.preventDefault();
+    deferredPrompt = event;
     window.dispatchEvent(new Event("pwa-install-available"));
   });
 

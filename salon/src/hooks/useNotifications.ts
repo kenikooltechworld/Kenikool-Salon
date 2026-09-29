@@ -31,9 +31,14 @@ export const useNotifications = (filters?: NotificationFilters) => {
 
       const response = await apiClient.get(`/notifications?${params}`);
       const payload = response.data;
-      return (Array.isArray(payload)
+      const notifications = Array.isArray(payload)
         ? payload
-        : (payload?.notifications || payload?.data?.notifications || [])) as Notification[];
+        : Array.isArray(payload?.notifications)
+          ? payload.notifications
+          : Array.isArray(payload?.data?.notifications)
+            ? payload.data.notifications
+            : [];
+      return notifications as Notification[];
     },
     staleTime: 30000, // 30 seconds
   });
