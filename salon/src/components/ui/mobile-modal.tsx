@@ -24,11 +24,16 @@ function useIsMobile() {
 }
 
 // Simple bottom sheet hook
-function useBottomSheet() {
+function useBottomSheet(_open: boolean) {
   return {
     isOpen: false,
     open: () => {},
     close: () => {},
+    isDragging: false,
+    dragY: 0,
+    handleTouchStart: () => {},
+    handleTouchMove: () => {},
+    handleTouchEnd: (_onClose?: () => void) => {},
   };
 }
 
@@ -87,7 +92,7 @@ export function MobileModal({
           }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd(onClose)}
+          onTouchEnd={() => handleTouchEnd(onClose)}
         >
           {/* Drag handle */}
           <div className="flex justify-center pt-3 pb-2">

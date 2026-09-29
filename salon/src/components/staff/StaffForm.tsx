@@ -57,7 +57,7 @@ export function StaffForm({
   const [certificationInput, setCertificationInput] = useState("");
   const [error, setError] = useState("");
   const { data: roles = [] } = useRoles();
-  const { data: services = [] } = useServices({ page_size: 100 });
+  const { data: services = [] } = useServices({ limit: 100 });
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Image upload hooks
@@ -413,7 +413,7 @@ export function StaffForm({
             options={services.map((service) => ({
               id: service.id,
               label: service.name,
-              description: `₦${parseFloat(service.price).toLocaleString()} (${service.duration_minutes}min)`,
+               description: `₦${Number(service.price).toLocaleString()} (${service.duration_minutes}min)`,
             }))}
             selectedIds={formData.service_ids}
             onChange={(serviceIds) =>

@@ -4,6 +4,7 @@ import * as d3 from "d3";
 interface DataPoint {
   date: string;
   revenue: number;
+  label?: string;
 }
 
 interface D3BarChartProps {
@@ -210,7 +211,7 @@ export function D3BarChart({
         .style("transition", "all 0.2s ease")
         .on(
           "mouseover",
-          function (_event: MouseEvent, d: { date: Date; revenue: number }) {
+          function (_event: MouseEvent, d: { date: Date; revenue: number; label: string }) {
             d3.select(this as SVGRectElement)
               .transition()
               .duration(200)

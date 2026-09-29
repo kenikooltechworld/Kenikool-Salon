@@ -30,7 +30,7 @@ export default function ServiceDetail() {
 
   const assignedStaff = (service?.staff_ids || [])
     .map((sid) => allStaff.find((s) => s.id === sid))
-    .filter(Boolean);
+    .filter((s): s is NonNullable<typeof s> => s != null);
 
   const category = categories.find(
     (cat: any) => cat.name === service?.category,

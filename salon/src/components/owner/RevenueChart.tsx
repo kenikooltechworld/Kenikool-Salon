@@ -36,7 +36,7 @@ export function RevenueChart({
     if (!data) return;
 
     // Get the appropriate data based on period
-    let chartData: { date: string; revenue: number }[] = [];
+    let chartData: { date: string; revenue: number; label?: string }[] = [];
     if (period === "daily") {
       chartData = data.dailyRevenue;
     } else if (period === "weekly") {
@@ -186,10 +186,10 @@ export function RevenueChart({
 
   const chartData =
     period === "daily"
-      ? data.dailyRevenue
+      ? data?.dailyRevenue
       : period === "weekly"
-        ? data.weeklyRevenue
-        : data.monthlyRevenue;
+        ? data?.weeklyRevenue
+        : data?.monthlyRevenue;
 
   if (!chartData || chartData.length === 0) {
     return (
@@ -276,10 +276,10 @@ export function RevenueChart({
         <D3BarChart
           data={
             period === "daily"
-              ? data.dailyRevenue
+              ? data?.dailyRevenue || []
               : period === "weekly"
-                ? data.weeklyRevenue
-                : data.monthlyRevenue
+                ? data?.weeklyRevenue || []
+                : data?.monthlyRevenue || []
           }
           height={380}
           currency={currency}
@@ -295,7 +295,7 @@ export function RevenueChart({
               className="text-2xl font-bold"
               style={{ color: "var(--foreground)" }}
             >
-              {formatCurrency(data.totalRevenue, currency)}
+              {formatCurrency(data?.totalRevenue || 0, currency)}
             </p>
           </div>
           <div className="space-y-1">
@@ -306,25 +306,27 @@ export function RevenueChart({
               className="text-2xl font-bold"
               style={{ color: "var(--foreground)" }}
             >
-              {formatCurrency(data.averageDailyRevenue, currency)}
+              {formatCurrency(data?.averageDailyRevenue || 0, currency)}
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
               Growth
             </p>
-            <p
-              className="text-2xl font-bold"
-              style={{
-                color:
-                  data.growthPercentage >= 0
-                    ? "var(--success, #22c55e)"
-                    : "var(--destructive)",
-              }}
-            >
-              {data.growthPercentage >= 0 ? "+" : ""}
-              {data.growthPercentage.toFixed(1)}%
-            </p>
+              {data && (
+                <p
+                  className="text-2xl font-bold"
+                  style={{
+                    color:
+                      (data.growthPercentage || 0) >= 0
+                        ? "var(--success, #22c55e)"
+                        : "var(--destructive)",
+                  }}
+                >
+                  {(data.growthPercentage || 0) >= 0 ? "+" : ""}
+                  {(data.growthPercentage || 0).toFixed(1)}%
+                </p>
+              )}
           </div>
         </div>
 
@@ -337,7 +339,7 @@ export function RevenueChart({
             Revenue by Service
           </h4>
           <div className="space-y-2">
-            {data.byService.slice(0, 5).map((service) => (
+            {data?.byService?.slice(0, 5).map((service) => (
               <div
                 key={service.serviceName}
                 className="flex items-center justify-between text-sm"
@@ -379,7 +381,7 @@ export function RevenueChart({
             Top Staff by Revenue
           </h4>
           <div className="space-y-2">
-            {data.byStaff.slice(0, 5).map((staff) => (
+            {data?.byStaff?.slice(0, 5).map((staff) => (
               <div
                 key={staff.staffName}
                 className="flex items-center justify-between text-sm"

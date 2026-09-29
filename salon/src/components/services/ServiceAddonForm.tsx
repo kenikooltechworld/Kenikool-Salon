@@ -63,7 +63,7 @@ export function ServiceAddonForm({
     setUploadError(null);
 
     try {
-      const imageUrl = await uploadImage(file, "service-addons");
+      const imageUrl = await uploadImage(file);
       handleInputChange("image_url", imageUrl);
       showToast({
         variant: "success",

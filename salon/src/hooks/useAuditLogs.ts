@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils";
 import { useState } from "react";
 
@@ -30,6 +30,7 @@ export interface AuditSummary {
 }
 
 export const useAuditLogs = () => {
+  const queryClient = useQueryClient();
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(100);
   const [eventType, setEventType] = useState<string | undefined>();
@@ -139,6 +140,9 @@ export const useAuditLogs = () => {
     // Mutations
     exportAuditLogs: exportAuditLogsMutation.mutate,
     isExportingAuditLogs: exportAuditLogsMutation.isPending,
+
+    // Refresh
+    refetch: () => queryClient.invalidateQueries({ queryKey: ["audit-logs"] }),
 
     // Filters
     skip,

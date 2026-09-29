@@ -20,6 +20,29 @@ export default function RevenueReport() {
     return `${year}-${month}-${day}`;
   };
 
+  const handleExportCSV = () => {
+    if (!reportData) return;
+    const headers = ["Date", "Revenue", "Transactions"];
+    const rows = (reportData.dailyRevenue || []).map((item: any) => [
+      item.date,
+      item.revenue.toFixed(2),
+      item.transactions || 0,
+    ]);
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row: string[]) => row.join(",")),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `revenue-report-${dateRange.start}-to-${dateRange.end}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const [dateRange, setDateRange] = useState({
     start: getLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
     end: getLocalDateString(new Date()),

@@ -67,7 +67,7 @@ export function useRealTimeAvailability({
     const tenantSubdomain = parts[0];
 
     // Connect to WebSocket server
-    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    const socketUrl = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || "/socket.io";
 
     if (!socket) {
       socket = io(socketUrl, {

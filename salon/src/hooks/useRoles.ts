@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { get, post, put, del } from "@/lib/utils/api";
 import type { Role } from "@/types/role";
 
+export type { Role };
+
 /**
  * Fetch all roles
  */

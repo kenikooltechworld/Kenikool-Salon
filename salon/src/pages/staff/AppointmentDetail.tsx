@@ -343,7 +343,9 @@ export default function AppointmentDetail() {
                   {isLoading ? (
                     <Skeleton className="h-4 w-32" />
                   ) : customer ? (
-                    `${customer.first_name} ${customer.last_name}`
+                    customer?.firstName || customer?.lastName
+                      ? `${customer.firstName || ""} ${customer.lastName || ""}`.trim()
+                      : "Customer no longer available"
                   ) : (
                     <span className="text-warning">Customer no longer available</span>
                   )}

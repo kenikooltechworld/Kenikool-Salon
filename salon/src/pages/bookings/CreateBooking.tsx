@@ -10,6 +10,7 @@ import { AvailabilityPicker } from "@/components/bookings/AvailabilityPicker";
 import { NewCustomerForm } from "@/components/bookings/NewCustomerForm";
 import { useServices } from "@/hooks/useServices";
 import { useStaff } from "@/hooks/useStaff";
+import { useLocations } from "@/hooks/useLocations";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useCreateBooking } from "@/hooks/useBookings";
 import type { Service, AvailableSlot } from "@/types";

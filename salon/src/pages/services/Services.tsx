@@ -225,10 +225,10 @@ export default function Services() {
                     </p>
                   </div>
                 </div>
-                {service.staff_ids?.length > 0 && (
+                {(service.staff_ids?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <UsersIcon size={13} />
-                    <span>{service.staff_ids.length} staff assigned</span>
+                    <span>{(service.staff_ids?.length ?? 0)} staff assigned</span>
                   </div>
                 )}
               </div>

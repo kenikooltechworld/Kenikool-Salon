@@ -25,6 +25,7 @@ export function useDropdownPosition(
     alignment: align,
     shouldFlip: false,
     style: {},
+    recalculate: () => {},
   }));
 
   const updatePosition = useRef<(() => void) | null>(null);
@@ -75,6 +76,7 @@ export function useDropdownPosition(
           left: Math.max(viewportPadding, Math.min(left, viewportWidth - contentWidth - viewportPadding)),
           zIndex: 9999,
         },
+        recalculate: update,
       });
     }
 

@@ -71,8 +71,8 @@ export default function Bookings() {
   }, [refetch, setRefreshHandler]);
 
   useEffect(() => {
-    setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
-  }, [searchTerm, setFilters]);
+    setFilters({ ...filters, search: searchTerm || undefined });
+  }, [searchTerm, filters, setFilters]);
 
   const handleConfirm = (id: string) => {
     confirmBooking(id, {

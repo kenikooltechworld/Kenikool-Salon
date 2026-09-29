@@ -8,7 +8,7 @@ const floatingVariants = {
     transition: {
       duration: 3,
       repeat: Infinity,
-      ease: [0.42, 0, 0.58, 1],
+      ease: [0.42, 0, 0.58, 1] as [number, number, number, number],
     },
   },
 };
@@ -29,7 +29,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 30 },
+    transition: { type: "spring" as const, stiffness: 300, damping: 30 },
   },
 };
 

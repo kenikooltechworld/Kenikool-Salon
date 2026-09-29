@@ -71,12 +71,20 @@ export function useCheckout() {
 
       if (data.appointmentId) {
         try {
-          await collectPayment.mutateAsync({
-            id: data.appointmentId,
-            paymentMethod: data.paymentMethod,
-            amount: data.total,
-            notes: `POS transaction ${data.id}`,
-          });
+          collectPayment(
+            {
+              id: data.appointmentId,
+              paymentMethod: data.paymentMethod,
+              amount: data.total,
+              notes: `POS transaction ${data.id}`,
+            },
+            {
+              onSuccess: () => {},
+              onError: (error) => {
+                console.error("Failed to update booking payment status:", error);
+              },
+            },
+          );
         } catch (error) {
           console.error("Failed to update booking payment status:", error);
         }

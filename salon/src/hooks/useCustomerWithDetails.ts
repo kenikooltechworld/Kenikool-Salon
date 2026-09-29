@@ -113,7 +113,7 @@ export function useCustomerWithPreferences(customerId: string) {
  * Fetch complete customer profile (history + preferences)
  */
 export function useCustomerProfile(customerId: string) {
-  const { data: customer, isLoading: customerLoading } =
+  const { data: customer, isLoading: customerLoading, refetch } =
     useCustomer(customerId);
   const { data: history, isLoading: historyLoading } =
     useCustomerHistory(customerId);
@@ -129,5 +129,6 @@ export function useCustomerProfile(customerId: string) {
         }
       : null,
     isLoading: customerLoading || historyLoading || preferencesLoading,
+    refetch,
   };
 }

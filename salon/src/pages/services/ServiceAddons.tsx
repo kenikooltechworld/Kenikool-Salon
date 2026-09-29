@@ -26,7 +26,7 @@ export default function ServiceAddons() {
 
   const filters = {
     search: searchTerm || undefined,
-    category: categoryFilter || undefined,
+    category: (categoryFilter || undefined) as "upgrade" | "product" | "treatment" | undefined,
     is_active: activeFilter === "all" ? undefined : activeFilter === "active",
   };
 

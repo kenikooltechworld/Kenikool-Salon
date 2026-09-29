@@ -59,11 +59,18 @@ export function CustomerPreferencesPanel({
 }: CustomerPreferencesPanelProps) {
   const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    preferred_staff_ids: [] as string[],
-    preferred_service_ids: [] as string[],
-    communication_methods: ["email"] as string[],
-    preferred_time_slots: [] as string[],
+  const [formData, setFormData] = useState<{
+    preferred_staff_ids: string[];
+    preferred_service_ids: string[];
+    communication_methods: ("email" | "sms" | "phone")[];
+    preferred_time_slots: ("morning" | "afternoon" | "evening")[];
+    language: string;
+    notes: string;
+  }>({
+    preferred_staff_ids: [],
+    preferred_service_ids: [],
+    communication_methods: ["email"],
+    preferred_time_slots: [],
     language: "en",
     notes: "",
   });
@@ -122,7 +129,7 @@ export function CustomerPreferencesPanel({
     setIsEditing(false);
   };
 
-  const toggleArrayValue = (array: string[], value: string) => {
+  const toggleArrayValue = <T,>(array: T[], value: T): T[] => {
     return array.includes(value)
       ? array.filter((item) => item !== value)
       : [...array, value];
@@ -310,20 +317,20 @@ export function CustomerPreferencesPanel({
                   key={slot.value}
                   className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted"
                 >
-                  <input
-                    type="checkbox"
-                    checked={formData.preferred_time_slots.includes(slot.value)}
-                    onChange={() =>
-                      setFormData({
-                        ...formData,
-                        preferred_time_slots: toggleArrayValue(
-                          formData.preferred_time_slots,
-                          slot.value
-                        ),
-                      })
-                    }
-                    className="rounded"
-                  />
+                   <input
+                     type="checkbox"
+                     checked={formData.preferred_time_slots.includes(slot.value as "morning" | "afternoon" | "evening")}
+                     onChange={() =>
+                       setFormData({
+                         ...formData,
+                         preferred_time_slots: toggleArrayValue(
+                           formData.preferred_time_slots,
+                           slot.value as "morning" | "afternoon" | "evening"
+                         ),
+                       })
+                     }
+                     className="rounded"
+                   />
                   <span className="text-sm text-foreground">{slot.label}</span>
                 </label>
               ))}
@@ -359,20 +366,20 @@ export function CustomerPreferencesPanel({
                   key={method.value}
                   className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted"
                 >
-                  <input
-                    type="checkbox"
-                    checked={formData.communication_methods.includes(method.value)}
-                    onChange={() =>
-                      setFormData({
-                        ...formData,
-                        communication_methods: toggleArrayValue(
-                          formData.communication_methods,
-                          method.value
-                        ),
-                      })
-                    }
-                    className="rounded"
-                  />
+                   <input
+                     type="checkbox"
+                     checked={formData.communication_methods.includes(method.value as "email" | "sms" | "phone")}
+                     onChange={() =>
+                       setFormData({
+                         ...formData,
+                         communication_methods: toggleArrayValue(
+                           formData.communication_methods,
+                           method.value as "email" | "sms" | "phone"
+                         ),
+                       })
+                     }
+                     className="rounded"
+                   />
                   <span className="text-sm text-foreground">{method.label}</span>
                 </label>
               ))}

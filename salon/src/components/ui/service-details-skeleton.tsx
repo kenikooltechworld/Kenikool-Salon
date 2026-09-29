@@ -1,6 +1,15 @@
 import { Skeleton } from "./skeleton";
 import { Card } from "./card";
 
+function StatCardSkeleton() {
+  return (
+    <Card className="p-4 sm:p-6">
+      <Skeleton className="h-4 w-24 mb-2" />
+      <Skeleton className="h-8 w-16" />
+    </Card>
+  );
+}
+
 export function ServiceDetailsPageSkeleton() {
   return (
     <div className="space-y-6">

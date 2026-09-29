@@ -217,7 +217,7 @@ export function useVerifyPayment() {
 
   return useMutation({
     mutationFn: async (reference: string) => {
-      const payment = await apiClient.get<{
+      const { data: payment } = await apiClient.get<{
         id: string;
         invoiceId: string;
         customerId: string;

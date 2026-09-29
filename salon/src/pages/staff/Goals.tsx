@@ -9,6 +9,7 @@ import {
   AlertCircleIcon,
   CalendarIcon,
   TrendingUpIcon,
+  RefreshCwIcon,
 } from "@/components/icons";
 import { GoalsDisplay } from "@/components/staff/GoalsDisplay";
 import { TargetProgress } from "@/components/staff/TargetProgress";

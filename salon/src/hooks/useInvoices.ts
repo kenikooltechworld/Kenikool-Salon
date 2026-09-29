@@ -61,7 +61,7 @@ export function useInvoice(id: string) {
     queryKey: ["invoices", id],
     queryFn: async () => {
       const response = await apiClient.get<Invoice>(`/invoices/${id}`);
-      const inv = response.data;
+      const inv = response.data as any;
       return {
         id: inv.id,
         appointmentId: inv.appointment_id,
@@ -124,7 +124,7 @@ export function useCreateInvoice() {
         appointment_id: invoice.appointmentId,
       };
       const response = await apiClient.post<Invoice>("/invoices", payload);
-      const inv = response.data;
+      const inv = response.data as any;
       return {
         id: inv.id,
         appointmentId: inv.appointment_id,
@@ -174,7 +174,7 @@ export function useUpdateInvoice() {
       if (updates.notes !== undefined) payload.notes = updates.notes;
 
       const response = await apiClient.put<Invoice>(`/invoices/${id}`, payload);
-      const inv = response.data;
+      const inv = response.data as any;
       return {
         id: inv.id,
         appointmentId: inv.appointment_id,
@@ -230,7 +230,7 @@ export function useIssueInvoice() {
   return useMutation({
     mutationFn: async (invoiceId: string) => {
       const response = await apiClient.post<Invoice>(`/invoices/${invoiceId}/issue`);
-      const inv = response.data;
+      const inv = response.data as any;
       return {
         id: inv.id,
         appointmentId: inv.appointment_id,
@@ -270,7 +270,7 @@ export function useMarkInvoicePaid() {
   return useMutation({
     mutationFn: async (invoiceId: string) => {
       const response = await apiClient.post<Invoice>(`/invoices/${invoiceId}/mark-paid`);
-      const inv = response.data;
+      const inv = response.data as any;
       return {
         id: inv.id,
         appointmentId: inv.appointment_id,

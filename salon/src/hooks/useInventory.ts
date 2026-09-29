@@ -54,6 +54,7 @@ export const useInventory = () => {
     data: inventoryData,
     isLoading: isLoadingInventory,
     error: inventoryError,
+    refetch,
   } = useQuery({
     queryKey: ["inventory", skip, limit],
     queryFn: async () => {
@@ -246,5 +247,6 @@ export const useInventory = () => {
     setSkip,
     limit,
     setLimit,
+    refetch,
   };
 };
