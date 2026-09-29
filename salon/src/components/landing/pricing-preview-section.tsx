@@ -81,8 +81,14 @@ export function PricingPreviewSection() {
   const { data: apiPricing = [] } = useQuery({
     queryKey: ["pricing-plans"],
     queryFn: async () => {
-      const response = await apiClient.get("/billing/plans");
-      return response.data || [];
+      const response = await apiClient.get<{ plans?: any[]; data?: any[] }>(
+        "/billing/plans",
+      );
+      return Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.plans)
+          ? response.data.plans
+          : [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 2,
