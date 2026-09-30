@@ -204,6 +204,10 @@ function isPublicSubdomain(): boolean {
     return false;
   }
 
+  if (hostname.endsWith(".pages.dev")) {
+    return false;
+  }
+
   return true;
 }
 
