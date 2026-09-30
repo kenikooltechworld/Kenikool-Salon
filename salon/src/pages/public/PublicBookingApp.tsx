@@ -17,8 +17,6 @@ import PublicTestimonialsSection from "@/components/public/PublicTestimonialsSec
 import PublicFAQSection from "@/components/public/PublicFAQSection";
 import PublicBookingStatistics from "@/components/public/PublicBookingStatistics";
 import ServiceRecommendations from "@/components/public/ServiceRecommendations";
-import InstallPWAPrompt from "@/components/public/InstallPWAPrompt";
-import PWAUpdatePrompt from "@/components/public/PWAUpdatePrompt";
 import LiveBookingNotifications from "@/components/public/LiveBookingNotifications";
 import { useCreatePublicBooking } from "@/hooks/usePublicBooking";
 import {
@@ -175,12 +173,6 @@ export default function PublicBookingApp() {
 
   return (
     <ToastProvider>
-      {/* PWA Install Prompt */}
-      <InstallPWAPrompt delay={30000} position="bottom" />
-
-      {/* PWA Update Prompt */}
-      <PWAUpdatePrompt />
-
       {/* Live Booking Notifications */}
       <LiveBookingNotifications />
 
