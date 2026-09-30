@@ -19,7 +19,7 @@ if settings.environment == "development":
         "http://127.0.0.1:5173",
     ]
 else:
-    _SOCKETIO_CORS = re.compile(r"^https?://(localhost(:\d+)?|.*\.?kenikoolsalon\.com)$")
+    _SOCKETIO_CORS = re.compile(r"^https?://(localhost(:\d+)?|.*\.?kenikoolsalon\.com|.*\.pages\.dev)$")
 
 sio = AsyncServer(
     async_mode='asgi',
