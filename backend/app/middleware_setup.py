@@ -16,10 +16,7 @@ def setup_middleware(app: FastAPI) -> None:
         "allow_methods": settings.cors_methods,
         "allow_headers": settings.cors_headers,
     }
-    if settings.environment == "development":
-        cors_kwargs["allow_origin_regex"] = r"http://(localhost(:\d+)?|.*\.?localhost(:\d+)?)|https?://(localhost(:\d+)?|.*\.?kenikoolsalon\.com)"
-    else:
-        cors_kwargs["allow_origin_regex"] = r"https?://.*"
+    cors_kwargs["allow_origins"] = settings.cors_origins
 
     app.add_middleware(
         CORSMiddleware,

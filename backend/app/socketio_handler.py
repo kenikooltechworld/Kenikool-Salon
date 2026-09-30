@@ -9,7 +9,10 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-if settings.environment == "development":
+if settings.environment == "development" and all(
+    origin.startswith("http://localhost") or origin.startswith("http://127.0.0.1")
+    for origin in settings.cors_origins
+):
     _SOCKETIO_CORS = [
         "http://localhost:3000",
         "http://localhost:8000",
@@ -19,7 +22,7 @@ if settings.environment == "development":
         "http://127.0.0.1:5173",
     ]
 else:
-    _SOCKETIO_CORS = re.compile(r"^https?://(localhost(:\d+)?|.*\.?kenikoolsalon\.com|.*\.pages\.dev)$")
+    _SOCKETIO_CORS = settings.cors_origins
 
 sio = AsyncServer(
     async_mode='asgi',
