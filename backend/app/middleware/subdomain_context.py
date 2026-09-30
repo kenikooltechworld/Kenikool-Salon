@@ -43,6 +43,12 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
             logger.info(f"[SubdomainContext] Localhost/IP detected, skipping subdomain extraction")
             return await call_next(request)
 
+        # Skip subdomain extraction for hosting platform domains
+        hosting_domains = {"fly.dev", "pages.dev", "workers.dev", "cloudflare", "vercel.app", "netlify.app", "herokuapp.com"}
+        if any(hostname_without_port.endswith("." + domain) or hostname_without_port == domain for domain in hosting_domains):
+            logger.info(f"[SubdomainContext] Hosting platform domain detected, skipping subdomain extraction")
+            return await call_next(request)
+
         # Check if it's an IP address (simple check)
         if self._is_ip_address(hostname_without_port):
             logger.info(f"[SubdomainContext] IP address detected, skipping subdomain extraction")
