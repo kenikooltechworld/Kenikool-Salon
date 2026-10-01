@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { InventorySkeleton } from "@/components/skeletons/InventorySkeleton";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -188,11 +188,7 @@ export default function Inventory() {
   };
 
   if (isLoadingInventory) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner />
-      </div>
-    );
+    return <InventorySkeleton />;
   }
 
   return (

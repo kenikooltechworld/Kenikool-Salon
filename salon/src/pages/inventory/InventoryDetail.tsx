@@ -3,7 +3,6 @@ import { useInventory } from "@/hooks/useInventory";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
 import {
   ArrowLeftIcon,
   Edit2Icon,
@@ -15,6 +14,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
 import { useEffect } from "react";
+import { InventoryDetailSkeleton } from "@/components/skeletons/InventoryDetailSkeleton";
 
 export default function InventoryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -34,11 +34,7 @@ export default function InventoryDetail() {
   const item = inventory.find((i: any) => i.id === id);
 
   if (isLoadingInventory || !item) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner />
-      </div>
-    );
+    return <InventoryDetailSkeleton />;
   }
 
   const handleDeduct = async () => {
