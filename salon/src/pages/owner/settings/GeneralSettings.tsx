@@ -11,6 +11,7 @@ import {
 import { useSubscription } from "@/hooks/owner/useSubscription";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
 const DEFAULT_SETTINGS: TenantSettingsData = {
   salon_name: "My Salon",
@@ -49,8 +50,21 @@ export default function GeneralSettings() {
   const { data: subscription } = useSubscription();
   const { addToast } = useToast();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const { setRefreshHandler } = usePageRefresh();
+  const { uploadImage, handleFileChange, preview: logoPreview } = useImageUpload({
+    folder: "salon-logos",
+    mediaType: "image",
+    onSuccess: (url) => {
+      setSettings((prev) => ({ ...prev, logo_url: url }));
+    },
+    onError: (error) => {
+      addToast({
+        title: "Upload Failed",
+        description: error,
+        variant: "error",
+      });
+    },
+  });
 
   // Get plan name from subscription
   const planName = subscription?.plan_name || "Loading...";
@@ -61,9 +75,6 @@ export default function GeneralSettings() {
   useEffect(() => {
     if (tenantData) {
       setSettings(tenantData);
-      if (tenantData.logo_url) {
-        setLogoPreview(tenantData.logo_url);
-      }
     }
   }, [tenantData]);
 
@@ -71,16 +82,14 @@ export default function GeneralSettings() {
     setRefreshHandler(() => refetch);
   }, [refetch, setRefreshHandler]);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setLogoPreview(result);
-        setSettings({ ...settings, logo_url: result });
-      };
-      reader.readAsDataURL(file);
+      try {
+        await uploadImage(file);
+      } catch {
+        // Error is handled by useImageUpload onError callback
+      }
     }
   };
 

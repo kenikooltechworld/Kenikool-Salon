@@ -1,6 +1,7 @@
 """Settings management routes."""
 
 import logging
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.services.tenant_settings_service import TenantSettingsService
@@ -119,17 +120,19 @@ async def update_financial_settings(
         raise HTTPException(status_code=401, detail="Tenant context not found")
     
     try:
-        settings = TenantSettingsService.get_settings(tenant_id)
-        if not settings:
-            raise HTTPException(status_code=404, detail="Settings not found")
+        from app.models.tenant import Tenant
+        tenant = Tenant.objects(id=tenant_id).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
         
-        settings["financial_config"] = config.model_dump()
-        updated = TenantSettingsService.update_settings(tenant_id, settings)
-        if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update settings")
+        if not tenant.settings:
+            tenant.settings = {}
+        
+        tenant.settings["financial_config"] = config.model_dump()
+        tenant.save()
         
         logger.info(f"Financial settings updated for tenant: {tenant_id}")
-        return updated.get("financial_config")
+        return TenantSettingsService.get_settings(tenant_id).get("financial_config")
     except HTTPException:
         raise
     except Exception as e:
@@ -171,19 +174,90 @@ async def update_operational_settings(
         raise HTTPException(status_code=401, detail="Tenant context not found")
     
     try:
-        settings = TenantSettingsService.get_settings(tenant_id)
-        if not settings:
-            raise HTTPException(status_code=404, detail="Settings not found")
+        from app.models.tenant import Tenant
+        tenant = Tenant.objects(id=tenant_id).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
         
-        settings["operational_config"] = config.model_dump()
-        updated = TenantSettingsService.update_settings(tenant_id, settings)
-        if not updated:
-            raise HTTPException(status_code=500, detail="Failed to update settings")
+        if not tenant.settings:
+            tenant.settings = {}
+        
+        tenant.settings["operational_config"] = config.model_dump()
+        tenant.save()
         
         logger.info(f"Operational settings updated for tenant: {tenant_id}")
-        return updated.get("operational_config")
+        return TenantSettingsService.get_settings(tenant_id).get("operational_config")
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating operational settings: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update operational settings")
+
+
+# Commission Settings Endpoints
+class CommissionRuleSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    percentage: float
+    minAmount: float
+    maxAmount: float
+    applicableTo: str = "staff"
+
+
+class CommissionSettingsSchema(BaseModel):
+    commissionRules: List[CommissionRuleSchema] = []
+    balanceEnforcement: Dict[str, Any] = {"enabled": True, "minimumBalance": 0}
+    paymentSettings: Dict[str, Any] = {"autoSettlement": False, "settlementDay": 1}
+
+
+@router.get("/commission")
+async def get_commission_settings(tenant_id: str = Depends(get_tenant_id)):
+    """Get commission configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
+    try:
+        settings = TenantSettingsService.get_settings(tenant_id)
+        if not settings:
+            raise HTTPException(status_code=404, detail="Settings not found")
+        
+        commission_config = settings.get("commission_config")
+        if not commission_config:
+            raise HTTPException(status_code=404, detail="Commission configuration not found")
+        
+        return commission_config
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching commission settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch commission settings")
+
+
+@router.put("/commission")
+async def update_commission_settings(
+    config: CommissionSettingsSchema,
+    tenant_id: str = Depends(get_tenant_id),
+):
+    """Update commission configuration settings."""
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Tenant context not found")
+    
+    try:
+        from app.models.tenant import Tenant
+        tenant = Tenant.objects(id=tenant_id).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+        
+        if not tenant.settings:
+            tenant.settings = {}
+        
+        tenant.settings["commission_config"] = config.model_dump()
+        tenant.save()
+        
+        logger.info(f"Commission settings updated for tenant: {tenant_id}")
+        return TenantSettingsService.get_settings(tenant_id).get("commission_config")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating commission settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update commission settings")

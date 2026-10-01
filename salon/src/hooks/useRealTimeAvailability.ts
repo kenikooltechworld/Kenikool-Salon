@@ -71,7 +71,7 @@ export function useRealTimeAvailability({
 
     if (!socket) {
       socket = io(socketUrl, {
-        transports: ["websocket", "polling"],
+        transports: ["websocket"],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,

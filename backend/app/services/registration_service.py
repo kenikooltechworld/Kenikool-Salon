@@ -253,16 +253,19 @@ class RegistrationService:
                     tenant = Tenant(
                         name=temp_reg.salon_name,
                         subdomain=subdomain,
-                        subscription_tier="trial",  # New users get 30-day trial
+                        subscription_tier="trial",
                         status="active",
                         is_published=True,
                         address=temp_reg.address,
+                        logo_url=None,
+                        primary_color="#000000",
+                        secondary_color="#FFFFFF",
                         settings={
                             "trial_end_date": (datetime.utcnow() + timedelta(days=30)).isoformat(),
                             "owner_phone": temp_reg.phone,
                             "owner_email": temp_reg.email,
-                            "email": temp_reg.email,  # Set business email from owner email
-                            "phone": temp_reg.phone,  # Set business phone from owner phone
+                            "email": temp_reg.email,
+                            "phone": temp_reg.phone,
                             "tax_rate": 0.0,
                             "currency": "NGN",
                             "timezone": "Africa/Lagos",

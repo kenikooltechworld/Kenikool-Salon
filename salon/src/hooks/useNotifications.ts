@@ -117,7 +117,7 @@ export const useUpdateNotificationPreferences = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (preferences: Partial<NotificationPreference>[]) => {
-      const response = await apiClient.post("/notifications/preferences", {
+      const response = await apiClient.post("/notifications/preferences/batch", {
         preferences,
       });
       return response.data;

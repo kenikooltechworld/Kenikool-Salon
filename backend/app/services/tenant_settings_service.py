@@ -132,6 +132,9 @@ class TenantSettingsService:
             # Update tenant
             tenant.name = settings_data.salon_name
             tenant.address = settings_data.address
+            tenant.logo_url = settings_data.logo_url
+            tenant.primary_color = settings_data.primary_color
+            tenant.secondary_color = settings_data.secondary_color
             tenant.updated_at = datetime.utcnow()
 
             # Update settings dict
@@ -222,6 +225,9 @@ class TenantSettingsService:
                 "require_customer_approval": False,
                 "auto_confirm_bookings": True,
             }
+            tenant.logo_url = None
+            tenant.primary_color = "#000000"
+            tenant.secondary_color = "#FFFFFF"
             tenant.updated_at = datetime.utcnow()
             tenant.save()
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiClient } from "@/lib/utils/api";
 
 interface FinancialConfig {
   balance_enforcement_enabled: boolean;
@@ -39,9 +40,8 @@ export default function FinancialSettings() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch("/api/v1/settings/financial");
-        const data = await response.json();
-        setConfig(data);
+        const response = await apiClient.get("/settings/financial");
+        setConfig(response.data);
       } catch (error) {
         console.error("Failed to load financial settings", error);
       } finally {
@@ -55,14 +55,7 @@ export default function FinancialSettings() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/v1/settings/financial", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
-
-      if (!response.ok) throw new Error("Failed to save financial settings");
-
+      await apiClient.put("/settings/financial", config);
       addToast({
         title: "Success",
         description: "Financial settings saved successfully!",

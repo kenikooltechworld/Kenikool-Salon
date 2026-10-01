@@ -64,6 +64,12 @@ class NotificationPreferenceUpdate(BaseModel):
     enabled: bool
 
 
+class NotificationPreferencesBatchUpdate(BaseModel):
+    """Schema for batch updating notification preferences."""
+
+    preferences: List[NotificationPreferenceUpdate]
+
+
 class NotificationPreferenceResponse(BaseModel):
     """Schema for notification preference response."""
 

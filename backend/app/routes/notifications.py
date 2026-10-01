@@ -118,6 +118,48 @@ async def set_notification_preference(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/preferences/batch", response_model=dict)
+@tenant_isolated
+async def batch_update_notification_preferences(
+    payload: NotificationPreferencesBatchUpdate,
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """Batch update notification preferences for current user."""
+    try:
+        user_id = current_user.get("id") or current_user.get("user_id")
+        user_role = current_user.get("role", "customer")
+        
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        results = []
+        for preference in payload.preferences:
+            # Determine recipient type and ID
+            if user_role == "staff":
+                created = NotificationService.set_preference(
+                    user_id=user_id,
+                    recipient_type="staff",
+                    notification_type=preference.notification_type,
+                    channel=preference.channel,
+                    enabled=preference.enabled,
+                )
+            else:
+                customer_id = preference.customer_id if preference.customer_id else user_id
+                created = NotificationService.set_preference(
+                    customer_id=customer_id,
+                    recipient_type="customer",
+                    notification_type=preference.notification_type,
+                    channel=preference.channel,
+                    enabled=preference.enabled,
+                )
+            results.append(NotificationPreferenceResponse.from_orm(created))
+        
+        return {"data": results}
+    except Exception as e:
+        logger.error(f"Error batch updating preferences: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/preferences", response_model=dict)
 @tenant_isolated
 async def get_all_preferences(current_user: dict = Depends(get_current_user_dependency)):

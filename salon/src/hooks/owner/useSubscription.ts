@@ -135,7 +135,7 @@ export function useFeatureAvailable(featureName: string) {
     return { available: false, isLoading: true };
   }
 
-  const plan = plans.find((p) => p.id === subscription.plan_name);
+  const plan = plans.find((p) => p.name === subscription.plan_name);
   if (!plan) {
     return { available: false, isLoading: false };
   }

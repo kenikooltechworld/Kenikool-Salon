@@ -439,3 +439,172 @@ class PaystackService:
                 "event": event,
                 "data": data,
             }
+
+    def create_subscription(
+        self,
+        customer_email: str,
+        plan_code: str,
+        authorization_code: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a Paystack subscription for a customer.
+
+        Args:
+            customer_email: Customer email address
+            plan_code: Paystack plan code
+            authorization_code: Optional existing authorization code for card-on-file
+
+        Returns:
+            Dictionary with subscription data
+        """
+        if not customer_email or not plan_code:
+            raise ValueError("customer_email and plan_code are required")
+
+        request_data = {
+            "customer": customer_email,
+            "plan": plan_code,
+        }
+
+        if authorization_code:
+            request_data["authorization_code"] = authorization_code
+
+        try:
+            logger.info(f"Creating Paystack subscription for {customer_email}, plan: {plan_code}")
+
+            response = requests.post(
+                f"{self.BASE_URL}/subscription",
+                headers=self._get_headers(),
+                json=request_data,
+                timeout=10,
+            )
+
+            response.raise_for_status()
+            response_data = response.json()
+
+            self._log_api_call(
+                "POST",
+                "subscription",
+                request_data=request_data,
+                response_data=response_data,
+            )
+
+            if not response_data.get("status"):
+                error_msg = response_data.get("message", "Unknown error")
+                logger.error(f"Paystack subscription creation failed: {error_msg}")
+                raise ValueError(f"Paystack error: {error_msg}")
+
+            return response_data.get("data", {})
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Paystack API request failed: {str(e)}"
+            logger.error(error_msg)
+            self._log_api_call(
+                "POST",
+                "subscription",
+                request_data=request_data,
+                error=error_msg,
+            )
+            raise
+
+    def cancel_subscription(
+        self,
+        subscription_code: str,
+        silent: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Cancel a Paystack subscription.
+
+        Args:
+            subscription_code: Paystack subscription code
+            silent: If True, do not notify customer
+
+        Returns:
+            Dictionary with cancellation confirmation
+        """
+        if not subscription_code:
+            raise ValueError("subscription_code is required")
+
+        request_data = {"code": subscription_code, "silent": silent}
+
+        try:
+            logger.info(f"Canceling Paystack subscription: {subscription_code}")
+
+            response = requests.post(
+                f"{self.BASE_URL}/subscription/disable",
+                headers=self._get_headers(),
+                json=request_data,
+                timeout=10,
+            )
+
+            response.raise_for_status()
+            response_data = response.json()
+
+            self._log_api_call(
+                "POST",
+                "subscription/disable",
+                request_data=request_data,
+                response_data=response_data,
+            )
+
+            if not response_data.get("status"):
+                error_msg = response_data.get("message", "Unknown error")
+                logger.error(f"Paystack subscription cancellation failed: {error_msg}")
+                raise ValueError(f"Paystack error: {error_msg}")
+
+            return response_data.get("data", {})
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Paystack API request failed: {str(e)}"
+            logger.error(error_msg)
+            self._log_api_call(
+                "POST",
+                "subscription/disable",
+                request_data=request_data,
+                error=error_msg,
+            )
+            raise
+
+    def get_subscription(self, subscription_code: str) -> Dict[str, Any]:
+        """
+        Get Paystack subscription details.
+
+        Args:
+            subscription_code: Paystack subscription code
+
+        Returns:
+            Dictionary with subscription details
+        """
+        if not subscription_code:
+            raise ValueError("subscription_code is required")
+
+        try:
+            logger.info(f"Fetching Paystack subscription: {subscription_code}")
+
+            response = requests.get(
+                f"{self.BASE_URL}/subscription/{subscription_code}",
+                headers=self._get_headers(),
+                timeout=10,
+            )
+
+            response.raise_for_status()
+            response_data = response.json()
+
+            self._log_api_call(
+                "GET",
+                f"subscription/{subscription_code}",
+                response_data=response_data,
+            )
+
+            if not response_data.get("status"):
+                error_msg = response_data.get("message", "Unknown error")
+                logger.error(f"Paystack get subscription failed: {error_msg}")
+                raise ValueError(f"Paystack error: {error_msg}")
+
+            return response_data.get("data", {})
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Paystack API request failed: {str(e)}"
+            logger.error(error_msg)
+            self._log_api_call(
+                "GET",
+                f"subscription/{subscription_code}",
+                error=error_msg,
+            )
+            raise
