@@ -116,7 +116,11 @@ function getRetryDelay(retryCount: number): number {
  * - Per-request timeouts available when needed
  */
 export function createApiClient(): AxiosInstance {
-  const baseURL = import.meta.env.VITE_API_URL || "/api/v1";
+  const isPages =
+    typeof window !== "undefined" &&
+    window.location.hostname.endsWith(".pages.dev");
+  const configuredBaseURL = import.meta.env.VITE_API_URL;
+  const baseURL = isPages ? "/api/v1" : configuredBaseURL || "/api/v1";
 
   const client = axios.create({
     baseURL,
