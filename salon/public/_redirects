@@ -2,7 +2,7 @@
 /*    /index.html   200
 
 # API proxy (if needed for development)
-/api/*  https://kenikool-salon-backend.fly.dev/api/:splat  200
+/api/*  https://api.kenikoolsalon.com/api/:splat  200
 
 # WebSocket proxy
-/socket.io/*  https://kenikool-salon-backend.fly.dev/socket.io/:splat  200
+/socket.io/*  https://api.kenikoolsalon.com/socket.io/:splat  200

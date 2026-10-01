@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_WS_URL || "https://kenikool-salon-backend.fly.dev";
+const SOCKET_URL = import.meta.env.VITE_WS_URL || "https://api.kenikoolsalon.com";
 
 let socket: Socket | null = null;
 

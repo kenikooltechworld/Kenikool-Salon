@@ -20,10 +20,6 @@ app = "kenikool-salon-backend"
 
   [[services.ports]]
     handlers = ["tls", "http"]
-    port = 443
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
     port = 8080
 
 [http_service]

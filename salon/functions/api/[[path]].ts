@@ -3,7 +3,7 @@ export interface Env {
 }
 
 export const onRequest = async (context: { request: Request; env: Env }) => {
-  const backendUrl = context.env.BACKEND_URL || "https://kenikool-salon-backend.fly.dev";
+  const backendUrl = context.env.BACKEND_URL || "https://api.kenikoolsalon.com";
   const url = new URL(context.request.url);
   const backendPath = `${backendUrl}${url.pathname}${url.search}`;
 
