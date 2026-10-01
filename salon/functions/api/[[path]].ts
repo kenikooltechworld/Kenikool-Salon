@@ -9,6 +9,7 @@ export const onRequest = async (context: { request: Request; env: Env }) => {
 
   const headers = new Headers(context.request.headers);
   headers.delete("Origin");
+  headers.set("X-Forwarded-Host", url.hostname);
 
   const response = await fetch(backendPath, {
     method: context.request.method,
