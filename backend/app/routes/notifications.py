@@ -10,6 +10,7 @@ from app.schemas.notification import (
     NotificationCreate,
     NotificationPreferenceResponse,
     NotificationPreferenceUpdate,
+    NotificationPreferencesBatchUpdate,
     NotificationTemplateResponse,
     NotificationTemplateCreate,
     InterDepartmentMessageCreate,
