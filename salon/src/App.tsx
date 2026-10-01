@@ -200,7 +200,7 @@ function isPublicSubdomain(): boolean {
     return false;
   }
 
-  if (hostname === "kenikool.com" || hostname === "www.kenikool.com") {
+  if (hostname === "kenikoolsalon.com" || hostname === "www.kenikoolsalon.com") {
     return false;
   }
 
