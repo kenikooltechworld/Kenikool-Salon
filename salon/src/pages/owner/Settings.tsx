@@ -11,6 +11,7 @@ import {
   PackageIcon,
   BellIcon,
   MailIcon,
+  MapPinIcon,
 } from "@/components/icons";
 
 interface SettingsNavItem {
@@ -20,7 +21,6 @@ interface SettingsNavItem {
   icon: any;
   path: string;
   allowedRoles: string[];
-  color: string;
 }
 
 const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
@@ -31,7 +31,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: SettingsIcon,
     path: "/settings/general",
     allowedRoles: ["Owner", "Manager"],
-    color: "text-blue-500",
   },
   {
     id: "commission",
@@ -40,7 +39,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: DollarSignIcon,
     path: "/settings/commission",
     allowedRoles: ["Owner"],
-    color: "text-green-500",
   },
   {
     id: "financial",
@@ -49,7 +47,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: TrendingUpIcon,
     path: "/settings/financial",
     allowedRoles: ["Owner"],
-    color: "text-emerald-500",
   },
   {
     id: "operational",
@@ -58,7 +55,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: PackageIcon,
     path: "/settings/operational",
     allowedRoles: ["Owner", "Manager"],
-    color: "text-orange-500",
   },
   {
     id: "billing",
@@ -67,7 +63,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: CreditCardIcon,
     path: "/settings/billing",
     allowedRoles: ["Owner", "Manager"],
-    color: "text-pink-500",
   },
   {
     id: "notifications",
@@ -76,7 +71,6 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: BellIcon,
     path: "/settings/notifications",
     allowedRoles: ["Owner", "Manager"],
-    color: "text-indigo-500",
   },
   {
     id: "email-templates",
@@ -85,7 +79,14 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: MailIcon,
     path: "/settings/email-templates",
     allowedRoles: ["Owner", "Manager"],
-    color: "text-violet-500",
+  },
+  {
+    id: "locations",
+    title: "Locations",
+    description: "Manage salon locations for bookings and resources",
+    icon: MapPinIcon,
+    path: "/settings/locations",
+    allowedRoles: ["Owner", "Manager"],
   },
 ];
 
@@ -154,12 +155,7 @@ export default function Settings() {
               onClick={() => navigate(section.path)}
             >
               <div className="flex items-start gap-4">
-                <div
-                  className={`p-3 rounded-lg bg-muted ${section.color}`}
-                  style={{
-                    backgroundColor: "var(--muted)",
-                  }}
-                >
+                <div className="p-3 rounded-lg bg-muted text-foreground">
                   <Icon size={24} />
                 </div>
                 <div className="flex-1">

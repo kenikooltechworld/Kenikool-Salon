@@ -19,6 +19,8 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "@/components/icons";
+import { useToast } from "@/components/ui/toast";
+import { apiClient } from "@/lib/utils/api";
 
 interface CommissionRule {
   id: string;
@@ -50,35 +52,41 @@ export function CommissionSettings() {
     text: string;
   } | null>(null);
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await apiClient.get("/settings/commission");
+        setSettings(response.data);
+      } catch (error) {
+        setMessage({ type: "error", text: "Failed to load commission settings" });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchSettings();
   }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch("/api/v1/settings/commission");
-      const data = await response.json();
-      setSettings(data);
-    } catch (error) {
-      setMessage({ type: "error", text: "Failed to load commission settings" });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!settings) return;
     setSaving(true);
     try {
-      await fetch("/api/v1/settings/commission", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
+      await apiClient.put("/settings/commission", settings);
       setMessage({ type: "success", text: "Commission settings saved" });
+      addToast({
+        title: "Success",
+        description: "Commission settings saved successfully!",
+        variant: "success",
+      });
     } catch (error) {
       setMessage({ type: "error", text: "Failed to save settings" });
+      addToast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save settings",
+        variant: "error",
+      });
     } finally {
       setSaving(false);
     }

@@ -16,12 +16,6 @@ export default function OwnerNotificationPreferences() {
     NotificationPreference[]
   >([]);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
-  const [quietHoursStart, setQuietHoursStart] = useState("22:00");
-  const [quietHoursEnd, setQuietHoursEnd] = useState("08:00");
-  const [frequency, setFrequency] = useState<"real-time" | "hourly" | "daily">(
-    "real-time",
-  );
   const { showToast } = useToast();
   const { setRefreshHandler } = usePageRefresh();
 
@@ -116,8 +110,6 @@ export default function OwnerNotificationPreferences() {
         ),
       );
       setLocalPreferences(defaults);
-      setQuietHoursEnabled(false);
-      setFrequency("real-time");
     }
   };
 
@@ -140,13 +132,13 @@ export default function OwnerNotificationPreferences() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <BellIcon className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <BellIcon className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-bold text-foreground">
             Notification Preferences
           </h1>
         </div>
       </div>
-      <p className="text-gray-600 dark:text-gray-400 mb-6">
+      <p className="text-muted-foreground mb-6">
         Manage how and when you receive notifications about your business
       </p>
 
@@ -160,27 +152,27 @@ export default function OwnerNotificationPreferences() {
       )}
 
       {updatePreferences.isError && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircleIcon className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-800 dark:text-red-200">
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+          <AlertCircleIcon className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+          <p className="text-sm text-destructive">
             Failed to save preferences. Please try again.
           </p>
         </div>
       )}
 
       {/* Notification Types Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+      <div className="bg-background rounded-lg border border-border overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
+              <tr className="border-b border-border bg-muted">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                   Notification Type
                 </th>
                 {channels.map((channel) => (
                   <th
                     key={channel.id}
-                    className="px-6 py-3 text-center text-sm font-semibold text-gray-900 dark:text-white"
+                    className="px-6 py-3 text-center text-sm font-semibold text-foreground"
                   >
                     {channel.label}
                   </th>
@@ -191,14 +183,14 @@ export default function OwnerNotificationPreferences() {
               {ownerNotificationTypes.map((type) => (
                 <tr
                   key={type.id}
-                  className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  className="border-b border-border hover:bg-muted"
                 >
                   <td className="px-6 py-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium text-foreground">
                         {type.label}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-muted-foreground">
                         {type.description}
                       </p>
                     </div>
@@ -215,7 +207,7 @@ export default function OwnerNotificationPreferences() {
                           type="checkbox"
                           checked={pref?.enabled ?? true}
                           onChange={() => handleToggle(type.id, channel.id)}
-                          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
                         />
                       </td>
                     );
@@ -227,86 +219,11 @@ export default function OwnerNotificationPreferences() {
         </div>
       </div>
 
-      {/* Quiet Hours Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Quiet Hours
-        </h2>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={quietHoursEnabled}
-              onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              Enable quiet hours (no notifications during this time)
-            </span>
-          </label>
-        </div>
-
-        {quietHoursEnabled && (
-          <div className="mt-4 flex items-center gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Time
-              </label>
-              <input
-                type="time"
-                value={quietHoursStart}
-                onChange={(e) => setQuietHoursStart(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Time
-              </label>
-              <input
-                type="time"
-                value={quietHoursEnd}
-                onChange={(e) => setQuietHoursEnd(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Notification Frequency Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Notification Frequency
-        </h2>
-        <div className="space-y-3">
-          {(["real-time", "hourly", "daily"] as const).map((freq) => (
-            <label key={freq} className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="frequency"
-                value={freq}
-                checked={frequency === freq}
-                onChange={(e) => setFrequency(e.target.value as typeof freq)}
-                className="w-4 h-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                {freq === "real-time"
-                  ? "Real-time (immediate notifications)"
-                  : freq === "hourly"
-                    ? "Hourly digest"
-                    : "Daily digest"}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-
       {/* Action Buttons */}
       <div className="flex justify-between">
         <button
           onClick={handleResetToDefaults}
-          className="px-6 py-3 rounded-lg font-semibold text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="px-6 py-3 rounded-lg font-semibold text-foreground border border-border hover:bg-muted transition-colors"
         >
           Reset to Defaults
         </button>
@@ -316,8 +233,8 @@ export default function OwnerNotificationPreferences() {
           className={cn(
             "px-6 py-3 rounded-lg font-semibold transition-colors",
             updatePreferences.isPending
-              ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-              : "bg-blue-600 text-white hover:bg-blue-700",
+              ? "bg-muted text-muted-foreground cursor-not-allowed"
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
         >
           {updatePreferences.isPending ? "Saving..." : "Save Preferences"}

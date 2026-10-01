@@ -6,3 +6,4 @@ export { OperationalSettings } from "./OperationalSettings";
 export { BillingDashboard } from "./BillingDashboard";
 export { default as NotificationPreferences } from "./NotificationPreferences";
 export { default as EmailTemplates } from "./EmailTemplates";
+export { default as LocationsSettings } from "./Locations";

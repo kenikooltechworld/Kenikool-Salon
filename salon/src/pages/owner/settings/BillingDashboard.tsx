@@ -9,6 +9,7 @@ import {
 } from "@/hooks/owner/useSubscription";
 import { AlertCircleIcon, CheckIcon, Loader2Icon } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiClient } from "@/lib/utils/api";
 
 export function BillingDashboard() {
   const {
@@ -49,8 +50,8 @@ export function BillingDashboard() {
                   <div
                     className={`rounded-lg p-8 h-full ${
                       i === 1
-                        ? "bg-gradient-to-b from-slate-700 to-slate-800 border-2 border-cyan-500"
-                        : "bg-slate-800 border border-slate-700"
+                        ? "bg-muted border-2 border-primary"
+                        : "bg-background border border-border"
                     }`}
                   >
                     <div className="space-y-4">
@@ -76,10 +77,10 @@ export function BillingDashboard() {
 
   if (!subscription || !plans) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
         <div className="flex items-center gap-2">
-          <AlertCircleIcon className="w-5 h-5 text-red-600" />
-          <p className="text-red-800">
+          <AlertCircleIcon className="w-5 h-5 text-destructive" />
+          <p className="text-destructive">
             Failed to load subscription information
           </p>
         </div>
@@ -114,16 +115,8 @@ export function BillingDashboard() {
 
   const handleContinueFree = async () => {
     try {
-      // Call continue-free endpoint
-      const response = await fetch("/api/v1/billing/continue-free", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (response.ok) {
-        window.location.reload();
-      }
+      await apiClient.post("/billing/continue-free");
+      window.location.reload();
     } catch (error) {
       console.error("Continue free failed:", error);
     }
@@ -153,20 +146,20 @@ export function BillingDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="pt-20 pb-16 px-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
           Simple, Transparent Pricing
         </h1>
-        <p className="text-slate-300 text-lg mb-8">
+        <p className="text-muted-foreground text-lg mb-8">
           Choose the plan that fits your business needs
         </p>
 
         {/* Billing Cycle Toggle */}
         <div className="flex items-center justify-center gap-4 mb-12">
           <span
-            className={`text-sm font-medium ${billingCycle === "monthly" ? "text-white" : "text-slate-400"}`}
+            className={`text-sm font-medium ${billingCycle === "monthly" ? "text-foreground" : "text-muted-foreground"}`}
           >
             Monthly
           </span>
@@ -175,17 +168,17 @@ export function BillingDashboard() {
               setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")
             }
             className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-              billingCycle === "yearly" ? "bg-cyan-500" : "bg-slate-600"
+              billingCycle === "yearly" ? "bg-primary" : "bg-muted"
             }`}
           >
             <span
-              className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+              className={`inline-block h-6 w-6 transform rounded-full bg-background transition-transform ${
                 billingCycle === "yearly" ? "translate-x-7" : "translate-x-1"
               }`}
             />
           </button>
           <span
-            className={`text-sm font-medium ${billingCycle === "yearly" ? "text-white" : "text-slate-400"}`}
+            className={`text-sm font-medium ${billingCycle === "yearly" ? "text-foreground" : "text-muted-foreground"}`}
           >
             Yearly
           </span>
@@ -207,7 +200,7 @@ export function BillingDashboard() {
                 >
                   {isMiddle && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                      <span className="bg-cyan-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                      <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
                         Most Popular
                       </span>
                     </div>
@@ -215,27 +208,27 @@ export function BillingDashboard() {
                   <div
                     className={`rounded-lg p-8 h-full transition-all ${
                       isMiddle
-                        ? "bg-gradient-to-b from-slate-700 to-slate-800 border-2 border-cyan-500 shadow-2xl"
-                        : "bg-slate-800 border border-slate-700 hover:border-slate-600"
+                        ? "bg-muted border-2 border-primary shadow-lg"
+                        : "bg-background border border-border hover:border-primary"
                     }`}
                   >
-                    <h3 className="text-2xl font-bold text-white mb-2">
+                    <h3 className="text-2xl font-bold text-foreground mb-2">
                       {plan.name}
                     </h3>
-                    <p className="text-slate-400 text-sm mb-6">
+                    <p className="text-muted-foreground text-sm mb-6">
                       {plan.description}
                     </p>
 
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-white">
+                        <span className="text-4xl font-bold text-foreground">
                           {billingCycle === "monthly"
                             ? Math.floor(plan.monthly_price)
                             : Math.floor(plan.yearly_price)}
                         </span>
-                        <span className="text-slate-400">NGN</span>
+                        <span className="text-muted-foreground">NGN</span>
                       </div>
-                      <p className="text-slate-400 text-sm mt-2">
+                      <p className="text-muted-foreground text-sm mt-2">
                         per {billingCycle}
                       </p>
                     </div>
@@ -256,10 +249,10 @@ export function BillingDashboard() {
                       }
                       className={`w-full py-3 rounded-lg font-semibold mb-8 transition-all ${
                         plan.id === currentPlan?.id
-                          ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                          ? "bg-muted text-muted-foreground cursor-not-allowed"
                           : isMiddle
-                            ? "bg-cyan-500 text-white hover:bg-cyan-600"
-                            : "bg-slate-700 text-white hover:bg-slate-600"
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "bg-muted text-foreground hover:bg-muted/80"
                       }`}
                     >
                       {plan.id === currentPlan?.id
@@ -273,47 +266,47 @@ export function BillingDashboard() {
 
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <CheckIcon className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                        <span className="text-slate-300 text-sm">
+                        <CheckIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                        <span className="text-foreground text-sm">
                           {plan.features.max_staff_count} staff members
                         </span>
                       </div>
                       {plan.features.has_pos && (
                         <div className="flex items-center gap-3">
-                          <CheckIcon className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                          <span className="text-slate-300 text-sm">
+                          <CheckIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="text-foreground text-sm">
                             POS System
                           </span>
                         </div>
                       )}
                       {plan.features.has_api_access && (
                         <div className="flex items-center gap-3">
-                          <CheckIcon className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                          <span className="text-slate-300 text-sm">
+                          <CheckIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="text-foreground text-sm">
                             API Access
                           </span>
                         </div>
                       )}
                       {plan.features.has_advanced_reports && (
                         <div className="flex items-center gap-3">
-                          <CheckIcon className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                          <span className="text-slate-300 text-sm">
+                          <CheckIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="text-foreground text-sm">
                             Advanced Reports
                           </span>
                         </div>
                       )}
                       {plan.features.has_multi_location && (
                         <div className="flex items-center gap-3">
-                          <CheckIcon className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                          <span className="text-slate-300 text-sm">
+                          <CheckIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="text-foreground text-sm">
                             Multi-Location
                           </span>
                         </div>
                       )}
                       {plan.features.has_white_label && (
                         <div className="flex items-center gap-3">
-                          <CheckIcon className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                          <span className="text-slate-300 text-sm">
+                          <CheckIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="text-foreground text-sm">
                             White-Label
                           </span>
                         </div>
@@ -329,26 +322,26 @@ export function BillingDashboard() {
 
       {/* Current Plan Details Modal */}
       {subscription && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-8">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg shadow-xl max-w-2xl w-full p-8">
             <button
               onClick={() => navigate("/settings")}
-              className="text-sm text-slate-600 hover:text-slate-900 mb-6"
+              className="text-sm text-muted-foreground hover:text-foreground mb-6"
             >
               ← Back to Settings
             </button>
 
-            <h2 className="text-2xl font-bold mb-6">Current Plan Details</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Current Plan Details</h2>
 
             {isTrialExpired && (
-              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-800 font-semibold mb-3">
+              <div className="mb-6 bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="text-destructive font-semibold mb-3">
                   ⚠️ Your trial has expired. Choose an option below:
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={handleContinueFree}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
                   >
                     Continue Free (10% fee)
                   </button>
@@ -427,7 +420,7 @@ export function BillingDashboard() {
               <button
                 onClick={handleCancel}
                 disabled={cancel.isPending}
-                className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                className="px-4 py-2 text-destructive border border-destructive rounded-lg hover:bg-destructive/10 disabled:opacity-50"
               >
                 {cancel.isPending ? "Canceling..." : "Cancel Subscription"}
               </button>

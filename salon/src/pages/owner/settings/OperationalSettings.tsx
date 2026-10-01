@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, ArrowLeftIcon } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOperationalSettings, useUpdateOperationalSettings } from "@/hooks/useOperationalSettings";
+import type { OperationalConfig } from "@/hooks/useOperationalSettings";
 
 export function OperationalSettings() {
   const navigate = useNavigate();
