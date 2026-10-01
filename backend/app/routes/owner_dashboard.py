@@ -222,9 +222,9 @@ async def get_revenue_analytics(
         {
             "success": true,
             "data": {
-                "dailyRevenue": [{"date": "2026-03-01", "revenue": 150.00}, ...],
-                "weeklyRevenue": [{"week": "2026-W09", "revenue": 1050.00}, ...],
-                "monthlyRevenue": [{"month": "2026-03", "revenue": 4500.00}, ...],
+                "dailyRevenue": [{"date": "2026-03-01", "revenue": 150.00, "label": "2026-03-01"}, ...],
+                "weeklyRevenue": [{"date": "2026-03-01", "revenue": 1050.00, "label": "Week of Mar 01"}, ...],
+                "monthlyRevenue": [{"date": "2026-03-01", "revenue": 4500.00, "label": "March 2026"}, ...],
                 "byService": [
                     {
                         "serviceName": "Haircut",

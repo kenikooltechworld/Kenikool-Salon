@@ -13,7 +13,7 @@ class WaitingRoomService:
     def check_in_customer(
         appointment_id: str,
         customer_id: str,
-        customer_name: str,
+        customer_name: str = None,
         customer_phone: str = None,
         service_id: str = None,
         service_name: str = None,
@@ -23,6 +23,51 @@ class WaitingRoomService:
     ) -> Optional[QueueEntry]:
         """Check in a customer to the waiting room."""
         tenant_id = get_tenant_id()
+
+        # Check if waiting room is enabled and accept check-ins
+        waiting_room = WaitingRoom.objects(tenant_id=tenant_id).first()
+        if waiting_room:
+            if not waiting_room.is_accepting_checkins:
+                raise ValueError("Waiting room is not accepting check-ins at this time")
+            if waiting_room.max_queue_length is not None:
+                current_count = QueueEntry.objects(
+                    tenant_id=tenant_id, status__in=["waiting", "called"]
+                ).count()
+                if current_count >= waiting_room.max_queue_length:
+                    raise ValueError(
+                        f"Waiting room is full (max {waiting_room.max_queue_length})"
+                    )
+
+        # Auto-populate missing fields from related models
+        if not customer_name or not customer_phone:
+            try:
+                from app.models.customer import Customer
+                customer = Customer.objects(id=customer_id, tenant_id=tenant_id).first()
+                if customer:
+                    if not customer_name:
+                        customer_name = customer.full_name or getattr(customer, "name", "")
+                    if not customer_phone:
+                        customer_phone = getattr(customer, "phone", None)
+            except Exception:
+                pass
+
+        if not service_name and service_id:
+            try:
+                from app.models.service import Service
+                service = Service.objects(id=service_id, tenant_id=tenant_id).first()
+                if service:
+                    service_name = service.name
+            except Exception:
+                pass
+
+        if not staff_name and staff_id:
+            try:
+                from app.models.staff import Staff
+                staff = Staff.objects(id=staff_id, tenant_id=tenant_id).first()
+                if staff:
+                    staff_name = staff.name
+            except Exception:
+                pass
 
         # Check if customer is already in queue
         existing = QueueEntry.objects(
@@ -43,7 +88,7 @@ class WaitingRoomService:
             tenant_id=tenant_id,
             appointment_id=appointment_id,
             customer_id=customer_id,
-            customer_name=customer_name,
+            customer_name=customer_name or "",
             customer_phone=customer_phone,
             check_in_time=datetime.utcnow(),
             position=queue_count + 1,
@@ -223,17 +268,17 @@ class WaitingRoomService:
             tenant_id=tenant_id, status="no_show", check_in_time__gte=today_start
         ).count()
 
-        # Average wait time
+        # Average and longest wait time
         completed_entries = QueueEntry.objects(
             tenant_id=tenant_id, status="completed", wait_duration_minutes__ne=None
         ).order_by("-service_end_time")[:50]
 
         avg_wait_time = 0
+        longest_wait_time = 0
         if completed_entries:
-            avg_wait_time = int(
-                sum([e.wait_duration_minutes for e in completed_entries])
-                / len(completed_entries)
-            )
+            wait_times = [e.wait_duration_minutes for e in completed_entries]
+            avg_wait_time = int(sum(wait_times) / len(wait_times))
+            longest_wait_time = max(wait_times)
 
         return {
             "current_queue": {
@@ -247,6 +292,7 @@ class WaitingRoomService:
                 "no_show": no_show_today,
             },
             "average_wait_time_minutes": avg_wait_time,
+            "longest_wait_time_minutes": longest_wait_time,
         }
 
     @staticmethod

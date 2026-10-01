@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePOSStore } from "@/stores/pos";
 import {
   useReceipts,
   usePrintReceipt,
@@ -13,6 +14,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
 import { useEffect } from "react";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function ReceiptHistory() {
   const [page, setPage] = useState(1);
@@ -25,6 +27,7 @@ export default function ReceiptHistory() {
   );
   const [emailAddress, setEmailAddress] = useState("");
   const { setRefreshHandler } = usePageRefresh();
+  const { currency } = usePOSStore();
 
   const { data: receiptsData, isLoading, refetch } = useReceipts({
     customerId: customerId || undefined,
@@ -247,10 +250,7 @@ export default function ReceiptHistory() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-bold text-sm md:text-base text-foreground">
-                    ₦
-                    {receipt.total.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(receipt.total, currency)}
                   </p>
                 </div>
               </div>
@@ -336,17 +336,11 @@ export default function ReceiptHistory() {
                   <div className="flex-1 min-w-0">
                     <p className="text-foreground truncate">{item.itemName}</p>
                     <p className="text-muted-foreground">
-                      {item.quantity} × ₦
-                      {item.unitPrice.toLocaleString("en-NG", {
-                        maximumFractionDigits: 2,
-                      })}
+                      {item.quantity} × {formatCurrency(item.unitPrice, currency)}
                     </p>
                   </div>
                   <p className="text-foreground font-medium flex-shrink-0">
-                    ₦
-                    {item.lineTotal.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(item.lineTotal, currency)}
                   </p>
                 </div>
               ))}
@@ -358,20 +352,14 @@ export default function ReceiptHistory() {
             <div className="flex justify-between text-xs md:text-sm">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="text-foreground">
-                ₦
-                {selectedReceipt.subtotal.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(selectedReceipt.subtotal, currency)}
               </span>
             </div>
             {selectedReceipt.discountAmount > 0 && (
               <div className="flex justify-between text-xs md:text-sm">
                 <span className="text-muted-foreground">Discount</span>
                 <span className="text-foreground">
-                  -₦
-                  {selectedReceipt.discountAmount.toLocaleString("en-NG", {
-                    maximumFractionDigits: 2,
-                  })}
+                  -{formatCurrency(selectedReceipt.discountAmount, currency)}
                 </span>
               </div>
             )}
@@ -379,20 +367,14 @@ export default function ReceiptHistory() {
               <div className="flex justify-between text-xs md:text-sm">
                 <span className="text-muted-foreground">Tax</span>
                 <span className="text-foreground">
-                  ₦
-                  {selectedReceipt.taxAmount.toLocaleString("en-NG", {
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatCurrency(selectedReceipt.taxAmount, currency)}
                 </span>
               </div>
             )}
             <div className="flex justify-between font-bold text-sm md:text-base">
               <span className="text-foreground">Total</span>
               <span className="text-foreground">
-                ₦
-                {selectedReceipt.total.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(selectedReceipt.total, currency)}
               </span>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { get, post, put, del } from "@/lib/utils/api";
 import type { Staff } from "@/types/staff";
 
@@ -13,8 +14,13 @@ export interface StaffFilters {
  * Fetch all staff with optional filters
  */
 export function useStaff(filters?: StaffFilters) {
+  const filtersKey = useMemo(() => {
+    if (!filters) return "{}";
+    return JSON.stringify(filters);
+  }, [filters]);
+
   return useQuery({
-    queryKey: ["staff", "list", filters || {}],
+    queryKey: ["staff", "list", filtersKey],
     queryFn: async () => {
       const response = await get<{
         staff: Staff[];
@@ -69,7 +75,9 @@ export function useCreateStaff() {
       return response;
     },
     onSuccess: (newStaff) => {
-      queryClient.refetchQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["staff"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["staff", "detail", newStaff.id] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
     },
   });
 }
@@ -86,7 +94,9 @@ export function useUpdateStaff() {
       return response;
     },
     onSuccess: (updatedStaff) => {
-      queryClient.refetchQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["staff"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["staff", "detail", updatedStaff.id] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
     },
   });
 }
@@ -102,7 +112,9 @@ export function useDeleteStaff() {
       await del(`/staff/${id}`);
     },
     onSuccess: (_, deletedId) => {
-      queryClient.refetchQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["staff"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["staff", "detail", deletedId] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "list"] });
     },
   });
 }

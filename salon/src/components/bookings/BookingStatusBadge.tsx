@@ -19,6 +19,11 @@ const statusConfig: Record<
     variant: "default",
     bgColor: "bg-success/10 text-success",
   },
+  in_progress: {
+    label: "In Progress",
+    variant: "default",
+    bgColor: "bg-accent/10 text-accent",
+  },
   completed: {
     label: "Completed",
     variant: "outline",

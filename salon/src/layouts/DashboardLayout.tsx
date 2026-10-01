@@ -7,6 +7,7 @@ import NotificationBadge from "@/components/notifications/NotificationBadge";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
+import { useOperationalSettings } from "@/hooks/useOperationalSettings";
 import {
   MenuIcon,
   XIcon,
@@ -20,6 +21,8 @@ import {
   UserIcon,
   ShoppingCartIcon,
   ClockIcon,
+  PackageIcon,
+  MessageSquareIcon,
 } from "@/components/icons";
 
 const menuItems = [
@@ -30,7 +33,9 @@ const menuItems = [
   { icon: UsersIcon, label: "Staff", path: "/staff" },
   { icon: FileTextIcon, label: "Invoices", path: "/invoices" },
   { icon: ShoppingCartIcon, label: "POS", path: "/pos" },
+  { icon: PackageIcon, label: "Inventory", path: "/inventory" },
   { icon: UsersIcon, label: "Group Bookings", path: "/owner/group-bookings" },
+  { icon: MessageSquareIcon, label: "Messages", path: "/owner/messages" },
   { icon: ScissorsIcon, label: "Social Proof", path: "/owner/social-proof" },
   { icon: UserIcon, label: "My Profile", path: "/owner/profile" },
   { icon: UserIcon, label: "My Account", path: "/my-account" },
@@ -40,15 +45,19 @@ const menuItems = [
 ];
 
 // Role-based menu filtering
-function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
+function getMenuItemsForRole(roleNames: string[], waitingRoomEnabled: boolean): typeof menuItems {
   // Owner: Full access except My Account
   if (roleNames.includes("Owner")) {
-    return menuItems.filter((item) => item.path !== "/my-account");
+    let items = menuItems.filter((item) => item.path !== "/my-account");
+    if (!waitingRoomEnabled) {
+      items = items.filter((item) => item.path !== "/waiting-room");
+    }
+    return items;
   }
 
   // Manager: Access to bookings, customers, services, staff, invoices, reports, settings
   if (roleNames.includes("Manager")) {
-    return menuItems.filter((item) =>
+    let items = menuItems.filter((item) =>
       [
         "/dashboard",
         "/bookings",
@@ -56,10 +65,15 @@ function getMenuItemsForRole(roleNames: string[]): typeof menuItems {
         "/services",
         "/staff",
         "/invoices",
+        "/inventory",
         "/settings",
         "/owner/profile",
       ].includes(item.path),
     );
+    if (!waitingRoomEnabled) {
+      items = items.filter((item) => item.path !== "/waiting-room");
+    }
+    return items;
   }
 
   // Staff: Access to staff dashboard
@@ -91,6 +105,7 @@ export function DashboardLayout() {
   const user = useAuthStore((state) => state.user);
   const tenantName = useTenantStore((state) => state.tenantName());
   const logout = useAuthStore((state) => state.logout);
+  const { data: operationalSettings } = useOperationalSettings();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
@@ -98,9 +113,10 @@ export function DashboardLayout() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // Get filtered menu items based on user role
+  const waitingRoomEnabled = operationalSettings?.waiting_room_enabled ?? true;
   const filteredMenuItems = user?.roleNames
-    ? getMenuItemsForRole(user.roleNames)
-    : getMenuItemsForRole([]);
+    ? getMenuItemsForRole(user.roleNames, waitingRoomEnabled)
+    : getMenuItemsForRole([], waitingRoomEnabled);
 
   const { refreshHandler } = usePageRefresh();
 

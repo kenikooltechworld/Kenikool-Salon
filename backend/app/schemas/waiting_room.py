@@ -10,7 +10,7 @@ class QueueEntryCheckIn(BaseModel):
 
     appointment_id: str
     customer_id: str
-    customer_name: str
+    customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
     service_id: Optional[str] = None
     service_name: Optional[str] = None

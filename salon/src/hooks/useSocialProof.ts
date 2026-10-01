@@ -116,6 +116,10 @@ export interface VideoTestimonial {
   thumbnail_url?: string;
   testimonial_text?: string;
   rating: number;
+  is_featured: boolean;
+  is_active: boolean;
+  display_order: number;
+  views_count: number;
   created_at: string;
 }
 
@@ -129,5 +133,46 @@ export function useVideoTestimonials(limit: number = 10) {
       return data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useCreateVideoTestimonial() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (testimonialData: {
+      customer_name: string;
+      video_url: string;
+      thumbnail_url?: string;
+      testimonial_text?: string;
+      rating: number;
+      is_featured?: boolean;
+      display_order?: number;
+    }) => {
+      const { data } = await apiClient.post(
+        "/social-proof/video-testimonials",
+        testimonialData,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video-testimonials"] });
+    },
+  });
+}
+
+export function useDeleteVideoTestimonial() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (testimonialId: string) => {
+      const { data } = await apiClient.delete(
+        `/social-proof/video-testimonials/${testimonialId}`,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video-testimonials"] });
+    },
   });
 }

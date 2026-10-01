@@ -221,7 +221,7 @@ class GroupBookingService:
                         tenant_id=group_booking.tenant_id,
                         customer_name=participant.name,
                         service_name=service.name,
-                        booking_time=start_time
+                        booking_type='group'
                     )
                 except Exception as e:
                     print(f"Error creating booking activity for {participant.name}: {e}")

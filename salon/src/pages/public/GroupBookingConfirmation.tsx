@@ -28,10 +28,10 @@ export default function GroupBookingConfirmation() {
 
   if (!booking) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <Card className="p-8 max-w-md text-center">
           <h2 className="text-xl font-semibold mb-4">Booking Not Found</h2>
-          <p className="text-gray-600 mb-6">
+           <p className="text-muted-foreground mb-6">
             We couldn't find the booking you're looking for.
           </p>
           <Button onClick={() => navigate("/public")} className="gap-2">
@@ -64,7 +64,7 @@ export default function GroupBookingConfirmation() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-muted py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Success Header */}
         <div className="text-center mb-8">
@@ -116,7 +116,7 @@ export default function GroupBookingConfirmation() {
               <Users size={20} className="text-gray-400 mt-0.5" />
               <div>
                 <p className="font-medium">{booking.group_name}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {booking.total_participants} participants •{" "}
                   {booking.group_type}
                 </p>
@@ -126,7 +126,7 @@ export default function GroupBookingConfirmation() {
               <Calendar size={20} className="text-gray-400 mt-0.5" />
               <div>
                 <p className="font-medium">Preferred Date & Time</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {formatDate(booking.booking_date)}
                 </p>
               </div>
@@ -142,20 +142,20 @@ export default function GroupBookingConfirmation() {
               <Mail size={20} className="text-gray-400" />
               <div>
                 <p className="font-medium">{booking.organizer_name}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {booking.organizer_email}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Phone size={20} className="text-gray-400" />
-              <p className="text-sm text-gray-600">{booking.organizer_phone}</p>
+              <p className="text-sm text-muted-foreground">{booking.organizer_phone}</p>
             </div>
           </div>
         </Card>
 
         {/* Pricing Summary */}
-        <Card className="p-6 mb-6 bg-blue-50">
+         <Card className="p-6 mb-6 bg-muted">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <NairaSign size={20} className="mr-2" />
             Pricing Summary
@@ -182,12 +182,12 @@ export default function GroupBookingConfirmation() {
         {booking.special_requests && (
           <Card className="p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Special Requests</h2>
-            <p className="text-gray-600">{booking.special_requests}</p>
+            <p className="text-muted-foreground">{booking.special_requests}</p>
           </Card>
         )}
 
         {/* Next Steps */}
-        <Card className="p-6 mb-6 bg-yellow-50">
+        <Card className="p-6 mb-6 bg-muted">
           <h2 className="text-xl font-semibold mb-4">What Happens Next?</h2>
           <ol className="list-decimal list-inside space-y-2 text-gray-700">
             <li>We'll review your group booking request</li>

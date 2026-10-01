@@ -1016,11 +1016,22 @@ class OwnerDashboardService:
                 utilization = (booked_hours / 40.0 * 100) if booked_hours > 0 else 0.0
 
                 # Get satisfaction score
-                satisfaction = float(staff.rating) if staff.rating else 0.0
+                satisfaction = float(staff.rating) if staff.rating else None
 
-                # Get attendance rate
-                # TODO: Implement real attendance tracking from check-in/check-out or schedule adherence
-                attendance = 0.0
+                # Get attendance rate from AttendanceRecord model
+                from app.models.attendance import AttendanceRecord
+                attendance_records = AttendanceRecord.objects(
+                    tenant_id=tenant_id,
+                    staff_id=staff.id,
+                    date__gte=current_month_start,
+                    date__lt=now,
+                )
+                distinct_days = len(set(record.date.date() for record in attendance_records))
+                weekdays_in_month = sum(
+                    1 for d in range(1, now.day + 1)
+                    if datetime(current_month_start.year, current_month_start.month, d).weekday() < 5
+                )
+                attendance = (distinct_days / weekdays_in_month * 100) if weekdays_in_month > 0 else 0.0
 
                 # Calculate revenue change
                 revenue_change = (
@@ -1036,8 +1047,8 @@ class OwnerDashboardService:
                     "staffName": staff_name,
                     "revenue": round(float(current_revenue), 2),
                     "utilizationRate": round(utilization, 2),
-                    "satisfactionScore": round(satisfaction, 2),
-                    "attendanceRate": attendance,
+                    "satisfactionScore": round(satisfaction, 2) if satisfaction is not None else None,
+                    "attendanceRate": round(attendance, 2),
                     "previousPeriodRevenue": round(float(prev_revenue), 2),
                     "revenueGrowth": round(revenue_change, 2),
                 })
@@ -1054,11 +1065,12 @@ class OwnerDashboardService:
             # Calculate averages across all staff (not just top 5)
             if staff_performance:
                 avg_utilization = sum(s["utilizationRate"] for s in staff_performance) / len(staff_performance)
-                avg_satisfaction = sum(s["satisfactionScore"] for s in staff_performance) / len(staff_performance)
+                valid_satisfactions = [s["satisfactionScore"] for s in staff_performance if s["satisfactionScore"] is not None]
+                avg_satisfaction = sum(valid_satisfactions) / len(valid_satisfactions) if valid_satisfactions else None
                 avg_attendance = sum(s["attendanceRate"] for s in staff_performance) / len(staff_performance)
             else:
                 avg_utilization = 0.0
-                avg_satisfaction = 0.0
+                avg_satisfaction = None
                 avg_attendance = 0.0
 
             result = {

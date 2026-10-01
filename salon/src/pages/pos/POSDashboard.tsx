@@ -41,9 +41,18 @@ export default function POSDashboard() {
   const { data: tenantSettings } = useTenantSettings();
   const { mutate: verifyPOSPayment } = useVerifyPOSPayment();
   const { mutate: generateReceipt } = useGenerateReceipt();
-  const currency = tenantSettings?.currency || "USD";
+  const { setTaxRate, setCurrency } = usePOSStore();
+  const currency = tenantSettings?.currency || "NGN";
+  const locale = tenantSettings?.language === "fr" ? "fr-FR" : "en-NG";
   const { showToast } = useToast();
   const { setRefreshHandler } = usePageRefresh();
+
+  useEffect(() => {
+    if (tenantSettings) {
+      setTaxRate(tenantSettings.tax_rate || 0.1);
+      setCurrency(tenantSettings.currency || "NGN");
+    }
+  }, [tenantSettings, setTaxRate, setCurrency]);
 
   // Handle Paystack payment callback
   useEffect(() => {
@@ -355,7 +364,7 @@ export default function POSDashboard() {
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(transaction.createdAt).toLocaleString(
-                            "en-NG",
+                            locale,
                             {
                               year: "numeric",
                               month: "short",
@@ -368,10 +377,7 @@ export default function POSDashboard() {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-foreground">
-                          ₦
-                          {transaction.total.toLocaleString("en-NG", {
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatCurrency(transaction.total, currency)}
                         </p>
                         <Badge
                           variant={

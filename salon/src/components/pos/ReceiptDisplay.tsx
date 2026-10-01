@@ -4,12 +4,14 @@ import {
   useEmailReceipt,
   useDownloadReceiptPDF,
 } from "@/hooks/useReceipt";
+import { usePOSStore } from "@/stores/pos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { useState, useEffect } from "react";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface ReceiptDisplayProps {
   transactionId: string;
@@ -22,6 +24,7 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
   const { mutate: emailReceipt, isPending: isEmailing } = useEmailReceipt();
   const { mutate: downloadPDF, isPending: isDownloading } = useDownloadReceiptPDF();
   const { showToast } = useToast();
+  const { currency } = usePOSStore();
 
   useEffect(() => {
     if (receipt?.customerEmail) {
@@ -133,13 +136,32 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
   return (
     <Card className="p-4 md:p-6 w-full max-w-full md:max-w-2xl mx-auto">
       <div className="space-y-4 md:space-y-6">
+        {/* Business Info Header */}
+        {receipt.tenantName && (
+          <div className="text-center border-b border-border pb-3 md:pb-4">
+            <p className="text-lg md:text-xl font-bold text-foreground">
+              {receipt.tenantName}
+            </p>
+            {receipt.tenantAddress && (
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {receipt.tenantAddress}
+              </p>
+            )}
+            {receipt.tenantPhone && (
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {receipt.tenantPhone}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Receipt Header */}
         <div className="text-center border-b border-border pb-3 md:pb-4">
           <p className="text-xs md:text-sm text-muted-foreground">
             Receipt #{receipt.receiptNumber}
           </p>
           <p className="text-xs text-muted-foreground">
-            {new Date(receipt.receiptDate).toLocaleString("en-NG", {
+            {new Date(receipt.receiptDate).toLocaleString(undefined, {
               year: "numeric",
               month: "short",
               day: "numeric",
@@ -179,17 +201,11 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
                     {item.itemName}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {item.quantity} × ₦
-                    {item.unitPrice.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {item.quantity} × {formatCurrency(item.unitPrice, currency)}
                   </p>
                 </div>
                 <p className="font-medium text-foreground flex-shrink-0">
-                  ₦
-                  {item.lineTotal.toLocaleString("en-NG", {
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatCurrency(item.lineTotal, currency)}
                 </p>
               </div>
             ))}
@@ -201,29 +217,20 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
           <div className="flex justify-between text-xs md:text-sm">
             <span className="text-muted-foreground">Subtotal</span>
             <span className="font-medium text-foreground">
-              ₦
-              {receipt.subtotal.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(receipt.subtotal, currency)}
             </span>
           </div>
           <div className="flex justify-between text-xs md:text-sm">
             <span className="text-muted-foreground">Tax</span>
             <span className="font-medium text-foreground">
-              ₦
-              {receipt.taxAmount.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(receipt.taxAmount, currency)}
             </span>
           </div>
           {receipt.discountAmount > 0 && (
             <div className="flex justify-between text-xs md:text-sm">
               <span className="text-muted-foreground">Discount</span>
               <span className="font-medium text-destructive">
-                -₦
-                {receipt.discountAmount.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                -{formatCurrency(receipt.discountAmount, currency)}
               </span>
             </div>
           )}
@@ -232,10 +239,7 @@ export default function ReceiptDisplay({ transactionId }: ReceiptDisplayProps) {
               Total
             </span>
             <span className="text-lg md:text-xl font-bold text-primary">
-              ₦
-              {receipt.total.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(receipt.total, currency)}
             </span>
           </div>
         </div>

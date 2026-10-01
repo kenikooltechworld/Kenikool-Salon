@@ -5,6 +5,7 @@
 import { Button, Card, Badge, Alert } from "@/components/ui";
 import { formatDate } from "@/lib/utils/format";
 import { CheckCircleIcon } from "@/components/icons";
+import ReviewForm from "./ReviewForm";
 
 interface BookingConfirmationProps {
   booking: {
@@ -22,10 +23,12 @@ interface BookingConfirmationProps {
     payment_id?: string;
   };
   onPaymentClick?: () => void;
+  showReviewForm?: boolean;
 }
 
 export default function BookingConfirmation({
   booking,
+  showReviewForm = false,
 }: BookingConfirmationProps) {
   const bookingDate = new Date(booking.booking_date);
 
@@ -175,6 +178,11 @@ export default function BookingConfirmation({
           <strong>{formatDate(bookingDate, "MMMM dd")}</strong>.
         </p>
       </div>
+
+      {/* Review Form */}
+      {showReviewForm && (
+        <ReviewForm bookingId={booking.id} />
+      )}
     </div>
   );
 }

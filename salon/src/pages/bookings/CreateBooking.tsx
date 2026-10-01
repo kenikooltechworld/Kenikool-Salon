@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +14,8 @@ import { useStaff } from "@/hooks/useStaff";
 import { useLocations } from "@/hooks/useLocations";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useCreateBooking } from "@/hooks/useBookings";
+import { useResources } from "@/hooks/useResources";
+import { useAssignResource } from "@/hooks/useResourceOperations";
 import type { Service, AvailableSlot } from "@/types";
 
 type WizardStep =
@@ -34,6 +37,7 @@ interface BookingFormData {
   selectedDate?: string;
   notes?: string;
   locationId?: string;
+  selectedResourceIds?: string[];
 }
 
 export default function CreateBooking() {
@@ -61,7 +65,7 @@ export default function CreateBooking() {
       }
       return parsed;
     }
-    return { customerMode: "existing" };
+    return { customerMode: "existing", selectedResourceIds: [] };
   });
   const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: staff = [], isLoading: staffLoading } = useStaff({
@@ -72,7 +76,10 @@ export default function CreateBooking() {
     enabled: formData.customerMode === "existing",
   });
   const customers = customersData?.customers || [];
+  const { data: resources = [] } = useResources();
+  const assignResource = useAssignResource();
   const { mutate: createBooking, isPending } = useCreateBooking();
+  const queryClient = useQueryClient();
 
   const updateFormData = (updates: Partial<BookingFormData>) => {
     setFormData((prev) => {
@@ -244,6 +251,7 @@ export default function CreateBooking() {
         notes: formData.notes || "",
         paymentOption: paymentOption,
         price: selectedService?.price || 0,
+        selectedResourceIds: formData.selectedResourceIds || [],
       };
 
       if (paymentOption === "now") {
@@ -270,6 +278,28 @@ export default function CreateBooking() {
             title: "Success",
             description: "Booking has been created successfully",
           });
+
+          // Assign selected resources to the appointment
+          const selectedResourceIds = formData.selectedResourceIds || [];
+          if (selectedResourceIds.length > 0 && bookingData?.id) {
+            selectedResourceIds.forEach((resourceId, index) => {
+              assignResource.mutate(
+                {
+                  appointment_id: bookingData.id,
+                  resource_id: resourceId,
+                  quantity_used: 1,
+                },
+                {
+                  onError: (err) => {
+                    console.error(`[CreateBooking] Failed to assign resource ${resourceId}:`, err);
+                  },
+                  // Continue assigning other resources even if one fails
+                  ...(index === selectedResourceIds.length - 1 ? {} : {}),
+                }
+              );
+            });
+            queryClient.invalidateQueries({ queryKey: ["resources"] });
+          }
 
           // Navigate to confirmation page with booking data
           navigate("/bookings/confirmation", {
@@ -834,6 +864,45 @@ export default function CreateBooking() {
                         className="mt-1 w-full p-2 border border-border rounded-md bg-background text-foreground text-sm min-h-[80px]"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Resources Section */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold text-foreground">Assign Resources</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Optionally assign resources (rooms, chairs, equipment) to this booking
+                  </p>
+                  <div className="space-y-2">
+                    {resources
+                      .filter((r) => r.status === "active" && r.is_active)
+                      .map((resource) => (
+                        <label
+                          key={resource.id}
+                          className="flex items-center gap-3 p-2 border rounded-lg cursor-pointer hover:bg-muted/50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.selectedResourceIds?.includes(resource.id)}
+                            onChange={(e) => {
+                              const current = formData.selectedResourceIds || [];
+                              const updated = e.target.checked
+                                ? [...current, resource.id]
+                                : current.filter((id) => id !== resource.id);
+                              updateFormData({ selectedResourceIds: updated });
+                            }}
+                            className="rounded"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-foreground">
+                              {resource.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {resource.type} | Available: {resource.available_quantity}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
                   </div>
                 </div>
 

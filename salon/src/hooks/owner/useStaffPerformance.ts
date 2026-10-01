@@ -7,7 +7,7 @@ export interface StaffPerformanceMetric {
   revenue: number;
   revenueRank: number;
   utilizationRate: number;
-  satisfactionScore: number;
+  satisfactionScore: number | null;
   attendanceRate: number;
   previousPeriodRevenue: number;
   revenueGrowth: number;
@@ -16,7 +16,7 @@ export interface StaffPerformanceMetric {
 export interface StaffPerformanceData {
   topStaff: StaffPerformanceMetric[];
   averageUtilization: number;
-  averageSatisfaction: number;
+  averageSatisfaction: number | null;
   averageAttendance: number;
 }
 

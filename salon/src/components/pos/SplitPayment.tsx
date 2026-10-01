@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePOSStore } from "@/stores/pos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert } from "@/components/ui/alert";
 import { PlusIcon, XIcon } from "@/components/icons";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface PaymentPart {
   id: string;
@@ -28,6 +30,7 @@ export default function SplitPayment({
     { id: "1", method: "cash", amount: totalAmount },
   ]);
   const [error, setError] = useState<string>();
+  const { currency } = usePOSStore();
 
   const paymentMethods = [
     { value: "cash", label: "Cash" },
@@ -83,7 +86,7 @@ export default function SplitPayment({
   const handleApply = () => {
     if (!isValid) {
       setError(
-        `Total must equal ₦${totalAmount.toLocaleString("en-NG", { maximumFractionDigits: 2 })}`,
+        `Total must equal ${formatCurrency(totalAmount, currency)}`,
       );
       return;
     }
@@ -187,21 +190,15 @@ export default function SplitPayment({
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Total Amount</span>
             <span className="font-medium">
-              ₦
-              {totalAmount.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(totalAmount, currency)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Total Paid</span>
             <span
-              className={`font-medium ${remaining > 0 ? "text-destructive" : "text-green-600"}`}
+              className={`font-medium ${remaining > 0 ? "text-destructive" : "text-green-500"}`}
             >
-              ₦
-              {totalPaid.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(totalPaid, currency)}
             </span>
           </div>
           {remaining !== 0 && (
@@ -210,12 +207,9 @@ export default function SplitPayment({
                 {remaining > 0 ? "Remaining" : "Overpaid"}
               </span>
               <span
-                className={`font-semibold ${remaining > 0 ? "text-destructive" : "text-green-600"}`}
+                className={`font-semibold ${remaining > 0 ? "text-destructive" : "text-green-500"}`}
               >
-                ₦
-                {Math.abs(remaining).toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(Math.abs(remaining), currency)}
               </span>
             </div>
           )}

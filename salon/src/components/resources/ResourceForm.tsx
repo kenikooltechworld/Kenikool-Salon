@@ -21,6 +21,8 @@ export default function ResourceForm({
     type: "room" | "chair" | "equipment" | "tool" | "supply";
     description: string;
     quantity: number;
+    status: "active" | "inactive" | "maintenance";
+    location_id: string;
     tags: string;
     notes: string;
   }>({
@@ -28,6 +30,8 @@ export default function ResourceForm({
     type: "room",
     description: "",
     quantity: 1,
+    status: "active",
+    location_id: "",
     tags: "",
     notes: "",
   });
@@ -46,6 +50,8 @@ export default function ResourceForm({
         type: existingResource.type,
         description: existingResource.description || "",
         quantity: existingResource.quantity,
+        status: existingResource.status,
+        location_id: existingResource.location_id || "",
         tags: existingResource.tags.join(", "),
         notes: existingResource.notes || "",
       });
@@ -84,6 +90,8 @@ export default function ResourceForm({
       type: formData.type,
       description: formData.description || undefined,
       quantity: formData.quantity,
+      status: formData.status,
+      location_id: formData.location_id || undefined,
       tags: formData.tags
         .split(",")
         .map((t) => t.trim())
@@ -116,6 +124,8 @@ export default function ResourceForm({
             type: "room",
             description: "",
             quantity: 1,
+            status: "active",
+            location_id: "",
             tags: "",
             notes: "",
           });
@@ -195,6 +205,44 @@ export default function ResourceForm({
             <option value="tool">Tool</option>
             <option value="supply">Supply</option>
           </select>
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Status *
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className={cn(
+              "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500",
+            )}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </div>
+
+        {/* Location */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Location ID
+          </label>
+          <input
+            type="text"
+            name="location_id"
+            value={formData.location_id}
+            onChange={handleChange}
+            placeholder="e.g., location-123"
+            className={cn(
+              "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500",
+            )}
+          />
         </div>
 
         {/* Description */}

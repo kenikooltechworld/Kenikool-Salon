@@ -6,6 +6,7 @@ from bson import ObjectId
 from datetime import datetime, timedelta
 from io import BytesIO
 import csv
+from mongoengine import Q
 from app.context import get_tenant_id
 from app.services.transaction_service import TransactionService
 

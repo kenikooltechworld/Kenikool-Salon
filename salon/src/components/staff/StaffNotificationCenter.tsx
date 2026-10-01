@@ -21,6 +21,8 @@ const STAFF_NOTIFICATION_TYPES = [
   { value: "time_off_approved", label: "Time Off Approved" },
   { value: "time_off_rejected", label: "Time Off Denied" },
   { value: "commission_payment", label: "Commission Payments" },
+  { value: "manager_message", label: "Manager Messages" },
+  { value: "team_announcement", label: "Team Announcements" },
 ];
 
 export default function StaffNotificationCenter({

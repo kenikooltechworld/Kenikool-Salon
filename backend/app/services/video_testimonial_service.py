@@ -18,6 +18,7 @@ class VideoTestimonialService:
         thumbnail_url: Optional[str] = None,
         testimonial_text: Optional[str] = None,
         rating: int = 5,
+        is_featured: bool = False,
         display_order: int = 0
     ) -> VideoTestimonial:
         """Create a new video testimonial"""
@@ -28,6 +29,7 @@ class VideoTestimonialService:
             thumbnail_url=thumbnail_url,
             testimonial_text=testimonial_text,
             rating=rating,
+            is_featured=is_featured,
             display_order=display_order,
             is_active=True
         )

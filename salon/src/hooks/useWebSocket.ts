@@ -55,6 +55,24 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       payment_failed: ["owner-metrics", "pending-actions"],
       staff_alert: ["pending-actions", "staff-performance"],
       inventory_alert: ["owner-metrics", "pending-actions"],
+      "notification:new": [
+        "notifications",
+        "notifications-unread-count",
+        "messages",
+        "messages-unread-count",
+      ],
+      "manager_message": [
+        "messages",
+        "messages-unread-count",
+      ],
+      "team_announcement": [
+        "messages",
+        "messages-unread-count",
+      ],
+      appointment_reminder: ["upcoming-appointments"],
+      shift_assigned: ["shifts"],
+      time_off_approved: ["time-off-requests"],
+      time_off_rejected: ["time-off-requests"],
     };
     return keyMap[eventType] || [];
   }, []);
@@ -89,7 +107,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     // Delay socket initialization to avoid blocking initial HTTP requests
     const initTimer = setTimeout(() => {
       try {
-        const socket = initializeSocket();
+        const socket = initializeSocket({
+          tenantId: user.tenantId,
+          userId: user.id,
+        });
 
         // Set up event listeners
         socket.on("connect", () => {
@@ -114,6 +135,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
         // Listen for dashboard events
         onSocketEvent("dashboard:update", handleMessage);
+
+        // Listen for real-time notifications
+        onSocketEvent("notification:new", handleMessage);
+
+        // Listen for inter-department messages
+        onSocketEvent("manager_message", handleMessage);
+        onSocketEvent("team_announcement", handleMessage);
       } catch (error) {
         console.error("Error initializing Socket.IO:", error);
         if (onError && error instanceof Error) {
@@ -126,6 +154,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       clearTimeout(initTimer);
       // Clean up event listeners
       offSocketEvent("dashboard:update", handleMessage);
+      offSocketEvent("notification:new", handleMessage);
+      offSocketEvent("manager_message", handleMessage);
+      offSocketEvent("team_announcement", handleMessage);
       disconnectSocket();
     };
   }, [user, onConnect, onDisconnect, onError, handleMessage]);

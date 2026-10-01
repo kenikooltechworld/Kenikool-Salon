@@ -19,8 +19,14 @@ import { useEffect } from "react";
 export default function InventoryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { inventory, deductInventory, updateInventory, isLoadingInventory, refetch } =
-    useInventory();
+  const {
+    inventory,
+    deductInventory,
+    restockInventory,
+    deleteInventory,
+    isLoadingInventory,
+    refetch,
+  } = useInventory();
   const [quantity, setQuantity] = useState(1);
   const { showToast } = useToast();
   const { setRefreshHandler } = usePageRefresh();
@@ -48,11 +54,25 @@ export default function InventoryDetail() {
 
   const handleRestock = async () => {
     if (quantity > 0) {
-      updateInventory({
-        id: item.id,
-        quantity: item.quantity + quantity,
+      restockInventory({
+        inventoryId: item.id,
+        quantity,
       });
       setQuantity(1);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this inventory item?")) {
+      deleteInventory(item.id, {
+        onSuccess: () => {
+          showToast({ title: "Inventory item deleted successfully", variant: "success" });
+          navigate("/inventory");
+        },
+        onError: () => {
+          showToast({ title: "Failed to delete inventory item", variant: "error" });
+        },
+      });
     }
   };
 
@@ -164,11 +184,19 @@ export default function InventoryDetail() {
           <Card className="p-4">
             <h3 className="font-semibold mb-3">Actions</h3>
             <div className="space-y-2">
-              <Button className="w-full gap-2" variant="outline">
+              <Button
+                className="w-full gap-2"
+                variant="outline"
+                onClick={() => navigate("/inventory")}
+              >
                 <Edit2Icon size={18} />
                 Edit Item
               </Button>
-              <Button className="w-full gap-2" variant="destructive">
+              <Button
+                className="w-full gap-2"
+                variant="destructive"
+                onClick={handleDelete}
+              >
                 <Trash2Icon size={18} />
                 Delete Item
               </Button>

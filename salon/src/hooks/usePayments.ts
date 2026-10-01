@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { apiClient } from "@/lib/utils/api";
 
 export interface Payment {
@@ -42,8 +43,13 @@ interface PaymentFilters {
  * Fetch all payments with optional filters
  */
 export function usePayments(filters?: PaymentFilters) {
+  const filtersKey = useMemo(() => {
+    if (!filters) return "{}";
+    return JSON.stringify(filters);
+  }, [filters]);
+
   return useQuery({
-    queryKey: ["payments", filters],
+    queryKey: ["payments", filtersKey],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.status) params.append("status", filters.status);
@@ -117,8 +123,8 @@ export function useCreatePayment() {
       return data.data;
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["payments"], exact: false });
-      queryClient.refetchQueries({ queryKey: ["invoices"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["payments"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["invoices"], exact: false });
     },
   });
 }
@@ -165,8 +171,8 @@ export function useRefundPayment() {
       return data.data;
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["payments"], exact: false });
-      queryClient.refetchQueries({ queryKey: ["invoices"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["payments"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["invoices"], exact: false });
     },
   });
 }
@@ -251,8 +257,8 @@ export function useVerifyPayment() {
       };
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["payments"], exact: false });
-      queryClient.refetchQueries({ queryKey: ["invoices"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["payments"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["invoices"], exact: false });
     },
   });
 }

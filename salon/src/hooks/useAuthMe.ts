@@ -1,7 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth";
 import { useTenantStore } from "@/stores/tenant";
 import { apiClient } from "@/lib/utils";
+import type { User } from "@/stores/auth";
+
+interface AuthMePayload {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  role_ids: string[];
+  role_names: string[];
+  tenant_id: string;
+  avatar?: string;
+  permissions: string[];
+}
 
 /**
  * Hook to fetch current user data from /auth/me endpoint using react-query
@@ -14,7 +29,7 @@ import { apiClient } from "@/lib/utils";
  * - error: error if fetch fails
  * - data: user data if authenticated
  */
-export function useAuthMe() {
+export function useAuthMe(): UseQueryResult<User | null, Error> {
   const setUser = useAuthStore((state) => state.setUser);
   const setPermissions = useAuthStore((state) => state.setPermissions);
   const setTenant = useTenantStore((state) => state.setTenant);
@@ -22,12 +37,11 @@ export function useAuthMe() {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await apiClient.get("/auth/me");
-      const userData = response.data?.data || response.data;
+      const response = await apiClient.get<AuthMePayload>("/auth/me");
+      const userData = response.data;
 
       if (userData && userData.id) {
-        // Restore user to auth store
-        setUser({
+        const user: User = {
           id: userData.id,
           email: userData.email,
           firstName: userData.first_name,
@@ -36,41 +50,27 @@ export function useAuthMe() {
           role: userData.role_ids?.[0] || "user",
           roleNames: userData.role_names || [],
           tenantId: userData.tenant_id,
+          avatar: userData.avatar,
+        };
+        setUser(user);
+        setPermissions(userData.permissions || []);
+        setTenant({
+          id: userData.tenant_id,
+          name: "",
+          subdomain: "",
+          subscriptionTier: "starter",
+          status: "active",
+          isPublished: false,
         });
-
-        // Set permissions if available
-        if (userData.permissions) {
-          setPermissions(userData.permissions);
-        }
-
-        // Load tenant data if tenant_id is available
-        if (userData.tenant_id) {
-          try {
-            const tenantResponse = await apiClient.get(
-              `/tenants/${userData.tenant_id}`,
-            );
-            const tenantData = tenantResponse.data?.data || tenantResponse.data;
-
-            if (tenantData) {
-              setTenant({
-                id: tenantData.id,
-                name: tenantData.name,
-                subdomain: tenantData.subdomain,
-                subscriptionTier: tenantData.subscription_tier,
-                status: tenantData.status,
-                isPublished: tenantData.is_published,
-              });
-            }
-          } catch (tenantError) {
-            // Log but don't fail auth if tenant fetch fails
-            console.error("Failed to load tenant data:", tenantError);
-          }
-        }
+        return user;
       }
 
-      return userData;
+      setUser(null);
+      setPermissions([]);
+      setTenant(null);
+      return null;
     },
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }

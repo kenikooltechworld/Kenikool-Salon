@@ -37,6 +37,9 @@ class PricingPlan(Document):
     is_active = BooleanField(default=True)
     is_featured = BooleanField(default=False)  # Show as recommended
 
+    # Payment Integration
+    paystack_plan_code = StringField(null=True)  # Paystack plan code for this pricing plan
+
     # Metadata
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)

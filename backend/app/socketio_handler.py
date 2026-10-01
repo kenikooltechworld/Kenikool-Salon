@@ -2,6 +2,7 @@
 
 import logging
 import re
+from datetime import datetime
 from typing import Dict, Any
 from socketio import AsyncServer, ASGIApp
 from fastapi import FastAPI
@@ -47,17 +48,38 @@ async def connect(sid, environ):
         query_string = environ.get('QUERY_STRING', '')
         headers = environ.get('headers', {})
         
-        logger.info(f"Client {sid} connected")
-        logger.info(f"Query string: {query_string}")
-        logger.info(f"Headers: {headers}")
+        # Parse query params
+        tenant_id = None
+        user_id = None
+        if query_string:
+            from urllib.parse import parse_qs
+            params = parse_qs(query_string)
+            tenant_id = params.get('tenant_id', [None])[0]
+            user_id = params.get('user_id', [None])[0]
+        
+        # Fallback: try to extract from headers
+        if not tenant_id:
+            tenant_id = headers.get('x-tenant-id', [None])[0] if isinstance(headers.get('x-tenant-id'), list) else headers.get('x-tenant-id')
+        if not user_id:
+            user_id = headers.get('x-user-id', [None])[0] if isinstance(headers.get('x-user-id'), list) else headers.get('x-user-id')
+        
+        logger.info(f"Client {sid} connected (tenant={tenant_id}, user={user_id})")
         
         connected_clients[sid] = {
             'sid': sid,
-            'connected_at': None,
+            'tenant_id': tenant_id,
+            'user_id': user_id,
+            'connected_at': datetime.utcnow().isoformat(),
         }
         
+        # Join tenant and user rooms if IDs are provided
+        if tenant_id:
+            await sio.enter_room(sid, f"tenant:{tenant_id}")
+        if tenant_id and user_id:
+            await sio.enter_room(sid, f"user:{tenant_id}:{user_id}")
+        
         # Send connection confirmation
-        await sio.emit('connect_response', {'data': 'Connected to server'}, to=sid)
+        await sio.emit('connect_response', {'data': 'Connected to server', 'sid': sid}, to=sid)
         logger.info(f"Connection confirmed for client {sid}")
     except Exception as e:
         logger.error(f"Error in connect handler: {e}", exc_info=True)

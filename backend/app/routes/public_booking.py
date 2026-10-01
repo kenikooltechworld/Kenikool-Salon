@@ -14,6 +14,8 @@ from app.models.staff import Staff
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.appointment import Appointment
+from app.models.appointment_history import AppointmentHistory
+from app.models.video_testimonial import VideoTestimonial
 from app.schemas.public_booking import (
     PublicBookingCreate,
     PublicBookingResponse,
@@ -293,31 +295,24 @@ async def get_booking_testimonials(request: Request, limit: int = Query(5, ge=1,
         if not tenant or not tenant.is_published:
             raise HTTPException(status_code=404, detail="Salon not found")
 
-        # Get completed bookings with ratings (from appointments)
-        # For now, return mock testimonials - in production, these would come from appointment reviews
+        # Get testimonials from video testimonials
+        video_testimonials = VideoTestimonial.objects(
+            tenant_id=tenant_id_obj,
+            is_active=True
+        ).order_by("display_order", "-created_at").limit(limit)
+
         testimonials = [
             {
-                "customer_name": "Sarah Johnson",
-                "rating": 5,
-                "review": "Excellent service! Very professional and friendly staff.",
-                "created_at": datetime.now().isoformat(),
-            },
-            {
-                "customer_name": "Ahmed Hassan",
-                "rating": 5,
-                "review": "Amazing experience. Will definitely book again!",
-                "created_at": datetime.now().isoformat(),
-            },
-            {
-                "customer_name": "Amara Okafor",
-                "rating": 5,
-                "review": "Best salon in town. Highly recommended!",
-                "created_at": datetime.now().isoformat(),
-            },
+                "customer_name": vt.customer_name,
+                "rating": vt.rating,
+                "review": vt.testimonial_text or "",
+                "created_at": vt.created_at.isoformat() if vt.created_at else datetime.now().isoformat(),
+            }
+            for vt in video_testimonials
         ]
 
-        logger.info(f"[PublicBooking] testimonials - Returning {len(testimonials[:limit])} testimonials")
-        return testimonials[:limit]
+        logger.info(f"[PublicBooking] testimonials - Returning {len(testimonials)} testimonials")
+        return testimonials
     except HTTPException:
         raise
     except Exception as e:
@@ -365,11 +360,21 @@ async def get_booking_statistics(request: Request):
         # Count total bookings
         total_bookings = PublicBooking.objects(tenant_id=tenant_id_obj).count()
 
-        # For now, return mock statistics - in production, these would be calculated from real data
+        # Calculate average rating from video testimonials
+        video_testimonials = VideoTestimonial.objects(
+            tenant_id=tenant_id_obj,
+            is_active=True,
+            rating__gt=0
+        )
+        avg_rating = 0.0
+        if video_testimonials:
+            ratings = [vt.rating for vt in video_testimonials]
+            avg_rating = round(sum(ratings) / len(ratings), 1)
+
         logger.info(f"[PublicBooking] statistics - Returning statistics")
         return StatisticsResponse(
             total_bookings=max(total_bookings, 500),
-            average_rating=4.8,
+            average_rating=avg_rating,
             average_response_time=120,
         )
     except HTTPException:
@@ -565,3 +570,89 @@ async def get_public_booking(request: Request, booking_id: str):
         created_at=appointment.created_at.isoformat(),
         updated_at=appointment.updated_at.isoformat(),
     )
+
+
+class ReviewSubmission(BaseModel):
+    """Review submission request."""
+    booking_id: str
+    rating: int = Field(..., ge=1, le=5)
+    feedback: Optional[str] = Field(None, max_length=1000)
+
+
+class ReviewResponse(BaseModel):
+    """Review submission response."""
+    success: bool
+    message: str
+
+
+@router.post("/bookings/reviews", response_model=ReviewResponse)
+async def submit_booking_review(request: Request, review_data: ReviewSubmission):
+    """
+    Submit a review for a completed booking.
+
+    Args:
+        review_data: Review details including booking_id, rating, and feedback
+
+    Returns:
+        Review submission confirmation
+    """
+    try:
+        tenant_id = request.scope.get("tenant_id")
+        if not tenant_id:
+            raise HTTPException(status_code=403, detail="Tenant not found")
+
+        try:
+            tenant_id_obj = ObjectId(tenant_id)
+            booking_id_obj = ObjectId(review_data.booking_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
+        tenant = Tenant.objects(id=tenant_id_obj).first()
+        if not tenant or not tenant.is_published:
+            raise HTTPException(status_code=404, detail="Salon not found")
+
+        public_booking = PublicBooking.objects(
+            id=booking_id_obj,
+            tenant_id=tenant_id_obj
+        ).first()
+
+        if not public_booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+
+        if public_booking.status != PublicBookingStatus.COMPLETED:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot review a booking that has not been completed"
+            )
+
+        if not public_booking.appointment_id:
+            raise HTTPException(
+                status_code=400,
+                detail="No appointment linked to this booking"
+            )
+
+        history_entry = AppointmentHistory.objects(
+            appointment_id=public_booking.appointment_id,
+            tenant_id=tenant_id_obj
+        ).first()
+
+        if not history_entry:
+            raise HTTPException(
+                status_code=404,
+                detail="Appointment history not found"
+            )
+
+        history_entry.rating = review_data.rating
+        history_entry.feedback = review_data.feedback
+        history_entry.save()
+
+        return ReviewResponse(
+            success=True,
+            message="Review submitted successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[PublicBooking] submit review - Unexpected error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")

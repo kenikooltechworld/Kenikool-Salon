@@ -62,6 +62,12 @@ class Receipt(BaseDocument):
     payment_method = StringField(required=True, max_length=50)
     payment_reference = StringField(null=True, max_length=255)
 
+    # Business info
+    tenant_name = StringField(null=True, max_length=255)
+    tenant_address = StringField(null=True, max_length=500)
+    tenant_phone = StringField(null=True, max_length=50)
+    tenant_logo_url = StringField(null=True, max_length=500)
+
     # Receipt format
     receipt_format = StringField(
         required=True,

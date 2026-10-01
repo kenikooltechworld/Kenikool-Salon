@@ -53,11 +53,24 @@ class InventoryService:
         return Inventory.objects(tenant_id=tenant_id, id=inventory_id).first()
 
     @staticmethod
+    def delete_inventory(inventory_id: str) -> bool:
+        """Delete inventory item"""
+        tenant_id = get_tenant_id()
+        inventory = Inventory.objects(tenant_id=tenant_id, id=inventory_id).first()
+        
+        if not inventory:
+            raise ValueError("Inventory not found")
+        
+        inventory.delete()
+        return True
+
+    @staticmethod
     def list_inventory(
         category: Optional[str] = None,
         is_active: bool = True,
         skip: int = 0,
         limit: int = 100,
+        search: Optional[str] = None,
     ) -> tuple[List[Inventory], int]:
         """List inventory items"""
         tenant_id = get_tenant_id()
@@ -65,6 +78,9 @@ class InventoryService:
         
         if category:
             query &= Q(category=category)
+        
+        if search:
+            query &= Q(name__icontains=search) | Q(sku__icontains=search)
         
         total = Inventory.objects(query).count()
         items = Inventory.objects(query).skip(skip).limit(limit)
@@ -316,7 +332,6 @@ class InventoryService:
         tenant_id = get_tenant_id()
         query = Q(tenant_id=tenant_id, is_active=True)
         
-        # Get items where quantity <= reorder_level
         items = Inventory.objects(query)
         low_stock_items = [item for item in items if item.quantity <= item.reorder_level]
         

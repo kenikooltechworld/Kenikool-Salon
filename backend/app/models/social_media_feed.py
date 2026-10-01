@@ -44,4 +44,5 @@ class SocialMediaFeed(Document):
             'likes_count': self.likes_count,
             'comments_count': self.comments_count,
             'published_at': self.published_at.isoformat() if self.published_at else None,
+            'is_active': self.is_active,
         }

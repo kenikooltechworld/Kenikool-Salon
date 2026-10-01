@@ -59,15 +59,48 @@ export const useWaitingRoomQueue = () => {
 export const useCheckIn = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (appointmentId: string) => {
+    mutationFn: async ({
+      appointmentId,
+      customerId,
+      customerName,
+      customerPhone,
+      serviceId,
+      serviceName,
+      staffId,
+      staffName,
+      estimatedWaitTime,
+    }: {
+      appointmentId: string;
+      customerId: string;
+      customerName?: string;
+      customerPhone?: string;
+      serviceId?: string;
+      serviceName?: string;
+      staffId?: string;
+      staffName?: string;
+      estimatedWaitTime?: number;
+    }) => {
       const { data } = await apiClient.post("/waiting-room/check-in", {
         appointment_id: appointmentId,
+        customer_id: customerId,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        service_id: serviceId,
+        service_name: serviceName,
+        staff_id: staffId,
+        staff_name: staffName,
+        estimated_wait_time: estimatedWaitTime,
       });
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["waiting-room-queue"] });
       queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
+      if (variables?.customerId) {
+        queryClient.invalidateQueries({
+          queryKey: ["queue-position", variables.customerId],
+        });
+      }
     },
   });
 };
@@ -93,7 +126,27 @@ export const useQueueStats = () => {
     queryKey: ["queue-stats"],
     queryFn: async () => {
       const { data } = await apiClient.get("/waiting-room/stats");
-      return data.data as WaitingRoomStats;
+      const stats = data.data as {
+        current_queue: {
+          waiting: number;
+          called: number;
+          in_service: number;
+          total: number;
+        };
+        today: {
+          completed: number;
+          no_show: number;
+        };
+        average_wait_time_minutes: number;
+        longest_wait_time_minutes: number;
+      };
+      return {
+        total_waiting: stats.current_queue.waiting,
+        average_wait_time_minutes: stats.average_wait_time_minutes,
+        longest_wait_time_minutes: stats.longest_wait_time_minutes,
+        total_completed_today: stats.today.completed,
+        total_no_shows_today: stats.today.no_show,
+      } as WaitingRoomStats;
     },
     refetchInterval: 10000, // Refetch every 10 seconds
   });

@@ -6,16 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert } from "@/components/ui/alert";
 import { TagIcon, XIcon } from "@/components/icons";
+import { useValidateDiscount } from "@/hooks/useDiscount";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface DiscountApplierProps {
   onClose?: () => void;
+  subtotal?: number;
+  onDiscountApplied?: (discountAmount: number) => void;
 }
 
-export default function DiscountApplier({ onClose }: DiscountApplierProps) {
+export default function DiscountApplier({ onClose, subtotal = 0, onDiscountApplied }: DiscountApplierProps) {
   const [discountCode, setDiscountCode] = useState("");
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
+  const validateDiscount = useValidateDiscount();
 
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) {
@@ -27,22 +33,27 @@ export default function DiscountApplier({ onClose }: DiscountApplierProps) {
     setIsApplying(true);
 
     try {
-      // Simulate discount validation
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const result = await validateDiscount.mutateAsync({
+        discountCode: discountCode.toUpperCase(),
+        subtotal,
+      });
 
-      // In a real app, this would call an API to validate the discount
-      if (discountCode.toUpperCase() === "WELCOME10") {
+      if (result.valid) {
         setSuccess(true);
-        setDiscountCode("");
+        setAppliedDiscount({
+          code: discountCode.toUpperCase(),
+          amount: result.discountAmount,
+        });
+        onDiscountApplied?.(result.discountAmount);
         setTimeout(() => {
           setSuccess(false);
           onClose?.();
         }, 2000);
       } else {
-        setError("Invalid discount code");
+        setError(result.message || "Invalid discount code");
       }
     } catch (err) {
-      setError("Failed to apply discount");
+      setError(err instanceof Error ? err.message : "Failed to apply discount");
     } finally {
       setIsApplying(false);
     }
@@ -52,6 +63,8 @@ export default function DiscountApplier({ onClose }: DiscountApplierProps) {
     setDiscountCode("");
     setSuccess(false);
     setError(undefined);
+    setAppliedDiscount(null);
+    onDiscountApplied?.(0);
   };
 
   return (
@@ -84,15 +97,15 @@ export default function DiscountApplier({ onClose }: DiscountApplierProps) {
         </Alert>
       )}
 
-      {discountCode ? (
+      {discountCode && appliedDiscount ? (
         <div className="space-y-4">
           <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg border border-green-200 dark:border-green-800">
             <p className="text-sm text-muted-foreground">Applied Discount</p>
             <p className="font-semibold text-foreground text-lg">
-              {discountCode}
+              {appliedDiscount.code}
             </p>
             <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-              Discount applied
+              -{formatCurrency(appliedDiscount.amount, "NGN")} discount
             </p>
           </div>
           <Button

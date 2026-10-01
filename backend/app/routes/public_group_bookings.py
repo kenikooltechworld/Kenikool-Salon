@@ -6,9 +6,15 @@ from app.schemas.group_booking import PublicGroupBookingCreate, GroupBookingResp
 from app.services.group_booking_service import GroupBookingService
 from app.middleware.tenant_context import get_tenant_id
 from app.services.notification_service import NotificationService
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/public/group-bookings", tags=["Public Group Bookings"])
+
+
+class CancelGroupBookingRequest(BaseModel):
+    email: str
+    cancellation_reason: Optional[str] = None
 
 
 @router.post("", response_model=GroupBookingResponse)
@@ -45,11 +51,6 @@ async def create_public_group_booking(
         from app.services.email_template_service import EmailTemplateService
         from app.models.tenant import Tenant
         from app.models.staff import Staff
-
-        organizer_staff_id = booking_data.staff_ids[0] if booking_data.staff_ids else None
-        staff = None
-        if organizer_staff_id:
-            staff = Staff.objects(tenant_id=tenant_id, id=ObjectId(organizer_staff_id)).first()
 
         tenant = Tenant.objects(id=tenant_id).first()
         business_email = tenant.settings.get("email", tenant.email) if tenant.settings else tenant.email
@@ -108,8 +109,7 @@ async def get_public_group_booking(
 async def cancel_public_group_booking(
     request: Request,
     booking_id: str,
-    email: str,
-    cancellation_reason: str = None
+    payload: CancelGroupBookingRequest,
 ):
     """Cancel a group booking (requires organizer email for verification)"""
     tenant_id = get_tenant_id()
@@ -119,7 +119,7 @@ async def cancel_public_group_booking(
     if not booking:
         raise HTTPException(status_code=404, detail="Group booking not found")
 
-    if booking.organizer_email != email:
+    if booking.organizer_email != payload.email:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     if booking.tenant_id != tenant_id:
@@ -133,7 +133,7 @@ async def cancel_public_group_booking(
 
     booking = GroupBookingService.cancel_group_booking(
         ObjectId(booking_id),
-        cancellation_reason
+        payload.cancellation_reason
     )
 
     try:

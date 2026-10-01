@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTransactions } from "@/hooks/useCheckout";
 import { useCreateRefund } from "@/hooks/useRefund";
+import { usePOSStore } from "@/stores/pos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert } from "@/components/ui/alert";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function RefundProcessor() {
   const [selectedTransactionId, setSelectedTransactionId] = useState("");
@@ -16,6 +18,7 @@ export default function RefundProcessor() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
+  const { currency } = usePOSStore();
 
   const { data: transactionsData, isLoading } = useTransactions({
     paymentStatus: "completed",
@@ -117,10 +120,7 @@ export default function RefundProcessor() {
                       </p>
                     </div>
                     <p className="font-bold text-sm md:text-base text-foreground shrink-0">
-                      ₦
-                      {transaction.total.toLocaleString("en-NG", {
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCurrency(transaction.total, currency)}
                     </p>
                   </div>
                 </div>
@@ -143,10 +143,7 @@ export default function RefundProcessor() {
                 Original Amount
               </Label>
               <p className="text-xl md:text-2xl font-bold text-foreground">
-                ₦
-                {selectedTransaction.total.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(selectedTransaction.total, currency)}
               </p>
             </div>
 

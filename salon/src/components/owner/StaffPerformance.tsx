@@ -122,7 +122,10 @@ export function StaffPerformance({
               className="text-lg font-bold"
               style={{ color: "var(--foreground)" }}
             >
-              {data.averageSatisfaction.toFixed(1)}/5
+              {data.averageSatisfaction !== null && data.averageSatisfaction !== undefined
+                ? data.averageSatisfaction.toFixed(1)
+                : "N/A"}
+              /5
             </p>
           </div>
           <div className="space-y-1">
@@ -210,7 +213,10 @@ export function StaffPerformance({
                       className="font-bold mt-1"
                       style={{ color: "var(--foreground)" }}
                     >
-                      {staff.satisfactionScore.toFixed(1)}/5
+                      {staff.satisfactionScore !== null && staff.satisfactionScore !== undefined
+                        ? staff.satisfactionScore.toFixed(1)
+                        : "N/A"}
+                      /5
                     </p>
                   </div>
                   <div>

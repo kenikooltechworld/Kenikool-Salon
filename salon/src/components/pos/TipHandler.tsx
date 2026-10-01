@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { usePOSStore } from "@/stores/pos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DollarSignIcon, XIcon } from "@/components/icons";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface TipHandlerProps {
   subtotal: number;
@@ -19,6 +21,7 @@ export default function TipHandler({
 }: TipHandlerProps) {
   const [tipType, setTipType] = useState<"percentage" | "fixed">("percentage");
   const [tipValue, setTipValue] = useState<number>(0);
+  const { currency } = usePOSStore();
 
   const tipPercentages = [10, 15, 18, 20];
 
@@ -151,10 +154,7 @@ export default function TipHandler({
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Tip Amount</span>
             <span className="text-lg font-bold text-primary">
-              ₦
-              {currentTipAmount.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(currentTipAmount, currency)}
             </span>
           </div>
           <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
@@ -162,10 +162,7 @@ export default function TipHandler({
               Subtotal + Tip
             </span>
             <span className="text-lg font-bold text-foreground">
-              ₦
-              {(subtotal + currentTipAmount).toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(subtotal + currentTipAmount, currency)}
             </span>
           </div>
         </div>

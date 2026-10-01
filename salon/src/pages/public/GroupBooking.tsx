@@ -88,7 +88,7 @@ export default function GroupBooking() {
 
   if (isOptionsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+       <div className="min-h-screen bg-muted py-8 px-4">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center mb-8">
             <Skeleton className="h-12 w-12 mx-auto mb-4 rounded-full" />
@@ -121,7 +121,7 @@ export default function GroupBooking() {
             </div>
             <div className="space-y-4">
               {[...Array(2)].map((_, i) => (
-                <Card key={i} className="p-4 bg-gray-50 space-y-3">
+                <Card key={i} className="p-4 bg-card space-y-3">
                   <Skeleton className="h-5 w-24" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Skeleton className="h-10 w-full" />
@@ -192,7 +192,7 @@ export default function GroupBooking() {
         special_requests: specialRequests || undefined,
       });
 
-      navigate(`/public/group-booking-confirmation/₦{result.id}`);
+      navigate(`/public/group-booking-confirmation/${result.id}`);
     } catch (error: any) {
       alert(error.response?.data?.detail || "Failed to create group booking");
     }
@@ -208,13 +208,13 @@ export default function GroupBooking() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-muted py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="text-center flex-1">
-            <Users size={48} className="mx-auto mb-4 text-blue-600" />
-            <h1 className="text-3xl font-bold mb-2">Group Booking</h1>
-            <p className="text-gray-600">
+            <Users size={48} className="mx-auto mb-4 text-primary" />
+            <h1 className="text-3xl font-bold mb-2 text-foreground">Group Booking</h1>
+            <p className="text-muted-foreground">
               Book for multiple people and save with group discounts
             </p>
           </div>
@@ -332,7 +332,7 @@ export default function GroupBooking() {
 
             <div className="space-y-4">
               {participants.map((participant, index) => (
-                <Card key={index} className="p-4 bg-gray-50">
+                 <Card key={index} className="p-4 bg-card">
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="font-medium">Participant {index + 1}</h3>
                     {participants.length > 2 && (
@@ -422,7 +422,7 @@ export default function GroupBooking() {
           </Card>
 
           {/* Pricing Summary */}
-          <Card className="p-6 bg-blue-50">
+           <Card className="p-6 bg-muted">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <NairaSign size={20} className="mr-2" />
               Pricing Summary
@@ -451,7 +451,7 @@ export default function GroupBooking() {
 
             <div className="mt-4 p-3 bg-white rounded flex items-start gap-2">
               <Info size={16} className="mt-0.5 text-blue-600" />
-              <div className="text-sm text-gray-600">
+               <div className="text-sm text-muted-foreground">
                 <p className="font-medium mb-1">Group Discount Tiers:</p>
                 <ul className="space-y-1">
                   <li>• 3-4 people: 10% off</li>

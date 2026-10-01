@@ -10,9 +10,8 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { useAuthStore } from "@/stores/auth";
 import { useTenantSettings } from "@/hooks/owner/useTenantSettings";
 import { useCustomerProfile, useUpdateCustomerProfile } from "@/hooks/useCustomerAuth";
+import { useAuthMe } from "@/hooks/useAuthMe";
 import { CalendarIcon, UserIcon, SettingsIcon, BuildingIcon } from "@/components/icons";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
 import { useToast } from "@/components/ui/toast";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
@@ -25,34 +24,11 @@ export default function MyAccountPage() {
   const { data: tenantSettings, isLoading: settingsLoading } = useTenantSettings();
   const { data: customerProfile, isLoading: customerLoading, refetch: refetchCustomerProfile } = useCustomerProfile();
   const updateCustomerProfile = useUpdateCustomerProfile();
+  const { data: authData, isLoading: authLoading, refetch: refetchAuth } = useAuthMe();
   const [activeTab, setActiveTab] = useState<"bookings" | "profile">(
     "bookings",
   );
   const { setRefreshHandler } = usePageRefresh();
-
-  const { data: authData, isLoading: authLoading, refetch: refetchAuth } = useQuery({
-    queryKey: ["current-user"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/auth/me");
-      const payload = data.user || data;
-      return payload;
-    },
-  });
-
-  useEffect(() => {
-    if (authData) {
-      setUser({
-        id: authData.id,
-        email: authData.email,
-        firstName: authData.firstName,
-        lastName: authData.lastName,
-        phone: authData.phone,
-        role: authData.role,
-        roleNames: authData.roleNames,
-        tenantId: authData.tenantId,
-      });
-    }
-  }, [authData, setUser]);
 
   useEffect(() => {
     setRefreshHandler(() => {
@@ -153,7 +129,13 @@ export default function MyAccountPage() {
     );
   }
 
-  const displayUser = isCustomer ? customerProfile : currentUser;
+  const displayUser = isCustomer && customerProfile
+    ? {
+        ...customerProfile,
+        firstName: customerProfile.first_name,
+        lastName: customerProfile.last_name,
+      }
+    : currentUser;
 
   return (
     <div className="w-full space-y-6 px-0 sm:px-0">

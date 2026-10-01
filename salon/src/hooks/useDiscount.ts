@@ -93,31 +93,6 @@ export function useValidateDiscount() {
 }
 
 /**
- * Apply discount to transaction
- */
-export function useApplyDiscount() {
-  return useMutation({
-    mutationFn: async ({
-      discountCode,
-      subtotal,
-    }: {
-      discountCode: string;
-      subtotal: number;
-    }) => {
-      const response = await apiClient.post<{
-        success: boolean;
-        discountAmount: number;
-        message: string;
-      }>("/discounts/apply", {
-        discountCode,
-        subtotal,
-      });
-      return response.data;
-    },
-  });
-}
-
-/**
  * Update discount
  */
 export function useUpdateDiscount() {

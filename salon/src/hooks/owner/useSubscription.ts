@@ -42,6 +42,7 @@ export interface Subscription {
   last_payment_amount?: number;
   transaction_fee_percentage: number;
   auto_renew: boolean;
+  paystack_subscription_id?: string;
 }
 
 /**

@@ -14,6 +14,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
 import { useEffect } from "react";
+import { usePOSStore } from "@/stores/pos";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function POSReports() {
   const [activeTab, setActiveTab] = useState("sales");
@@ -21,6 +23,7 @@ export default function POSReports() {
   const [endDate, setEndDate] = useState("");
   const { showToast } = useToast();
   const { setRefreshHandler } = usePageRefresh();
+  const { currency } = usePOSStore();
 
   const { data: salesReport, isLoading: salesLoading, refetch: refetchSales } = useSalesReport({
     startDate,
@@ -150,7 +153,7 @@ export default function POSReports() {
                     Total Sales
                   </p>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
-                    ₦{(salesReport.totalSales || 0).toLocaleString("en-NG")}
+                    {formatCurrency(salesReport.totalSales || 0, currency)}
                   </p>
                 </div>
                 <div>
@@ -166,10 +169,7 @@ export default function POSReports() {
                     Average
                   </p>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
-                    ₦
-                    {(salesReport.averageTransaction || 0).toLocaleString(
-                      "en-NG",
-                    )}
+                    {formatCurrency(salesReport.averageTransaction || 0, currency)}
                   </p>
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function POSReports() {
                     Total Revenue
                   </p>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
-                    ₦{(revenueReport.totalRevenue || 0).toLocaleString("en-NG")}
+                    {formatCurrency(revenueReport.totalRevenue || 0, currency)}
                   </p>
                 </div>
                 <div>
@@ -220,8 +220,7 @@ export default function POSReports() {
                     Discounts
                   </p>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
-                    ₦
-                    {(revenueReport.totalDiscount || 0).toLocaleString("en-NG")}
+                    {formatCurrency(revenueReport.totalDiscount || 0, currency)}
                   </p>
                 </div>
                 <div>
@@ -229,7 +228,7 @@ export default function POSReports() {
                     Net Revenue
                   </p>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
-                    ₦{(revenueReport.netRevenue || 0).toLocaleString("en-NG")}
+                    {formatCurrency(revenueReport.netRevenue || 0, currency)}
                   </p>
                 </div>
               </div>
@@ -366,8 +365,8 @@ export default function POSReports() {
                               {method}
                             </p>
                             <p>
-                              Count: {data.count} | Total: ₦
-                              {data.total.toLocaleString("en-NG")}
+                              Count: {data.count} | Total:{" "}
+                              {formatCurrency(data.total, currency)}
                             </p>
                           </div>
                         ),

@@ -152,6 +152,17 @@ export const useInventory = () => {
     },
   });
 
+  // Delete inventory
+  const deleteInventoryMutation = useMutation({
+    mutationFn: async (inventoryId: string) => {
+      const response = await apiClient.delete(`/inventory/${inventoryId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+
   // Get transactions
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery(
     {
@@ -239,6 +250,8 @@ export const useInventory = () => {
     isDeductingInventory: deductInventoryMutation.isPending,
     restockInventory: restockInventoryMutation.mutate,
     isRestockingInventory: restockInventoryMutation.isPending,
+    deleteInventory: deleteInventoryMutation.mutate,
+    isDeletingInventory: deleteInventoryMutation.isPending,
     reconcileInventory: reconcileInventoryMutation.mutate,
     isReconcilingInventory: reconcileInventoryMutation.isPending,
 

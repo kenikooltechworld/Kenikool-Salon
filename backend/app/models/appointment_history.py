@@ -30,6 +30,10 @@ class AppointmentHistory(BaseDocument):
     # Optional notes
     notes = StringField(null=True, max_length=1000)
     
+    # Review fields
+    rating = IntField(min_value=1, max_value=5, null=True)
+    feedback = StringField(null=True, max_length=1000)
+    
     # Metadata
     created_at = DateTimeField(default=datetime.utcnow)
 

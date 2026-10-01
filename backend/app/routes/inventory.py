@@ -51,6 +51,7 @@ async def list_inventory(
     is_active: bool = Query(True),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    search: Optional[str] = Query(None),
 ):
     """List inventory items"""
     items, total = InventoryService.list_inventory(
@@ -58,6 +59,7 @@ async def list_inventory(
         is_active=is_active,
         skip=skip,
         limit=limit,
+        search=search,
     )
     return {
         "items": [InventoryResponse.from_orm(item) for item in items],
@@ -77,6 +79,17 @@ async def update_inventory(inventory_id: str, data: InventoryUpdate):
             **data.dict(exclude_unset=True),
         )
         return InventoryResponse.from_orm(inventory)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete("/{inventory_id}")
+@tenant_isolated
+async def delete_inventory(inventory_id: str):
+    """Delete inventory item"""
+    try:
+        InventoryService.delete_inventory(inventory_id)
+        return {"message": "Inventory deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

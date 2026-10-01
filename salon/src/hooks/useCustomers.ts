@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { get, post, put, del } from "@/lib/utils";
 
 export interface Customer {
@@ -53,8 +54,13 @@ interface CustomerFilters {
  * Fetch all customers with optional filters
  */
 export function useCustomers(filters?: CustomerFilters & { enabled?: boolean }) {
+  const filtersKey = useMemo(() => {
+    if (!filters) return "{}";
+    return JSON.stringify(filters);
+  }, [filters]);
+
   return useQuery({
-    queryKey: ["customers", filters],
+    queryKey: ["customers", filtersKey],
     queryFn: async () => {
       const { enabled: _enabled, ...queryFilters } = filters || {};
       const data = await get<any>("/customers", {
@@ -164,7 +170,7 @@ export function useCreateCustomer() {
       return data;
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"], exact: false });
     },
   });
 }
@@ -201,8 +207,8 @@ export function useUpdateCustomer() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.refetchQueries({ queryKey: ["customers"] });
-      queryClient.refetchQueries({ queryKey: ["customers", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["customers"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["customers", data.id] });
     },
   });
 }
@@ -218,7 +224,7 @@ export function useDeleteCustomer() {
       await del(`/customers/${id}`);
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"], exact: false });
     },
   });
 }

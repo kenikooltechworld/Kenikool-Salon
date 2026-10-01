@@ -162,6 +162,7 @@ async def create_video_testimonial(
         thumbnail_url=testimonial_data.thumbnail_url,
         testimonial_text=testimonial_data.testimonial_text,
         rating=testimonial_data.rating,
+        is_featured=testimonial_data.is_featured,
         display_order=testimonial_data.display_order
     )
     

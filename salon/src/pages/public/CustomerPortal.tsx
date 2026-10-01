@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import BookingHistory from "@/components/public/BookingHistory";
 import CustomerProfile from "@/components/public/CustomerProfile";
+import CustomerContactForm from "@/components/public/CustomerContactForm";
 import {
   useCustomerProfile,
   useCustomerLogout,
@@ -21,6 +22,7 @@ import {
   LogOutIcon,
   HomeIcon,
   RefreshCwIcon,
+  MessageSquareIcon,
 } from "@/components/icons";
 
 export default function CustomerPortal() {
@@ -101,6 +103,10 @@ export default function CustomerPortal() {
               <UserIcon size={16} className="mr-2" />
               Profile
             </TabsTrigger>
+            <TabsTrigger value="contact">
+              <MessageSquareIcon size={16} className="mr-2" />
+              Contact Us
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings">
@@ -125,6 +131,10 @@ export default function CustomerPortal() {
               </div>
               <CustomerProfile />
             </div>
+          </TabsContent>
+
+          <TabsContent value="contact">
+            <CustomerContactForm />
           </TabsContent>
         </Tabs>
       </main>

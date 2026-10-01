@@ -22,6 +22,7 @@ class Notification(BaseDocument):
     # Notification types
     NOTIFICATION_TYPES = [
         "appointment_confirmation",
+        "appointment_confirmed",
         "appointment_reminder_24h",
         "appointment_reminder_1h",
         "appointment_cancelled",
@@ -35,7 +36,13 @@ class Notification(BaseDocument):
         "time_off_approved",
         "time_off_rejected",
         "time_off_request_created",
+        "manager_message",
+        "team_announcement",
         "custom",
+        "new_appointment",
+        "payment_received",
+        "staff_alert",
+        "inventory_alert",
     ]
 
     # Channels
@@ -152,6 +159,7 @@ class NotificationTemplate(BaseDocument):
 
     TEMPLATE_TYPES = [
         "appointment_confirmation",
+        "appointment_confirmed",
         "appointment_reminder_24h",
         "appointment_reminder_1h",
         "appointment_cancelled",
@@ -165,6 +173,12 @@ class NotificationTemplate(BaseDocument):
         "time_off_approved",
         "time_off_rejected",
         "time_off_request_created",
+        "manager_message",
+        "team_announcement",
+        "new_appointment",
+        "payment_received",
+        "staff_alert",
+        "inventory_alert",
     ]
 
     CHANNELS = ["email", "sms", "push", "in_app"]
@@ -199,6 +213,7 @@ class NotificationPreference(BaseDocument):
 
     NOTIFICATION_TYPES = [
         "appointment_confirmation",
+        "appointment_confirmed",
         "appointment_reminder_24h",
         "appointment_reminder_1h",
         "appointment_cancelled",
@@ -213,6 +228,12 @@ class NotificationPreference(BaseDocument):
         "time_off_rejected",
         "time_off_request_created",
         "commission_payment",
+        "manager_message",
+        "team_announcement",
+        "new_appointment",
+        "payment_received",
+        "staff_alert",
+        "inventory_alert",
     ]
 
     CHANNELS = ["email", "sms", "push", "in_app"]

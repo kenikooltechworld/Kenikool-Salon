@@ -14,10 +14,12 @@ import TipHandler from "./TipHandler";
 import SplitPayment from "./SplitPayment";
 import QuickCheckout from "./QuickCheckout";
 import { generateSalonReference } from "@/lib/utils/reference";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface PaymentProcessorProps {
   customerId: string;
   staffId: string;
+  staffEmail?: string;
   appointmentId?: string;
   paymentMethod: string;
   open: boolean;
@@ -27,6 +29,7 @@ interface PaymentProcessorProps {
 export default function PaymentProcessor({
   customerId,
   staffId,
+  staffEmail,
   appointmentId,
   paymentMethod: initialPaymentMethod,
   open,
@@ -45,7 +48,7 @@ export default function PaymentProcessor({
   const { mutate: initializePOSPayment } = useInitializePOSPayment();
   const { mutate: generateReceipt } = useGenerateReceipt();
   const { showToast } = useToast();
-  const { cartItems, cartTotal, cartSubtotal, setPaymentStatus, clearCart } =
+  const { cartItems, cartTotal, cartSubtotal, setPaymentStatus, clearCart, taxRate, currency } =
     usePOSStore();
 
   const totalWithTip = cartTotal + tipAmount;
@@ -84,7 +87,7 @@ export default function PaymentProcessor({
           item_name: item.itemName,
           quantity: item.quantity,
           unit_price: item.unitPrice,
-          tax_rate: 0.1,
+          tax_rate: taxRate,
           discount_rate: 0,
         }));
 
@@ -102,11 +105,11 @@ export default function PaymentProcessor({
                 onSuccess: () => {
                   setPaymentStatus("completed");
                   setSuccess(true);
-                  showToast({
-                    title: "Payment Completed",
-                    description: `Cash payment of ₦${totalWithTip.toLocaleString("en-NG")} recorded`,
-                    variant: "success",
-                  });
+                    showToast({
+                      title: "Payment Completed",
+                      description: `Cash payment of ${formatCurrency(totalWithTip, currency)} recorded`,
+                      variant: "success",
+                    });
                   setTimeout(() => {
                     clearCart();
                     onClose();
@@ -148,7 +151,7 @@ export default function PaymentProcessor({
           item_name: item.itemName,
           quantity: item.quantity,
           unit_price: item.unitPrice,
-          tax_rate: 0.1,
+          tax_rate: taxRate,
           discount_rate: 0,
         }));
 
@@ -164,13 +167,13 @@ export default function PaymentProcessor({
             onSuccess: (transaction: any) => {
               const transactionId = transaction.id;
 
-              initializePOSPayment(
-                {
-                  transactionId,
-                  email: "staff@salon.local",
-                  callbackUrl: `${window.location.origin}/pos`,
-                  reference: generateSalonReference(),
-                },
+               initializePOSPayment(
+                 {
+                   transactionId,
+                   email: staffEmail || "staff@salon.local",
+                   callbackUrl: `${window.location.origin}/pos`,
+                   reference: generateSalonReference(),
+                 },
                 {
                   onSuccess: (paymentData: any) => {
                     if (paymentData.authorizationUrl) {
@@ -236,7 +239,7 @@ export default function PaymentProcessor({
           item_name: item.itemName,
           quantity: item.quantity,
           unit_price: item.unitPrice,
-          tax_rate: 0.1,
+          tax_rate: taxRate,
           discount_rate: 0,
         }));
 
@@ -254,11 +257,11 @@ export default function PaymentProcessor({
                 onSuccess: () => {
                   setPaymentStatus("pending");
                   setSuccess(true);
-                  showToast({
-                    title: "Check Payment Recorded",
-                    description: `Check payment of ₦${totalWithTip.toLocaleString("en-NG")} marked as pending`,
-                    variant: "success",
-                  });
+                    showToast({
+                      title: "Check Payment Recorded",
+                      description: `Check payment of ${formatCurrency(totalWithTip, currency)} marked as pending`,
+                      variant: "success",
+                    });
                   setTimeout(() => {
                     clearCart();
                     onClose();
@@ -415,18 +418,11 @@ export default function PaymentProcessor({
                 Total Amount
               </p>
               <p className="text-xl md:text-2xl font-bold text-foreground">
-                ₦
-                {totalWithTip.toLocaleString("en-NG", {
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(totalWithTip, currency)}
               </p>
               {tipAmount > 0 && (
                 <p className="text-xs md:text-sm text-green-600 mt-1">
-                  Includes ₦
-                  {tipAmount.toLocaleString("en-NG", {
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  tip
+                  Includes {formatCurrency(tipAmount, currency)} tip
                 </p>
               )}
             </div>

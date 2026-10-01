@@ -14,9 +14,11 @@ export interface Resource {
   purchase_date?: string;
   purchase_price?: number;
   depreciation_value?: number;
-  maintenance_cost: number;
+  maintenance_cost?: number;
   tags: string[];
   notes?: string;
+  availability_schedule: Array<Record<string, any>>;
+  required_resources: string[];
   created_at: string;
   updated_at: string;
 }

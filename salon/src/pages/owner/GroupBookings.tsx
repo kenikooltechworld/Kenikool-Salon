@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectItem } from "@/components/ui/select";
@@ -11,13 +12,13 @@ import {
   useCancelGroupBooking,
   type GroupBooking,
 } from "@/hooks/useGroupBookings";
-import { Users, Calendar, Check, X, Eye } from "@/components/icons";
+import { Users, Calendar, Check, X, Eye, Plus } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
 import { GroupBookingCardSkeleton } from "@/components/ui/group-booking-card-skeleton";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
-import { useEffect } from "react";
 
 export default function GroupBookings() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [selectedBooking, setSelectedBooking] = useState<GroupBooking | null>(
     null,
@@ -105,14 +106,21 @@ export default function GroupBookings() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
             <Users size={28} />
             Group Bookings
           </h1>
-          <p className="text-gray-600 mt-1">
+           <p className="text-muted-foreground mt-1">
             Manage group bookings and coordinate multiple appointments
           </p>
         </div>
+        <Button
+          onClick={() => navigate("/owner/group-bookings/create")}
+          className="gap-2 w-full sm:w-auto h-10 cursor-pointer"
+        >
+          <Plus size={18} />
+          New Group Booking
+        </Button>
       </div>
 
       {/* Filters */}
@@ -140,7 +148,7 @@ export default function GroupBookings() {
         {bookings && bookings.length === 0 && (
           <Card className="p-8 text-center">
             <Users size={48} className="mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">No group bookings found</p>
+             <p className="text-muted-foreground">No group bookings found</p>
           </Card>
         )}
 
@@ -155,7 +163,7 @@ export default function GroupBookings() {
                   {getStatusBadge(booking.status)}
                   <Badge variant="secondary">{booking.group_type}</Badge>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
+                <div className="text-sm text-muted-foreground space-y-1">
                   <p>
                     <strong>Organizer:</strong> {booking.organizer_name} (
                     {booking.organizer_email})

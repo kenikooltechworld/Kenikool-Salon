@@ -21,6 +21,10 @@ export interface Receipt {
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
+  tenantName?: string;
+  tenantAddress?: string;
+  tenantPhone?: string;
+  tenantLogoUrl?: string;
   items: ReceiptItem[];
   subtotal: number;
   taxAmount: number;

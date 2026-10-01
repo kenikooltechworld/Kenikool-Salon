@@ -13,6 +13,9 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Label,
+  Textarea,
+  Select,
 } from "@/components/ui";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -21,6 +24,8 @@ import {
   useTogglePostVisibility,
   useDeleteSocialPost,
   useVideoTestimonials,
+  useCreateVideoTestimonial,
+  useDeleteVideoTestimonial,
 } from "@/hooks/useSocialProof";
 import {
   TrashIcon,
@@ -30,12 +35,25 @@ import {
   PlusIcon,
   SettingsIcon,
 } from "@/components/icons";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function SocialProof() {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState("instagram");
   const [instagramToken, setInstagramToken] = useState("");
   const [instagramUserId, setInstagramUserId] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [settings, setSettings] = useState({
+    liveNotifications: true,
+    instagramDisplay: true,
+    videoTestimonialsDisplay: true,
+  });
 
   const { data: instagramFeed, isLoading: instagramLoading } = useSocialFeed(
     "instagram",
@@ -46,6 +64,81 @@ export default function SocialProof() {
   const syncInstagram = useSyncInstagram();
   const toggleVisibility = useTogglePostVisibility();
   const deletePost = useDeleteSocialPost();
+  const createTestimonial = useCreateVideoTestimonial();
+  const deleteTestimonial = useDeleteVideoTestimonial();
+
+  const [formData, setFormData] = useState({
+    customer_name: "",
+    video_url: "",
+    thumbnail_url: "",
+    testimonial_text: "",
+    rating: "5",
+    display_order: "0",
+  });
+
+  const handleCreateTestimonial = async () => {
+    if (!formData.customer_name || !formData.video_url) {
+      addToast({
+        title: "Error",
+        description: "Customer name and video URL are required",
+        variant: "error",
+      });
+      return;
+    }
+
+    try {
+      await createTestimonial.mutateAsync({
+        customer_name: formData.customer_name,
+        video_url: formData.video_url,
+        thumbnail_url: formData.thumbnail_url || undefined,
+        testimonial_text: formData.testimonial_text || undefined,
+        rating: parseInt(formData.rating, 10),
+        display_order: parseInt(formData.display_order, 10),
+      });
+
+      addToast({
+        title: "Success",
+        description: "Video testimonial added successfully",
+        variant: "success",
+      });
+      setIsAddModalOpen(false);
+      setFormData({
+        customer_name: "",
+        video_url: "",
+        thumbnail_url: "",
+        testimonial_text: "",
+        rating: "5",
+        display_order: "0",
+      });
+    } catch (error) {
+      addToast({
+        title: "Error",
+        description: "Failed to add testimonial",
+        variant: "error",
+      });
+    }
+  };
+
+  const handleDeleteTestimonial = async (testimonialId: string) => {
+    if (!confirm("Are you sure you want to delete this testimonial?")) {
+      return;
+    }
+
+    try {
+      await deleteTestimonial.mutateAsync(testimonialId);
+      addToast({
+        title: "Success",
+        description: "Testimonial deleted successfully",
+        variant: "success",
+      });
+    } catch (error) {
+      addToast({
+        title: "Error",
+        description: "Failed to delete testimonial",
+        variant: "error",
+      });
+    }
+  };
 
   const handleSyncInstagram = async () => {
     if (!instagramToken || !instagramUserId) {
@@ -242,7 +335,7 @@ export default function SocialProof() {
           <Card className="p-6">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Video Testimonials</h2>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => setIsAddModalOpen(true)}>
                 <PlusIcon size={16} />
                 Add Testimonial
               </Button>
@@ -285,9 +378,7 @@ export default function SocialProof() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => {
-                          // Handle delete testimonial
-                        }}
+                        onClick={() => handleDeleteTestimonial(testimonial.id)}
                       >
                         <TrashIcon size={16} />
                       </Button>
@@ -302,6 +393,103 @@ export default function SocialProof() {
               </div>
             )}
           </Card>
+
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Video Testimonial</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Customer Name</Label>
+                  <Input
+                    value={formData.customer_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, customer_name: e.target.value })
+                    }
+                    placeholder="Enter customer name"
+                  />
+                </div>
+                <div>
+                  <Label>Video URL</Label>
+                  <Input
+                    value={formData.video_url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, video_url: e.target.value })
+                    }
+                    placeholder="https://example.com/video.mp4"
+                  />
+                </div>
+                <div>
+                  <Label>Thumbnail URL</Label>
+                  <Input
+                    value={formData.thumbnail_url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, thumbnail_url: e.target.value })
+                    }
+                    placeholder="https://example.com/thumbnail.jpg"
+                  />
+                </div>
+                <div>
+                  <Label>Testimonial Text</Label>
+                  <Textarea
+                    value={formData.testimonial_text}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        testimonial_text: e.target.value,
+                      })
+                    }
+                    placeholder="What did the customer say?"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Rating</Label>
+                    <Select
+                      value={formData.rating}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, rating: value })
+                      }
+                    >
+                      <option value="5">5 Stars</option>
+                      <option value="4">4 Stars</option>
+                      <option value="3">3 Stars</option>
+                      <option value="2">2 Stars</option>
+                      <option value="1">1 Star</option>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Display Order</Label>
+                    <Input
+                      type="number"
+                      value={formData.display_order}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          display_order: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateTestimonial}
+                  disabled={createTestimonial.isPending}
+                >
+                  {createTestimonial.isPending ? "Adding..." : "Add Testimonial"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Settings Tab */}
@@ -312,42 +500,69 @@ export default function SocialProof() {
             </h2>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Live Booking Notifications
-                </label>
-                <p className="text-sm text-gray-600 mb-2">
-                  Show recent booking notifications to visitors
-                </p>
-                <Button variant="outline" className="gap-2">
-                  <SettingsIcon size={16} />
-                  Configure
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium">
+                    Live Booking Notifications
+                  </label>
+                  <p className="text-sm text-gray-600">
+                    Show recent booking notifications to visitors
+                  </p>
+                </div>
+                <Button
+                  variant={settings.liveNotifications ? "primary" : "outline"}
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      liveNotifications: !settings.liveNotifications,
+                    })
+                  }
+                >
+                  {settings.liveNotifications ? "Enabled" : "Disabled"}
                 </Button>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Instagram Feed Display
-                </label>
-                <p className="text-sm text-gray-600 mb-2">
-                  Control how Instagram posts are displayed on your booking page
-                </p>
-                <Button variant="outline" className="gap-2">
-                  <SettingsIcon size={16} />
-                  Configure
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium">
+                    Instagram Feed Display
+                  </label>
+                  <p className="text-sm text-gray-600">
+                    Control how Instagram posts are displayed on your booking page
+                  </p>
+                </div>
+                <Button
+                  variant={settings.instagramDisplay ? "primary" : "outline"}
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      instagramDisplay: !settings.instagramDisplay,
+                    })
+                  }
+                >
+                  {settings.instagramDisplay ? "Enabled" : "Disabled"}
                 </Button>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Video Testimonials Display
-                </label>
-                <p className="text-sm text-gray-600 mb-2">
-                  Control how video testimonials are displayed
-                </p>
-                <Button variant="outline" className="gap-2">
-                  <SettingsIcon size={16} />
-                  Configure
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium">
+                    Video Testimonials Display
+                  </label>
+                  <p className="text-sm text-gray-600">
+                    Control how video testimonials are displayed
+                  </p>
+                </div>
+                <Button
+                  variant={settings.videoTestimonialsDisplay ? "primary" : "outline"}
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      videoTestimonialsDisplay: !settings.videoTestimonialsDisplay,
+                    })
+                  }
+                >
+                  {settings.videoTestimonialsDisplay ? "Enabled" : "Disabled"}
                 </Button>
               </div>
             </div>

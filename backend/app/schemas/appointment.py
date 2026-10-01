@@ -113,6 +113,7 @@ class AppointmentDetailResponse(BaseModel):
     customer: Optional[dict] = None
     service: Optional[dict] = None
     staff: Optional[dict] = None
+    resource_assignments: List[dict] = []
 
 
 class AppointmentListResponse(BaseModel):

@@ -3,56 +3,68 @@ import { Card } from "@/components/ui/card";
 import { StarIcon } from "@/components/icons";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { useEffect, useState } from "react";
+import { get } from "@/lib/utils/api";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-const testimonials = [
-  {
-    name: "Sarah Johnson",
-    role: "Owner, Beauty Haven Salon",
-    content:
-      "Kenikool has transformed how I manage my salon. I've saved so much time and my customers love the automated reminders!",
-    rating: 5,
-  },
-  {
-    name: "Ahmed Hassan",
-    role: "Manager, Fitness Plus Gym",
-    content:
-      "The analytics dashboard gives me insights I never had before. Revenue increased by 30% in just 3 months.",
-    rating: 5,
-  },
-  {
-    name: "Amara Okafor",
-    role: "Founder, Spa Serenity",
-    content:
-      "Customer support is amazing. They helped me set everything up and I was booking appointments within hours.",
-    rating: 5,
-  },
-  {
-    name: "Chioma Adeyemi",
-    role: "Owner, Glam Studio",
-    content:
-      "The POS system is incredibly fast and reliable. My staff loves how easy it is to use during busy hours.",
-    rating: 5,
-  },
-  {
-    name: "Tunde Okonkwo",
-    role: "Manager, Elite Barber Shop",
-    content:
-      "Best investment for my business. The inventory tracking alone has saved me thousands in wasted products.",
-    rating: 5,
-  },
-  {
-    name: "Zainab Mohammed",
-    role: "Founder, Luxury Spa & Wellness",
-    content:
-      "The loyalty program feature has increased our repeat customers by 45%. Highly recommended!",
-    rating: 5,
-  },
-];
+interface Testimonial {
+  customer_name: string;
+  rating: number;
+  review: string;
+  created_at: string;
+}
 
 export function TestimonialsSection() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoading(true);
+        const data = await get<Testimonial[]>("/public/bookings/testimonials?limit=6");
+        setTestimonials(data);
+        setError(null);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch testimonials",
+        );
+        setTestimonials([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
+
+  if (loading) {
+    return (
+      <section
+        id="testimonials"
+        className="py-20 sm:py-32 bg-gradient-to-br from-primary/5 to-secondary/5"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Loved by Business Owners
+            </h2>
+          </div>
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || testimonials.length === 0) {
+    return null;
+  }
+
   return (
     <section
       id="testimonials"
@@ -102,7 +114,7 @@ export function TestimonialsSection() {
             className="pb-12"
           >
             {testimonials.map((testimonial, idx) => (
-              <SwiperSlide key={idx}>
+              <SwiperSlide key={testimonial.customer_name + idx}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -122,14 +134,11 @@ export function TestimonialsSection() {
                       )}
                     </div>
                     <p className="text-foreground mb-4 italic">
-                      "{testimonial.content}"
+                      "{testimonial.review}"
                     </p>
                     <div>
                       <p className="font-semibold text-foreground">
-                        {testimonial.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {testimonial.role}
+                        {testimonial.customer_name}
                       </p>
                     </div>
                   </Card>

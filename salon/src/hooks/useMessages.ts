@@ -2,39 +2,26 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
 import type { Notification } from "@/types/notification";
 
-// Message types for staff communication
-const MESSAGE_TYPES = ["manager_message", "team_announcement", "custom"];
-
 interface MessageFilters {
-  status?: "read" | "unread";
+  status?: "read" | "unread" | "all";
   limit?: number;
   offset?: number;
   search?: string;
 }
 
-// Fetch messages (notifications with message types)
+// Fetch messages (inter-department communication)
 export const useMessages = (filters?: MessageFilters) => {
   return useQuery({
     queryKey: ["messages", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
-
-      // Filter by message notification types
-      MESSAGE_TYPES.forEach((type) => {
-        params.append("notification_type", type);
-      });
-
-      if (filters?.status === "read") params.append("status", "read");
-      if (filters?.status === "unread") params.append("status", "unread");
+      if (filters?.status && filters.status !== "all") params.append("status", filters.status);
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("skip", filters.offset.toString());
 
-      const { data } = await apiClient.get(`/notifications?${params}`);
-      const messages = (
-        Array.isArray(data) ? data : data.data || []
-      ) as Notification[];
+      const { data } = await apiClient.get(`/notifications/messages?${params.toString()}`);
+      const messages = (Array.isArray(data) ? data : data.data || []) as Notification[];
 
-      // Apply search filter on client side if provided
       if (filters?.search) {
         const searchLower = filters.search.toLowerCase();
         return messages.filter(
@@ -46,7 +33,7 @@ export const useMessages = (filters?: MessageFilters) => {
 
       return messages;
     },
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
   });
 };
 
@@ -84,11 +71,7 @@ export const useMarkMessageUnread = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (messageId: string) => {
-      // This would need a backend endpoint to mark as unread
-      // For now, we'll use a workaround by updating the notification
-      const { data } = await apiClient.patch(`/notifications/${messageId}`, {
-        is_read: false,
-      });
+      const { data } = await apiClient.patch(`/notifications/${messageId}/unread`);
       return data;
     },
     onSuccess: () => {
@@ -103,20 +86,11 @@ export const useUnreadMessageCount = () => {
   return useQuery({
     queryKey: ["messages-unread-count"],
     queryFn: async () => {
-      // Get unread notifications filtered by message types
-      const params = new URLSearchParams();
-      MESSAGE_TYPES.forEach((type) => {
-        params.append("notification_type", type);
-      });
-      params.append("status", "unread");
-
-      const { data } = await apiClient.get(`/notifications?${params}`);
-      const messages = (
-        Array.isArray(data) ? data : data.data || []
-      ) as Notification[];
+      const { data } = await apiClient.get(`/notifications/messages?status=unread&limit=100`);
+      const messages = (Array.isArray(data) ? data : data.data || []) as Notification[];
       return messages.length;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 };
 
@@ -126,6 +100,77 @@ export const useDeleteMessage = () => {
   return useMutation({
     mutationFn: async (messageId: string) => {
       await apiClient.delete(`/notifications/${messageId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+    },
+  });
+};
+
+// Send inter-department message
+export const useSendMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      recipient_type: string;
+      role_id?: string;
+      recipient_ids?: string[];
+      notification_type: string;
+      content: string;
+      subject?: string;
+      channel?: string;
+      send_email?: boolean;
+    }) => {
+      const { data } = await apiClient.post("/notifications/send-message", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+    },
+  });
+};
+
+// Staff sends message to owner/manager or other staff
+export const useSendStaffMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      recipient_type: string;
+      recipient_ids?: string[];
+      role_id?: string;
+      notification_type: string;
+      content: string;
+      subject?: string;
+      channel?: string;
+      send_email?: boolean;
+    }) => {
+      const { data } = await apiClient.post("/notifications/staff/send-message", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+    },
+  });
+};
+
+// Customer sends message to staff or owner
+export const useSendCustomerMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      recipient_type: string;
+      recipient_ids?: string[];
+      notification_type: string;
+      content: string;
+      subject?: string;
+      channel?: string;
+      send_email?: boolean;
+    }) => {
+      const { data } = await apiClient.post("/notifications/customer/send-message", payload);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messages"] });

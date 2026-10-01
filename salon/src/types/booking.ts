@@ -1,6 +1,7 @@
 export type BookingStatus =
   | "scheduled"
   | "confirmed"
+  | "in_progress"
   | "completed"
   | "cancelled"
   | "no_show";

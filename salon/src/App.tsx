@@ -13,7 +13,13 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { PageRefreshProvider } from "@/contexts/PageRefreshContext";
 import { useInitializeAuth } from "@/hooks/useInitializeAuth";
+import { useOperationalSettings } from "@/hooks/useOperationalSettings";
 import { setNavigationCallback } from "@/lib/utils/api";
+import { initializeSocket, SOCKET_EVENTS } from "@/services/socket";
+
+const ReactQueryDevtools = import.meta.env.DEV
+  ? await import("@tanstack/react-query-devtools").then((m) => m.ReactQueryDevtools)
+  : null;
 
 // Layouts
 import { PublicLayout } from "@/layouts/PublicLayout";
@@ -127,6 +133,8 @@ import OwnerServicePackages from "@/pages/owner/ServicePackages";
 import OwnerGiftCards from "@/pages/owner/GiftCards";
 import OwnerMemberships from "@/pages/owner/Memberships";
 import OwnerGroupBookings from "@/pages/owner/GroupBookings";
+import CreateGroupBooking from "@/pages/owner/CreateGroupBooking";
+import OwnerMessages from "@/pages/owner/OwnerMessages";
 import OwnerSocialProof from "@/pages/owner/SocialProof";
 
 // Payment Pages
@@ -233,6 +241,24 @@ function NavigationSetup() {
 // Main app content component
 function AppContent() {
   const { isLoading } = useInitializeAuth();
+  const user = useAuthStore((state) => state.user);
+  const { data: operationalSettings } = useOperationalSettings(!!user);
+  const waitingRoomEnabled = operationalSettings?.waiting_room_enabled ?? true;
+
+  useEffect(() => {
+    if (user) {
+      const socket = initializeSocket();
+      const handler = () => {
+        queryClient.invalidateQueries({ queryKey: ["messages"] });
+        queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      };
+      socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, handler);
+      return () => {
+        socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, handler);
+      };
+    }
+  }, [user]);
 
   return (
     <Router>
@@ -615,14 +641,16 @@ function AppContent() {
               </RoleBasedRoute>
             }
           />
-          <Route
-            path="/waiting-room"
-            element={
-              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
-                <WaitingRoomManagement />
-              </RoleBasedRoute>
-            }
-          />
+          {waitingRoomEnabled && (
+            <Route
+              path="/waiting-room"
+              element={
+                <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                  <WaitingRoomManagement />
+                </RoleBasedRoute>
+              }
+            />
+          )}
           <Route
             path="/resources"
             element={
@@ -642,7 +670,23 @@ function AppContent() {
             }
           />
           <Route
+            path="/inventory/create"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <Inventory />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
             path="/inventory/:id"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <InventoryDetail />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/inventory/:id/edit"
             element={
               <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
                 <InventoryDetail />
@@ -747,6 +791,24 @@ function AppContent() {
               </RoleBasedRoute>
             }
           />
+          <Route
+            path="/owner/group-bookings/create"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <CreateGroupBooking />
+              </RoleBasedRoute>
+            }
+          />
+
+          {/* Messages Routes */}
+          <Route
+            path="/owner/messages"
+            element={
+              <RoleBasedRoute allowedRoles={["Owner", "Manager"]}>
+                <OwnerMessages />
+              </RoleBasedRoute>
+            }
+          />
 
           {/* Social Proof Routes */}
           <Route
@@ -846,6 +908,7 @@ export default function App() {
           <ToastProvider>
             <PublicSubdomainApp />
           </ToastProvider>
+          {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} />}
         </QueryClientProvider>
       </ThemeProvider>
     );
@@ -859,6 +922,7 @@ export default function App() {
             <AppContent />
           </PageRefreshProvider>
         </ToastProvider>
+        {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </ThemeProvider>
   );

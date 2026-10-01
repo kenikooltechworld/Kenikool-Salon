@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface Service {
   id: string;
@@ -25,7 +26,7 @@ export default function ItemSelector({
 }: ItemSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const { addToCart } = usePOSStore();
+  const { addToCart, currency } = usePOSStore();
   const { showToast } = useToast();
 
   const filteredServices = services.filter((s) =>
@@ -86,15 +87,12 @@ export default function ItemSelector({
           filteredServices.map((service) => (
             <Card key={service.id} className="p-3 hover:shadow-md transition">
               <div className="space-y-2">
-                <div>
+                 <div>
                   <p className="font-medium text-sm text-foreground">
                     {service.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    ₦
-                    {service.price.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(service.price, currency)}
                   </p>
                 </div>
 

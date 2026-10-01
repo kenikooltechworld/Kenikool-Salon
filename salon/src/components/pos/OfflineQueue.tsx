@@ -9,6 +9,7 @@ import {
   AlertCircleIcon,
   RefreshCwIcon,
 } from "@/components/icons";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface QueuedTransaction {
   id: string;
@@ -98,14 +99,14 @@ export default function OfflineQueue({ onRetrySync }: OfflineQueueProps) {
   }
 
   return (
-    <Card className="p-4 md:p-6 border-2 border-amber-500">
+    <Card className="p-4 md:p-6 border-2 border-warning">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <WifiOffIcon
               size={20}
-              className={isOnline ? "text-green-600" : "text-amber-600"}
+              className={isOnline ? "text-green-500" : "text-warning"}
             />
             <h3 className="text-base md:text-lg font-semibold text-foreground">
               Offline Queue
@@ -118,17 +119,17 @@ export default function OfflineQueue({ onRetrySync }: OfflineQueueProps) {
 
         {/* Status Summary */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-amber-50 dark:bg-amber-950 p-2 rounded-lg text-center">
+          <div className="bg-warning/10 p-2 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">Pending</p>
-            <p className="text-lg font-bold text-amber-600">{pendingCount}</p>
+            <p className="text-lg font-bold text-warning">{pendingCount}</p>
           </div>
-          <div className="bg-red-50 dark:bg-red-950 p-2 rounded-lg text-center">
+          <div className="bg-destructive/10 p-2 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">Failed</p>
-            <p className="text-lg font-bold text-red-600">{failedCount}</p>
+            <p className="text-lg font-bold text-destructive">{failedCount}</p>
           </div>
-          <div className="bg-green-50 dark:bg-green-950 p-2 rounded-lg text-center">
+          <div className="bg-green-500/10 p-2 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">Synced</p>
-            <p className="text-lg font-bold text-green-600">{syncedCount}</p>
+            <p className="text-lg font-bold text-green-500">{syncedCount}</p>
           </div>
         </div>
 
@@ -139,10 +140,10 @@ export default function OfflineQueue({ onRetrySync }: OfflineQueueProps) {
               key={transaction.id}
               className={`p-3 rounded-lg border ${
                 transaction.status === "synced"
-                  ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                  ? "bg-green-500/10 border-green-500/20"
                   : transaction.status === "failed"
-                    ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
-                    : "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800"
+                    ? "bg-destructive/10 border-destructive/20"
+                    : "bg-warning/10 border-warning/20"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -151,13 +152,13 @@ export default function OfflineQueue({ onRetrySync }: OfflineQueueProps) {
                     {transaction.status === "synced" && (
                       <CheckCircleIcon
                         size={16}
-                        className="text-green-600 flex-shrink-0"
+                        className="text-green-500 flex-shrink-0"
                       />
                     )}
                     {transaction.status === "failed" && (
                       <AlertCircleIcon
                         size={16}
-                        className="text-red-600 flex-shrink-0"
+                        className="text-destructive flex-shrink-0"
                       />
                     )}
                     <p className="font-medium text-sm text-foreground truncate">
@@ -170,17 +171,14 @@ export default function OfflineQueue({ onRetrySync }: OfflineQueueProps) {
                     {new Date(transaction.timestamp).toLocaleTimeString()}
                   </p>
                   {transaction.error && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {transaction.error}
                     </p>
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-semibold text-sm text-foreground">
-                    ₦
-                    {transaction.amount.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(transaction.amount, "NGN")}
                   </p>
                   <Button
                     variant="ghost"

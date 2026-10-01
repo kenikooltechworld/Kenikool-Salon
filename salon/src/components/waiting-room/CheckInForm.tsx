@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useCheckIn, useQueuePosition } from "@/hooks/useWaitingRoom";
 import { AlertCircle, CheckCircle } from "@/components/icons";
@@ -15,27 +15,41 @@ export default function CheckInForm() {
       status: "confirmed",
     });
   const checkIn = useCheckIn();
-  const { data: queuePosition } = useQueuePosition(selectedAppointmentId);
 
   const selectedAppointment = appointments.find(
     (a) => a.id === selectedAppointmentId,
   );
 
+  const customerId = selectedAppointment?.customerId || "";
+  const { data: queuePosition } = useQueuePosition(customerId);
+
+  useEffect(() => {
+    if (checkIn.isSuccess && checkIn.data) {
+      setSuccessMessage(
+        `Successfully checked in! Your position in queue: ${checkIn.data.position || queuePosition?.position || "N/A"}`,
+      );
+      setShowSuccess(true);
+      setSelectedAppointmentId("");
+      setTimeout(() => setShowSuccess(false), 5000);
+    }
+  }, [checkIn.isSuccess, checkIn.data, queuePosition?.position]);
+
   const handleCheckIn = () => {
-    if (!selectedAppointmentId) {
+    if (!selectedAppointmentId || !selectedAppointment) {
       alert("Please select an appointment");
       return;
     }
 
-    checkIn.mutate(selectedAppointmentId, {
-      onSuccess: () => {
-        setSuccessMessage(
-          `Successfully checked in! Your position in queue: ${queuePosition?.position || "N/A"}`,
-        );
-        setShowSuccess(true);
-        setSelectedAppointmentId("");
-        setTimeout(() => setShowSuccess(false), 5000);
-      },
+    checkIn.mutate({
+      appointmentId: selectedAppointmentId,
+      customerId: selectedAppointment.customerId,
+      customerName: "",
+      customerPhone: "",
+      serviceId: selectedAppointment.serviceId,
+      serviceName: "",
+      staffId: selectedAppointment.staffId,
+      staffName: "",
+      estimatedWaitTime: undefined,
     });
   };
 

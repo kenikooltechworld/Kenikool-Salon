@@ -16,13 +16,14 @@ export interface OperationalConfig {
   cache_ttl_minutes: number;
 }
 
-export function useOperationalSettings() {
+export function useOperationalSettings(enabled: boolean = true) {
   return useQuery({
     queryKey: ["operational-settings"],
     queryFn: async () => {
       const response = await apiClient.get("/settings/operational");
       return response.data as OperationalConfig;
     },
+    enabled,
   });
 }
 

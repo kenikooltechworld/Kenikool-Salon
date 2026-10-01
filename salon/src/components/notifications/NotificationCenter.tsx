@@ -29,9 +29,16 @@ export default function NotificationCenter({
     "appointment_cancelled",
     "appointment_completed",
     "payment_receipt",
+    "payment_success",
+    "payment_failed",
+    "payment_cancelled",
+    "refund_success",
     "shift_assigned",
     "time_off_approved",
     "time_off_rejected",
+    "manager_message",
+    "team_announcement",
+    "custom",
   ];
 
   const handleClearAll = () => {

@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { useState } from "react";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function CartItems() {
-  const { cartItems, removeFromCart, updateCartItem } = usePOSStore();
+  const { cartItems, removeFromCart, updateCartItem, currency } = usePOSStore();
   const { showToast } = useToast();
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
 
@@ -55,10 +56,7 @@ export default function CartItems() {
               {item.itemName}
             </p>
             <p className="text-xs text-muted-foreground">
-              ₦
-              {item.unitPrice.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(item.unitPrice, currency)}
             </p>
           </div>
 
@@ -73,10 +71,7 @@ export default function CartItems() {
               className="w-12 h-8 text-center text-sm"
             />
             <span className="text-sm font-medium w-20 sm:w-16 text-right text-foreground">
-              ₦
-              {item.lineTotal.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(item.lineTotal, currency)}
             </span>
             <Button
               variant="ghost"

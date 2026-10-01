@@ -135,3 +135,19 @@ export function usePublicBooking(bookingId: string) {
     enabled: !!bookingId,
   });
 }
+
+export function useSubmitReview() {
+  return useMutation({
+    mutationFn: async (reviewData: {
+      booking_id: string;
+      rating: number;
+      feedback?: string;
+    }) => {
+      const { data } = await apiClient.post(
+        "/public/bookings/reviews",
+        reviewData,
+      );
+      return data;
+    },
+  });
+}

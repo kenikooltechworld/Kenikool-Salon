@@ -1,6 +1,6 @@
 """Resource routes."""
 
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from typing import List, Optional
 from datetime import datetime
 from app.schemas.resource import (
@@ -16,6 +16,8 @@ from app.schemas.resource import (
 )
 from app.services.resource_service import ResourceService
 from app.decorators.tenant_isolated import tenant_isolated
+from app.context import get_tenant_id
+from app.models.resource import ResourceAvailability
 
 router = APIRouter(prefix="/resources", tags=["resources"])
 
@@ -83,7 +85,10 @@ async def update_resource(resource_id: str, resource: ResourceUpdate):
             name=resource.name,
             description=resource.description,
             quantity=resource.quantity,
+            status=resource.status,
+            location_id=resource.location_id,
             tags=resource.tags,
+            notes=resource.notes,
         )
         if not updated:
             raise HTTPException(status_code=404, detail="Resource not found")
@@ -102,7 +107,10 @@ async def patch_resource(resource_id: str, resource: ResourceUpdate):
             name=resource.name,
             description=resource.description,
             quantity=resource.quantity,
+            status=resource.status,
+            location_id=resource.location_id,
             tags=resource.tags,
+            notes=resource.notes,
         )
         if not updated:
             raise HTTPException(status_code=404, detail="Resource not found")
@@ -119,6 +127,36 @@ async def delete_resource(resource_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="Resource not found")
     return {"message": "Resource deleted successfully"}
+
+
+@router.post("/{resource_id}/reserve")
+@tenant_isolated
+async def reserve_resource(resource_id: str, quantity: int = Body(1, ge=1, embed=True)):
+    """Reserve resource quantity."""
+    try:
+        success = ResourceService.reserve_resource(resource_id, quantity)
+        if not success:
+            raise HTTPException(
+                status_code=400, detail="Resource not found or insufficient quantity"
+            )
+        resource = ResourceService.get_resource(resource_id)
+        return {"data": ResourceResponse.from_orm(resource)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{resource_id}/release")
+@tenant_isolated
+async def release_resource(resource_id: str, quantity: int = Body(1, ge=1, embed=True)):
+    """Release resource quantity."""
+    try:
+        ResourceService.release_resource(resource_id, quantity)
+        resource = ResourceService.get_resource(resource_id)
+        return {"data": ResourceResponse.from_orm(resource)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/available", response_model=dict)
@@ -174,6 +212,22 @@ async def update_availability(
         availabilities = availability.get("availability", [])
         results = []
         for avail in availabilities:
+            availability_id = avail.get("id")
+            if availability_id:
+                from bson import ObjectId
+                existing = ResourceAvailability.objects(
+                    id=ObjectId(availability_id),
+                    tenant_id=get_tenant_id()
+                ).first()
+                if existing:
+                    existing.is_active = avail.get("is_active", existing.is_active)
+                    existing.start_time = avail.get("start_time", existing.start_time)
+                    existing.end_time = avail.get("end_time", existing.end_time)
+                    existing.day_of_week = avail.get("day_of_week", existing.day_of_week)
+                    existing.is_recurring = avail.get("is_recurring", existing.is_recurring)
+                    existing.save()
+                    results.append(ResourceAvailabilityResponse.from_orm(existing))
+                    continue
             created = ResourceService.set_availability(
                 resource_id=resource_id,
                 start_time=avail.get("start_time"),
@@ -185,6 +239,26 @@ async def update_availability(
             )
             results.append(ResourceAvailabilityResponse.from_orm(created))
         return {"data": results}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/availability/{availability_id}")
+@tenant_isolated
+async def delete_availability(availability_id: str):
+    """Delete resource availability."""
+    try:
+        from bson import ObjectId
+        availability = ResourceAvailability.objects(
+            id=ObjectId(availability_id),
+            tenant_id=get_tenant_id()
+        ).first()
+        if not availability:
+            raise HTTPException(status_code=404, detail="Availability not found")
+        availability.delete()
+        return {"message": "Availability deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -249,8 +323,28 @@ async def get_appointment_resources_alt(appointment_id: str):
 async def release_resource_assignment(assignment_id: str):
     """Release resource assignment."""
     try:
-        # This would need to be implemented in the service
-        return {"data": {"message": "Resource released"}}
+        from bson import ObjectId
+        from app.models.resource import ResourceAssignment
+
+        assignment = ResourceAssignment.objects(
+            id=ObjectId(assignment_id),
+            tenant_id=get_tenant_id()
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+
+        assignment.status = "released"
+        assignment.released_at = datetime.utcnow()
+        assignment.save()
+
+        resource = ResourceService.get_resource(str(assignment.resource_id))
+        if resource:
+            resource.release(assignment.quantity_used)
+
+        return {"data": ResourceAssignmentResponse.from_orm(assignment)}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

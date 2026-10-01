@@ -19,13 +19,18 @@ import type { Inventory } from "@/hooks/useInventory";
 import CartItems from "./CartItems";
 import ItemSelector from "./ItemSelector";
 import PaymentProcessor from "./PaymentProcessor";
+import CustomerSelector from "./CustomerSelector";
+import StaffSelector from "./StaffSelector";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default function TransactionEntry() {
   const location = useLocation();
   const [showPayment, setShowPayment] = useState(false);
   const [showClearCartConfirm, setShowClearCartConfirm] = useState(false);
   const [customerId, setCustomerId] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [staffId, setStaffId] = useState("");
+  const [staffName, setStaffName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<
     "cash" | "card" | "mobile_money" | "check"
   >("cash");
@@ -38,6 +43,7 @@ export default function TransactionEntry() {
   const staffQuery = useStaff();
   const inventoryQuery = useInventory();
 
+  const { taxRate, currency } = usePOSStore();
   const { mutate: checkout, isPending: isCheckingOut } = useCheckout();
   const {
     cartItems,
@@ -108,7 +114,7 @@ export default function TransactionEntry() {
         item_name: item.itemName,
         quantity: item.quantity,
         unit_price: item.unitPrice,
-        tax_rate: 0.1, // 10% tax rate
+        tax_rate: taxRate,
         discount_rate: 0,
       }));
 
@@ -153,56 +159,30 @@ export default function TransactionEntry() {
             Customer & Staff
           </h3>
           <div className="space-y-4">
-            {/* Customer Dropdown */}
+            {/* Customer Selector */}
             <div>
-              <Label htmlFor="customer-select" className="mb-2 block">
-                Customer
-              </Label>
-              {isLoadingCustomers ? (
-                <div className="flex items-center justify-center py-2">
-                  <Spinner className="w-4 h-4" />
-                </div>
-              ) : (
-                <select
-                  id="customer-select"
-                  value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
-                >
-                  <option value="">Select a customer...</option>
-                  {customers.map((customer: Customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.firstName} {customer.lastName}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <Label className="mb-2 block">Customer</Label>
+              <CustomerSelector
+                selectedCustomerId={customerId || undefined}
+                selectedCustomerName={customerName || undefined}
+                onSelect={(id, name) => {
+                  setCustomerId(id);
+                  setCustomerName(name);
+                }}
+              />
             </div>
 
-            {/* Staff Dropdown */}
+            {/* Staff Selector */}
             <div>
-              <Label htmlFor="staff-select" className="mb-2 block">
-                Staff Member
-              </Label>
-              {isLoadingStaff ? (
-                <div className="flex items-center justify-center py-2">
-                  <Spinner className="w-4 h-4" />
-                </div>
-              ) : (
-                <select
-                  id="staff-select"
-                  value={staffId}
-                  onChange={(e) => setStaffId(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
-                >
-                  <option value="">Select a staff member...</option>
-                  {staff.map((member: Staff) => (
-                    <option key={member.id} value={member.id}>
-                      {member.firstName} {member.lastName}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <Label className="mb-2 block">Staff Member</Label>
+              <StaffSelector
+                selectedStaffId={staffId || undefined}
+                selectedStaffName={staffName || undefined}
+                onSelect={(id, name) => {
+                  setStaffId(id);
+                  setStaffName(name);
+                }}
+              />
             </div>
           </div>
         </Card>
@@ -243,10 +223,7 @@ export default function TransactionEntry() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-primary">
-                        ₦
-                        {service.price.toLocaleString("en-NG", {
-                          maximumFractionDigits: 2,
-                        })}
+                        {formatCurrency(service.price, currency)}
                       </p>
                     </div>
                   </div>
@@ -331,10 +308,7 @@ export default function TransactionEntry() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-primary">
-                        ₦
-                        {item.unit_cost.toLocaleString("en-NG", {
-                          maximumFractionDigits: 2,
-                        })}
+                        {formatCurrency(item.unit_cost, currency)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Stock: {item.quantity}
@@ -379,28 +353,19 @@ export default function TransactionEntry() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium text-foreground">
-                    ₦
-                    {cartSubtotal.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(cartSubtotal, currency)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tax (10%)</span>
+                  <span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span>
                   <span className="font-medium text-foreground">
-                    ₦
-                    {cartTaxAmount.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(cartTaxAmount, currency)}
                   </span>
                 </div>
                 <div className="border-t border-border pt-2 flex justify-between">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="text-xl font-bold text-primary">
-                    ₦
-                    {cartTotal.toLocaleString("en-NG", {
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(cartTotal, currency)}
                   </span>
                 </div>
               </div>
@@ -453,6 +418,7 @@ export default function TransactionEntry() {
         <PaymentProcessor
           customerId={customerId}
           staffId={staffId}
+          staffEmail={staffQuery.data?.find((s: any) => s.id === staffId)?.email}
           appointmentId={appointmentId}
           paymentMethod={paymentMethod}
           open={showPayment}

@@ -38,6 +38,7 @@ class SubscriptionResponse(BaseModel):
     auto_renew: bool
     trial_expiry_action_required: bool
     transaction_fee_percentage: float
+    paystack_subscription_id: Optional[str] = None
 
 
 class UpgradeRequest(BaseModel):
@@ -90,6 +91,7 @@ def serialize_subscription(sub: Subscription, plan: PricingPlan) -> Subscription
         auto_renew=sub.auto_renew,
         trial_expiry_action_required=sub.trial_expiry_action_required,
         transaction_fee_percentage=sub.transaction_fee_percentage,
+        paystack_subscription_id=sub.paystack_subscription_id,
     )
 
 
@@ -196,6 +198,31 @@ async def upgrade_subscription(
             billing_cycle=request.billing_cycle,
         )
 
+        # Attempt to create/update Paystack subscription if configured
+        try:
+            from app.models.tenant import Tenant
+            from app.config import get_settings
+            from app.services.paystack_service import PaystackService
+
+            config = get_settings()
+            if config.paystack_live_secret_key and plan.paystack_plan_code:
+                tenant = Tenant.objects(id=tenant_id).first()
+                if tenant and tenant.email:
+                    paystack = PaystackService()
+                    paystack_data = paystack.create_subscription(
+                        customer_email=tenant.email,
+                        plan_code=plan.paystack_plan_code,
+                        authorization_code=subscription.paystack_subscription_id,
+                    )
+                    subscription.paystack_subscription_id = paystack_data.get(
+                        "subscription_code"
+                    )
+                    subscription.save()
+        except Exception as paystack_err:
+            logger.warning(
+                f"Paystack subscription sync failed for tenant {tenant_id}: {str(paystack_err)}"
+            )
+
         return serialize_subscription(subscription, plan)
     except HTTPException:
         raise
@@ -238,6 +265,28 @@ async def downgrade_subscription(
             billing_cycle=request.billing_cycle,
         )
 
+        # Attempt to cancel Paystack subscription if downgrading to free tier
+        try:
+            from app.config import get_settings
+            from app.services.paystack_service import PaystackService
+
+            config = get_settings()
+            if (
+                config.paystack_live_secret_key
+                and subscription.paystack_subscription_id
+            ):
+                paystack = PaystackService()
+                paystack.cancel_subscription(
+                    subscription_code=subscription.paystack_subscription_id,
+                    silent=True,
+                )
+                subscription.paystack_subscription_id = None
+                subscription.save()
+        except Exception as paystack_err:
+            logger.warning(
+                f"Paystack cancellation failed for tenant {tenant_id}: {str(paystack_err)}"
+            )
+
         return serialize_subscription(subscription, plan)
     except HTTPException:
         raise
@@ -270,6 +319,23 @@ async def cancel_subscription(tenant_id: str = Depends(get_tenant_id)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Pricing plan not found",
+            )
+
+        # Attempt to cancel Paystack subscription
+        try:
+            from app.config import get_settings
+            from app.services.paystack_service import PaystackService
+
+            config = get_settings()
+            if config.paystack_live_secret_key and subscription.paystack_subscription_id:
+                paystack = PaystackService()
+                paystack.cancel_subscription(
+                    subscription_code=subscription.paystack_subscription_id,
+                    silent=True,
+                )
+        except Exception as paystack_err:
+            logger.warning(
+                f"Paystack cancellation failed for tenant {tenant_id}: {str(paystack_err)}"
             )
 
         return serialize_subscription(subscription, plan)

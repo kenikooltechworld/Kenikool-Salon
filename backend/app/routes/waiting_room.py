@@ -10,10 +10,15 @@ from app.schemas.waiting_room import (
     QueueHistoryResponse,
     QueueStatsResponse,
 )
+from pydantic import BaseModel
 from app.services.waiting_room_service import WaitingRoomService
 from app.decorators.tenant_isolated import tenant_isolated
 
 router = APIRouter(prefix="/waiting-room", tags=["waiting-room"])
+
+
+class NoShowRequest(BaseModel):
+    reason: Optional[str] = None
 
 
 # Queue Management
@@ -147,9 +152,9 @@ async def mark_no_show(entry_id: str, reason: Optional[str] = Query(None)):
 
 @router.patch("/{entry_id}/no-show", response_model=QueueEntryResponse)
 @tenant_isolated
-async def mark_no_show_alt(entry_id: str, reason: Optional[str] = Query(None)):
+async def mark_no_show_alt(entry_id: str, request: NoShowRequest):
     """Mark customer as no-show (alternative endpoint)."""
-    entry = WaitingRoomService.mark_no_show(entry_id, reason)
+    entry = WaitingRoomService.mark_no_show(entry_id, request.reason)
     if not entry:
         raise HTTPException(status_code=404, detail="Queue entry not found")
     return QueueEntryResponse.from_orm(entry)

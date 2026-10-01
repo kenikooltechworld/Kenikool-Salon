@@ -2,14 +2,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useBooking } from "@/hooks/useBookings";
-import { useConfirmBooking, useCancelBooking, useCompleteBooking, useMarkNoShow } from "@/hooks/useBookings";
+import { useBooking, useBookingDetail, useConfirmBooking, useCancelBooking, useCompleteBooking, useMarkNoShow } from "@/hooks/useBookings";
+import { useReleaseResourceAssignment } from "@/hooks/useResourceOperations";
 import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { formatDate, formatTime, formatCurrency } from "@/lib/utils/format";
 import { ArrowLeftIcon } from "@/components/icons";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/utils/api";
 import { useToast } from "@/components/ui/toast";
+import ResourceAssignments from "@/components/resources/ResourceAssignments";
 
 export default function BookingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,20 +19,12 @@ export default function BookingDetail() {
   const { mutate: cancelBooking } = useCancelBooking();
   const { mutate: completeBooking } = useCompleteBooking();
   const { mutate: markNoShow } = useMarkNoShow();
+  const { mutate: releaseResourceAssignment } = useReleaseResourceAssignment();
 
   const { data: booking, isLoading } = useBooking(bookingId, { refetchOnMount: true });
   console.log("[BookingDetail] booking data:", booking);
 
-  const { data: detail, isLoading: isLoadingDetail } = useQuery({
-    queryKey: ["bookingDetail", bookingId],
-    queryFn: async () => {
-      const response = await apiClient.get(`/appointments/${bookingId}/detail`);
-      return response.data;
-    },
-    enabled: !!bookingId,
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true,
-  });
+  const { data: detail, isLoading: isLoadingDetail } = useBookingDetail(bookingId);
 
   const serviceData = detail?.service || null;
   const staffData = detail?.staff || null;
@@ -222,6 +213,55 @@ export default function BookingDetail() {
             </div>
           )}
 
+          {detail?.resource_assignments && detail.resource_assignments.length > 0 && (
+            <div>
+              <span className="text-sm text-muted-foreground">Assigned Resources</span>
+              <div className="mt-2 space-y-2">
+                {detail.resource_assignments.map((assignment: any) => (
+                  <div key={assignment.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{assignment.resource_name || assignment.resource_id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Quantity: {assignment.quantity_used} | Status: {assignment.status}
+                      </p>
+                      {assignment.assigned_at && (
+                        <p className="text-xs text-muted-foreground">
+                          Assigned: {new Date(assignment.assigned_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    {assignment.status !== "released" && assignment.status !== "cancelled" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          releaseResourceAssignment(assignment.id, {
+                            onSuccess: () => {
+                              showToast({
+                                variant: "success",
+                                title: "Success",
+                                description: "Resource released successfully",
+                              });
+                            },
+                            onError: (err: any) => {
+                              showToast({
+                                variant: "error",
+                                title: "Error",
+                                description: err?.response?.data?.detail || "Failed to release resource",
+                              });
+                            },
+                          });
+                        }}
+                      >
+                        Release
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="text-xs text-muted-foreground">
             <p>Created: {formatDate(new Date(booking.createdAt))}</p>
             <p>Updated: {formatDate(new Date(booking.updatedAt))}</p>
@@ -286,7 +326,7 @@ export default function BookingDetail() {
               variant="destructive"
               className="cursor-pointer"
               onClick={() => {
-                cancelBooking(booking.id, {
+                cancelBooking({ id: booking.id, reason: "Cancelled by user" }, {
                   onSuccess: () => {
                     showToast({
                       title: "Success",

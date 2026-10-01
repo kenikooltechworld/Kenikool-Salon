@@ -24,6 +24,44 @@ class NotificationCreate(BaseModel):
     recipient_phone: Optional[str] = None
 
 
+class InterDepartmentMessageCreate(BaseModel):
+    """Schema for sending inter-departmental messages."""
+
+    recipient_type: str = "staff"  # staff, owner, all
+    role_id: Optional[str] = None
+    recipient_ids: Optional[List[str]] = None
+    notification_type: str = "custom"  # manager_message, team_announcement, custom
+    channel: str = "in_app"
+    content: str
+    subject: Optional[str] = None
+    send_email: bool = False
+
+
+class StaffMessageCreate(BaseModel):
+    """Schema for staff sending messages to owners/managers or other staff."""
+
+    recipient_type: str  # owner, specific_staff, role
+    recipient_ids: Optional[List[str]] = None
+    role_id: Optional[str] = None
+    notification_type: str = "custom"
+    channel: str = "in_app"
+    content: str
+    subject: Optional[str] = None
+    send_email: bool = False
+
+
+class CustomerMessageCreate(BaseModel):
+    """Schema for customers sending messages to staff or owners."""
+
+    recipient_type: str  # staff, owner
+    recipient_ids: Optional[List[str]] = None
+    notification_type: str = "custom"
+    channel: str = "in_app"
+    content: str
+    subject: Optional[str] = None
+    send_email: bool = False
+
+
 class NotificationResponse(BaseModel):
     """Schema for notification response."""
 

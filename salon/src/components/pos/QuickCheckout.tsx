@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { usePOSStore } from "@/stores/pos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { CreditCardIcon, PlusIcon, XIcon } from "@/components/icons";
+import { formatCurrency } from "@/lib/utils/format";
 
 interface SavedPaymentMethod {
   id: string;
@@ -46,6 +48,7 @@ export default function QuickCheckout({
     savedMethods.find((m) => m.isDefault)?.id || savedMethods[0]?.id || "",
   );
   const [showAddNew, setShowAddNew] = useState(false);
+  const { currency } = usePOSStore();
 
   const handleQuickCheckout = () => {
     if (!selectedMethodId) {
@@ -173,10 +176,7 @@ export default function QuickCheckout({
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Amount</span>
             <span className="text-xl font-bold text-primary">
-              ₦
-              {total.toLocaleString("en-NG", {
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(total, currency)}
             </span>
           </div>
           {selectedMethod && (

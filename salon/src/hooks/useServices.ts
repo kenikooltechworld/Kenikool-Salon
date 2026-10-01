@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { get, post, put, del } from "@/lib/utils/api";
 import type { Service, ServiceFilters } from "@/types/service";
 
@@ -6,8 +7,13 @@ import type { Service, ServiceFilters } from "@/types/service";
  * Fetch all services with optional filters
  */
 export function useServices(filters?: ServiceFilters) {
+  const filtersKey = useMemo(() => {
+    if (!filters) return "{}";
+    return JSON.stringify(filters);
+  }, [filters]);
+
   return useQuery({
-    queryKey: ["services", filters || {}],
+    queryKey: ["services", filtersKey],
     queryFn: async () => {
       try {
         const response = await get<{

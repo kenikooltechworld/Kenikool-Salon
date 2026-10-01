@@ -66,8 +66,8 @@ def enrich_history_entries(
             "appointment_date": entry.appointment_date.isoformat(),
             "appointment_time": entry.appointment_date.strftime("%H:%M"),
             "notes": entry.notes or "",
-            "rating": 0,
-            "feedback": "",
+            "rating": entry.rating or 0,
+            "feedback": entry.feedback or "",
             "created_at": entry.created_at.isoformat(),
         })
     

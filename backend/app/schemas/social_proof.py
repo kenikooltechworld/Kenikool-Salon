@@ -37,6 +37,7 @@ class VideoTestimonialCreate(BaseModel):
     testimonial_text: Optional[str] = Field(None, max_length=500)
     service_name: Optional[str] = Field(None, max_length=200)
     is_featured: bool = False
+    display_order: int = 0
 
 
 class VideoTestimonialUpdate(BaseModel):

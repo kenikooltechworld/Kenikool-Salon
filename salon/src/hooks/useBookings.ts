@@ -2,11 +2,80 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils";
 import type { CreateBookingInput, BookingFilters } from "@/types";
 
-const BOOKINGS_QUERY_KEY = "bookings";
+export interface Appointment {
+  id: string;
+  customerId: string;
+  staffId: string;
+  serviceId: string;
+  locationId: string;
+  startTime: string;
+  endTime: string;
+  status:
+    | "scheduled"
+    | "confirmed"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "no_show";
+  notes?: string;
+  price?: number;
+  paymentOption?: "now" | "later";
+  paymentStatus?: "pending" | "completed" | "failed";
+  cancellationReason?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  noShowReason?: string;
+  markedNoShowAt?: string;
+  confirmedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export function useBookings(filters?: BookingFilters) {
+export interface AppointmentFilters {
+  status?: string;
+  customerId?: string;
+  staffId?: string;
+  serviceId?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+const APPOINTMENTS_QUERY_KEY = "appointments";
+
+function transformAppointment(appt: any): Appointment {
+  return {
+    id: appt.id,
+    customerId: appt.customer_id,
+    staffId: appt.staff_id,
+    serviceId: appt.service_id,
+    locationId: appt.location_id,
+    startTime: appt.start_time,
+    endTime: appt.end_time,
+    status: appt.status,
+    notes: appt.notes,
+    price: appt.price,
+    paymentOption: appt.paymentOption,
+    paymentStatus: appt.paymentStatus,
+    cancellationReason: appt.cancellation_reason,
+    cancelledAt: appt.cancelled_at,
+    cancelledBy: appt.cancelled_by,
+    noShowReason: appt.no_show_reason,
+    markedNoShowAt: appt.marked_no_show_at,
+    confirmedAt: appt.confirmed_at,
+    createdAt: appt.created_at,
+    updatedAt: appt.updated_at,
+  };
+}
+
+/**
+ * Fetch all appointments with optional filters
+ */
+export function useAppointments(filters?: AppointmentFilters) {
   return useQuery({
-    queryKey: [BOOKINGS_QUERY_KEY, filters],
+    queryKey: [APPOINTMENTS_QUERY_KEY, filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.status) params.append("status", filters.status);
@@ -23,109 +92,84 @@ export function useBookings(filters?: BookingFilters) {
         `/appointments?${params}`,
       );
 
-      return (data?.appointments || []).map((appt: any) => ({
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      }));
+      return (data?.appointments || []).map(transformAppointment);
     },
     staleTime: 5 * 60 * 1000,
     refetchOnMount: true,
   });
 }
 
-export function useBooking(id: string, options?: { refetchOnMount?: boolean }) {
+/**
+ * Alias for useAppointments - kept for backward compatibility
+ */
+export function useBookings(filters?: BookingFilters) {
+  return useAppointments(filters);
+}
+
+/**
+ * Fetch single appointment by ID
+ */
+export function useAppointment(id: string, options?: { refetchOnMount?: boolean }) {
   return useQuery({
-    queryKey: [BOOKINGS_QUERY_KEY, id],
+    queryKey: [APPOINTMENTS_QUERY_KEY, id],
     queryFn: async () => {
       const { data } = await apiClient.get<any>(`/appointments/${id}`);
-      const appt = data;
-      if (!appt) return null;
-      console.log("[useBooking] raw appointment data:", appt);
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     ...options,
+    enabled: !!id,
   });
 }
 
-export function useCreateBooking() {
+/**
+ * Alias for useAppointment - kept for backward compatibility
+ */
+export function useBooking(id: string, options?: { refetchOnMount?: boolean }) {
+  return useAppointment(id, options);
+}
+
+/**
+ * Create new appointment
+ */
+export function useCreateAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: CreateBookingInput) => {
       const { data } = await apiClient.post<any>("/appointments", input);
-      const appt = data;
-
-      // Transform snake_case from backend to camelCase for frontend
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY], exact: false });
-      queryClient.refetchQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
 }
 
-export function useConfirmBooking() {
+/**
+ * Alias for useCreateAppointment - kept for backward compatibility
+ */
+export function useBookingDetail(id: string) {
+  return useQuery({
+    queryKey: ["bookingDetail", id],
+    queryFn: async () => {
+      const response = await apiClient.get(`/appointments/${id}/detail`);
+      return response.data;
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateBooking() {
+  return useCreateAppointment();
+}
+
+/**
+ * Confirm appointment
+ */
+export function useConfirmAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -134,159 +178,58 @@ export function useConfirmBooking() {
         `/appointments/${id}/confirm`,
         {},
       );
-      const appt = data;
-
-      // Transform snake_case from backend to camelCase for frontend
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     onSuccess: (_, id) => {
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY], exact: false });
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
-      queryClient.refetchQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
 }
 
-export function useCancelBooking() {
+/**
+ * Alias for useConfirmAppointment - kept for backward compatibility
+ */
+export function useConfirmBooking() {
+  return useConfirmAppointment();
+}
+
+/**
+ * Cancel appointment
+ */
+export function useCancelAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
       const { data } = await apiClient.post<any>(`/appointments/${id}/cancel`, {
         reason,
       });
-      const appt = data;
-
-      // Transform snake_case from backend to camelCase for frontend
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     onSuccess: (_, { id }) => {
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY], exact: false });
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
-      queryClient.refetchQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
     },
   });
 }
 
-export function useAvailableSlots(
-  staffId: string,
-  serviceId: string,
-  date: string,
-) {
-  return useQuery({
-    queryKey: ["availableSlots", staffId, serviceId, date],
-    queryFn: async () => {
-      const { data } = await apiClient.get(
-        `/appointments/available-slots/${staffId}/${serviceId}?date=${date}`,
-      );
-      return data.data || [];
-    },
-    enabled: !!staffId && !!serviceId && !!date,
-    staleTime: 5 * 60 * 1000,
-  });
+/**
+ * Alias for useCancelAppointment - kept for backward compatibility
+ */
+export function useCancelBooking() {
+  return useCancelAppointment();
 }
 
-export function useCalendarView(view: "day" | "week" | "month", date: string) {
-  return useQuery({
-    queryKey: ["calendar", view, date],
-    queryFn: async () => {
-      let appointments: any[] = [];
-
-      try {
-        if (view === "day") {
-          const response = await apiClient.get<any>(
-            `/appointments/day/${date}`,
-          );
-          const data = response.data || response;
-          appointments = data.appointments || [];
-        } else if (view === "week") {
-          const response = await apiClient.get<any>(
-            `/appointments/week/${date}`,
-          );
-          const data = response.data || response;
-          appointments = data.appointments || [];
-        } else {
-          const response = await apiClient.get<any>(
-            `/appointments/month/${date}`,
-          );
-          const data = response.data || response;
-          appointments = data.appointments || [];
-        }
-      } catch (error) {
-        console.error(`Error fetching ${view} view for date ${date}:`, error);
-        throw error;
-      }
-
-      return appointments.map((appt: any) => ({
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      }));
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useCompleteBooking() {
+/**
+ * Mark appointment as completed
+ */
+export function useCompleteAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -294,53 +237,28 @@ export function useCompleteBooking() {
       const { data } = await apiClient.post<any>(
         `/appointments/${id}/complete`,
       );
-      const appt = data;
-      console.log("[useCompleteBooking] raw complete response:", appt);
-
-      // Transform snake_case from backend to camelCase for frontend
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     onSuccess: (_, id) => {
-      console.log("[useCompleteBooking] success, refetching queries for id:", id);
-      queryClient.refetchQueries({
-        queryKey: [BOOKINGS_QUERY_KEY],
-        exact: false,
-      });
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
-      queryClient.refetchQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
-      queryClient.refetchQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
 }
 
+/**
+ * Alias for useCompleteAppointment - kept for backward compatibility
+ */
+export function useCompleteBooking() {
+  return useCompleteAppointment();
+}
+
+/**
+ * Collect payment for appointment
+ */
 export function useCollectPayment() {
   const queryClient = useQueryClient();
 
@@ -364,51 +282,22 @@ export function useCollectPayment() {
           notes,
         },
       );
-      const appt = data;
-
-      // Transform snake_case from backend to camelCase for frontend
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     onSuccess: (_, { id }) => {
-      queryClient.refetchQueries({
-        queryKey: [BOOKINGS_QUERY_KEY],
-        exact: false,
-      });
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
-      queryClient.refetchQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
-      queryClient.refetchQueries({
-        queryKey: ["transactions"],
-        exact: false,
-      });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["transactions"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
   });
 }
 
+/**
+ * Mark appointment as no-show
+ */
 export function useMarkNoShow() {
   const queryClient = useQueryClient();
 
@@ -418,43 +307,131 @@ export function useMarkNoShow() {
         `/appointments/${id}/no-show`,
         { reason },
       );
-      const appt = data;
-
-      // Transform snake_case from backend to camelCase for frontend
-      return {
-        id: appt.id,
-        customerId: appt.customer_id,
-        staffId: appt.staff_id,
-        serviceId: appt.service_id,
-        locationId: appt.location_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        price: appt.price,
-        paymentOption: appt.paymentOption,
-        paymentStatus: appt.paymentStatus,
-        cancellationReason: appt.cancellation_reason,
-        cancelledAt: appt.cancelled_at,
-        cancelledBy: appt.cancelled_by,
-        noShowReason: appt.no_show_reason,
-        markedNoShowAt: appt.marked_no_show_at,
-        confirmedAt: appt.confirmed_at,
-        createdAt: appt.created_at,
-        updatedAt: appt.updated_at,
-      };
+      return transformAppointment(data);
     },
     onSuccess: (_, { id }) => {
-      queryClient.refetchQueries({
-        queryKey: [BOOKINGS_QUERY_KEY],
-        exact: false,
-      });
-      queryClient.refetchQueries({ queryKey: [BOOKINGS_QUERY_KEY, id] });
-      queryClient.refetchQueries({ queryKey: ["bookingDetail", id] });
-      queryClient.refetchQueries({
-        queryKey: ["calendar"],
-        exact: false,
-      });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: ["bookingDetail", id] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
+  });
+}
+
+/**
+ * Update appointment
+ */
+export function useUpdateAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...updates
+    }: Partial<Appointment> & { id: string }) => {
+      const { data } = await apiClient.put<{ data: Appointment }>(
+        `/appointments/${id}`,
+        updates,
+      );
+      return data.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, data.id] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+    },
+  });
+}
+
+/**
+ * Alias for useUpdateAppointment - kept for backward compatibility
+ */
+export function useUpdateBooking() {
+  return useUpdateAppointment();
+}
+
+/**
+ * Delete appointment
+ */
+export function useDeleteAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/appointments/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+    },
+  });
+}
+
+/**
+ * Alias for useDeleteAppointment - kept for backward compatibility
+ */
+export function useDeleteBooking() {
+  return useDeleteAppointment();
+}
+
+/**
+ * Fetch available time slots
+ */
+export function useAvailableSlots(
+  staffId: string,
+  serviceId: string,
+  date: string,
+) {
+  return useQuery({
+    queryKey: ["availableSlots", staffId, serviceId, date],
+    queryFn: async () => {
+      const { data } = await apiClient.get(
+        `/appointments/available-slots/${staffId}/${serviceId}?date=${date}`,
+      );
+      return data.data || [];
+    },
+    enabled: !!staffId && !!serviceId && !!date,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch calendar view (day/week/month)
+ */
+export function useCalendarView(view: "day" | "week" | "month", date: string) {
+  return useQuery({
+    queryKey: ["calendar", view, date],
+    queryFn: async () => {
+      let appointments: Appointment[] = [];
+
+      try {
+        if (view === "day") {
+          const response = await apiClient.get<any>(
+            `/appointments/day/${date}`,
+          );
+          const data = response.data || response;
+          appointments = (data.appointments || []).map(transformAppointment);
+        } else if (view === "week") {
+          const response = await apiClient.get<any>(
+            `/appointments/week/${date}`,
+          );
+          const data = response.data || response;
+          appointments = (data.appointments || []).map(transformAppointment);
+        } else {
+          const response = await apiClient.get<any>(
+            `/appointments/month/${date}`,
+          );
+          const data = response.data || response;
+          appointments = (data.appointments || []).map(transformAppointment);
+        }
+      } catch (error) {
+        console.error(`Error fetching ${view} view for date ${date}:`, error);
+        throw error;
+      }
+
+      return appointments;
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }

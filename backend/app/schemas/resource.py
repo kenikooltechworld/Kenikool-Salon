@@ -1,7 +1,7 @@
 """Resource schemas."""
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, time
 from decimal import Decimal
 
@@ -17,6 +17,7 @@ class ResourceCreate(BaseModel):
     purchase_date: Optional[datetime] = None
     purchase_price: Optional[Decimal] = None
     tags: Optional[List[str]] = None
+    notes: Optional[str] = None
 
 
 class ResourceUpdate(BaseModel):
@@ -25,7 +26,10 @@ class ResourceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     quantity: Optional[int] = None
+    status: Optional[str] = None
+    location_id: Optional[str] = None
     tags: Optional[List[str]] = None
+    notes: Optional[str] = None
 
 
 class ResourceResponse(BaseModel):
@@ -42,7 +46,12 @@ class ResourceResponse(BaseModel):
     description: Optional[str] = None
     purchase_date: Optional[datetime] = None
     purchase_price: Optional[Decimal] = None
+    depreciation_value: Optional[Decimal] = None
+    maintenance_cost: Optional[Decimal] = None
     tags: List[str]
+    notes: Optional[str] = None
+    availability_schedule: List[Dict[str, Any]] = []
+    required_resources: List[str] = []
     created_at: datetime
     updated_at: datetime
 

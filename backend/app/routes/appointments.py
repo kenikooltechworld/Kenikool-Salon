@@ -31,6 +31,8 @@ from app.models.customer import Customer
 from app.models.service import Service
 from app.models.staff import Staff
 from app.models.user import User
+from app.models.resource import ResourceAssignment
+from app.services.resource_service import ResourceService
 from app.middleware.tenant_context import get_tenant_id
 from app.decorators.tenant_isolated import tenant_isolated
 from app.routes.auth import get_current_user_dependency
@@ -244,6 +246,22 @@ async def get_appointment_detail(
                 "phone": user.phone if user else "",
             }
         
+        resource_assignments = []
+        assignments = ResourceAssignment.objects(
+            tenant_id=tenant_id, appointment_id=appt_id, status__ne="cancelled"
+        )
+        for assignment in assignments:
+            resource = ResourceService.get_resource(str(assignment.resource_id))
+            resource_assignments.append({
+                "id": str(assignment.id),
+                "resource_id": str(assignment.resource_id),
+                "resource_name": resource.name if resource else "Unknown",
+                "quantity_used": assignment.quantity_used,
+                "status": assignment.status,
+                "assigned_at": assignment.assigned_at.isoformat(),
+                "released_at": assignment.released_at.isoformat() if assignment.released_at else None,
+            })
+        
         return AppointmentDetailResponse(
             id=str(appointment.id),
             customer_id=str(appointment.customer_id) if appointment.customer_id else None,
@@ -268,6 +286,7 @@ async def get_appointment_detail(
             customer=customer_data,
             service=service_data,
             staff=staff_data,
+            resource_assignments=resource_assignments,
         )
     except HTTPException:
         raise
@@ -597,6 +616,12 @@ async def cancel_appointment(
             tenant_id, appt_id, reason=request.reason
         )
         
+        # Release any resource assignments
+        try:
+            ResourceService.release_appointment_resources(str(appt_id))
+        except Exception as e:
+            logger.error(f"Failed to release resources for cancelled appointment {appt_id}: {e}")
+        
         # Create appointment history entry
         try:
             AppointmentHistoryService.create_history_from_appointment(tenant_id, appt_id)
@@ -652,6 +677,12 @@ async def complete_appointment(
         # Mark appointment as completed
         appointment.status = "completed"
         appointment.save()
+
+        # Release any resource assignments
+        try:
+            ResourceService.release_appointment_resources(str(appt_id))
+        except Exception as e:
+            logger.error(f"Failed to release resources for completed appointment {appt_id}: {e}")
 
         # Create history entry
         try:

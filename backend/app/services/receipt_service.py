@@ -79,6 +79,19 @@ class ReceiptService:
             payment_reference=transaction.paystack_reference,
             receipt_format="thermal",
         )
+
+        # Populate tenant business info
+        try:
+            from app.models.tenant import Tenant
+            tenant = Tenant.objects(id=tenant_id).first()
+            if tenant:
+                receipt.tenant_name = tenant.name
+                receipt.tenant_address = tenant.address
+                receipt.tenant_phone = tenant.settings.get("phone") if tenant.settings else None
+                receipt.tenant_logo_url = tenant.logo_url
+        except Exception:
+            pass
+
         receipt.save()
         print(f"[ReceiptService] Receipt created: {receipt.id}")
         return receipt

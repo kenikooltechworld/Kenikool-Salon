@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from datetime import datetime
+from bson import ObjectId
 import logging
 from app.schemas.notification import (
     NotificationResponse,
@@ -11,11 +12,15 @@ from app.schemas.notification import (
     NotificationPreferenceUpdate,
     NotificationTemplateResponse,
     NotificationTemplateCreate,
+    InterDepartmentMessageCreate,
+    StaffMessageCreate,
+    CustomerMessageCreate,
 )
 from app.services.notification_service import NotificationService
 from app.decorators.tenant_isolated import tenant_isolated
 from app.context import get_tenant_id
 from app.routes.auth import get_current_user_dependency
+from app.tasks import run_in_background
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +46,41 @@ async def get_unread_count(current_user: dict = Depends(get_current_user_depende
     except Exception as e:
         logger.error(f"[Notifications] Error getting unread count: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to get unread count")
+
+
+@router.get("/messages", response_model=List[NotificationResponse])
+@tenant_isolated
+async def get_inter_department_messages(
+    status: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """Get inter-department messages for current user."""
+    try:
+        user_id = current_user.get("id") or current_user.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+        message_types = ["manager_message", "team_announcement", "custom"]
+        notifications = []
+        for message_type in message_types:
+            batch = NotificationService.get_notifications(
+                recipient_id=user_id,
+                notification_type=message_type,
+                status=status,
+                limit=limit,
+                skip=skip,
+            )
+            notifications.extend(batch)
+
+        notifications.sort(key=lambda n: n.created_at, reverse=True)
+        return [NotificationResponse.from_orm(n) for n in notifications[:limit]]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Notifications] Error getting messages: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to get messages")
 
 
 @router.post("/clear-all")
@@ -266,6 +306,355 @@ async def update_template(template_id: str, template: NotificationTemplateCreate
 
 
 # ============================================================================
+# INTER-DEPARTMENT COMMUNICATION
+# ============================================================================
+
+@router.post("/send-message", response_model=dict)
+@tenant_isolated
+async def send_inter_department_message(
+    payload: InterDepartmentMessageCreate,
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """Send a message to staff, owners, or a specific role."""
+    try:
+        from bson import ObjectId
+        from app.models.staff import Staff
+        from app.models.user import User
+        from app.models.role import Role
+        from app.tasks import send_email
+        from app.services.notification_service import NotificationService
+
+        tenant_id = get_tenant_id()
+        sender_id = current_user.get("id") or current_user.get("user_id")
+        sender_role = current_user.get("role", "staff")
+        sender_role_names = current_user.get("role_names", [])
+
+        if not sender_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+        # RBAC: Only Owner or Manager can send inter-department messages
+        allowed_roles = {"Owner", "Manager"}
+        if not any(role in allowed_roles for role in sender_role_names):
+            raise HTTPException(
+                status_code=403,
+                detail="Only Owner or Manager can send inter-department messages",
+            )
+
+        recipient_ids = set()
+
+        if payload.recipient_type == "all_staff":
+            staff_members = Staff.objects(tenant_id=ObjectId(tenant_id), status="active")
+            for staff in staff_members:
+                recipient_ids.add(str(staff.user_id))
+
+        elif payload.recipient_type == "role" and payload.role_id:
+            role = Role.objects(id=ObjectId(payload.role_id), tenant_id=ObjectId(tenant_id)).first()
+            if not role:
+                raise HTTPException(status_code=404, detail="Role not found")
+            users = User.objects(tenant_id=ObjectId(tenant_id), role_ids__in=[ObjectId(payload.role_id)])
+            for user in users:
+                recipient_ids.add(str(user.id))
+
+        elif payload.recipient_type == "specific" and payload.recipient_ids:
+            recipient_ids = set(payload.recipient_ids)
+
+        else:
+            raise HTTPException(status_code=400, detail="Invalid recipient configuration")
+
+        if not recipient_ids:
+            raise HTTPException(status_code=400, detail="No recipients found")
+
+        notifications = []
+        for recipient_id in recipient_ids:
+            notification = NotificationService.create_notification(
+                recipient_id=recipient_id,
+                recipient_type="staff",
+                notification_type=payload.notification_type,
+                channel=payload.channel,
+                content=payload.content,
+                subject=payload.subject,
+            )
+            notifications.append(notification)
+
+            if payload.send_email:
+                try:
+                    user = User.objects(id=ObjectId(recipient_id)).first()
+                    email = getattr(user, "email", None)
+                    if email:
+                        context = {
+                            "subject": payload.subject or "New Message",
+                            "content": payload.content,
+                            "sender_role": sender_role,
+                        }
+                        run_in_background(
+                            send_email,
+                            to=email,
+                            subject=payload.subject or "New Message",
+                            template="""<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2 style="color: #333;">{subject}</h2>
+                                <p style="color: #555; line-height: 1.6;">{content}</p>
+                                <p style="color: #888; font-size: 12px; margin-top: 20px;">
+                                    Sent by: {sender_role}
+                                </p>
+                            </div>""",
+                            context=context,
+                        )
+                except Exception as email_err:
+                    logger.warning(f"Failed to send email for inter-department message: {email_err}")
+
+        # Emit real-time Socket.IO event for each recipient
+        try:
+            from app.socketio_handler import sio
+            for recipient_id in recipient_ids:
+                await sio.emit(
+                    "notification:new",
+                    {
+                        "type": payload.notification_type,
+                        "data": {
+                            "subject": payload.subject,
+                            "content": payload.content,
+                            "sender_role": sender_role,
+                            "recipients_count": len(notifications),
+                            "recipient_id": recipient_id,
+                        },
+                        "timestamp": datetime.utcnow().isoformat(),
+                    },
+                    room=f"user:{tenant_id}:{recipient_id}",
+                )
+        except Exception as socket_err:
+            logger.warning(f"Failed to emit Socket.IO event for new message: {socket_err}")
+
+        return {
+            "data": {
+                "sent_count": len(notifications),
+                "recipient_ids": list(recipient_ids),
+                "notification_type": payload.notification_type,
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending inter-department message: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to send message")
+
+
+@router.post("/staff/send-message", response_model=dict)
+@tenant_isolated
+async def staff_send_message(
+    payload: StaffMessageCreate,
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """Staff sends a message to owner/manager or other staff members."""
+    try:
+        from bson import ObjectId
+        from app.models.staff import Staff
+        from app.models.user import User
+        from app.models.role import Role
+        from app.tasks import send_email
+        from app.services.notification_service import NotificationService
+
+        tenant_id = get_tenant_id()
+        sender_id = current_user.get("id") or current_user.get("user_id")
+        sender_role = current_user.get("role", "staff")
+        sender_role_names = current_user.get("role_names", [])
+
+        if not sender_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+        # RBAC: Only staff can use this endpoint
+        if "Staff" not in sender_role_names and sender_role != "staff":
+            raise HTTPException(
+                status_code=403,
+                detail="Only staff can send messages via this endpoint",
+            )
+
+        recipient_ids = set()
+
+        if payload.recipient_type == "owner":
+            # Send to all owners/managers
+            owners = User.objects(tenant_id=ObjectId(tenant_id), role="owner")
+            for owner in owners:
+                recipient_ids.add(str(owner.id))
+
+        elif payload.recipient_type == "specific_staff" and payload.recipient_ids:
+            recipient_ids = set(payload.recipient_ids)
+
+        elif payload.recipient_type == "role" and payload.role_id:
+            role = Role.objects(id=ObjectId(payload.role_id), tenant_id=ObjectId(tenant_id)).first()
+            if not role:
+                raise HTTPException(status_code=404, detail="Role not found")
+            users = User.objects(tenant_id=ObjectId(tenant_id), role_ids__in=[ObjectId(payload.role_id)])
+            for user in users:
+                recipient_ids.add(str(user.id))
+
+        else:
+            raise HTTPException(status_code=400, detail="Invalid recipient configuration")
+
+        # Exclude sender from recipients
+        recipient_ids.discard(sender_id)
+
+        if not recipient_ids:
+            raise HTTPException(status_code=400, detail="No recipients found")
+
+        notifications = []
+        for recipient_id in recipient_ids:
+            notification = NotificationService.create_notification(
+                recipient_id=recipient_id,
+                recipient_type="staff",
+                notification_type=payload.notification_type,
+                channel=payload.channel,
+                content=payload.content,
+                subject=payload.subject,
+            )
+            notifications.append(notification)
+
+            if payload.send_email:
+                try:
+                    user = User.objects(id=ObjectId(recipient_id)).first()
+                    email = getattr(user, "email", None)
+                    if email:
+                        context = {
+                            "subject": payload.subject or "New Message",
+                            "content": payload.content,
+                            "sender_role": sender_role,
+                        }
+                        run_in_background(
+                            send_email,
+                            to=email,
+                            subject=payload.subject or "New Message",
+                            template="""<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2 style="color: #333;">{subject}</h2>
+                                <p style="color: #555; line-height: 1.6;">{content}</p>
+                                <p style="color: #888; font-size: 12px; margin-top: 20px;">
+                                    Sent by: {sender_role}
+                                </p>
+                            </div>""",
+                            context=context,
+                        )
+                except Exception as email_err:
+                    logger.warning(f"Failed to send email for staff message: {email_err}")
+
+        return {
+            "data": {
+                "sent_count": len(notifications),
+                "recipient_ids": list(recipient_ids),
+                "notification_type": payload.notification_type,
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending staff message: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to send message")
+
+
+@router.post("/customer/send-message", response_model=dict)
+@tenant_isolated
+async def customer_send_message(
+    payload: CustomerMessageCreate,
+    current_user: dict = Depends(get_current_user_dependency),
+):
+    """Customer sends a message to staff or owner."""
+    try:
+        from bson import ObjectId
+        from app.models.staff import Staff
+        from app.models.user import User
+        from app.tasks import send_email
+        from app.services.notification_service import NotificationService
+
+        tenant_id = get_tenant_id()
+        sender_id = current_user.get("id") or current_user.get("user_id")
+        sender_role = current_user.get("role", "customer")
+
+        if not sender_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+        # RBAC: Only customers can use this endpoint
+        if sender_role != "customer":
+            raise HTTPException(
+                status_code=403,
+                detail="Only customers can send messages via this endpoint",
+            )
+
+        recipient_ids = set()
+
+        if payload.recipient_type == "staff":
+            # Send to all active staff
+            staff_members = Staff.objects(tenant_id=ObjectId(tenant_id), status="active")
+            for staff in staff_members:
+                recipient_ids.add(str(staff.user_id))
+
+        elif payload.recipient_type == "owner":
+            # Send to all owners/managers
+            owners = User.objects(tenant_id=ObjectId(tenant_id), role="owner")
+            for owner in owners:
+                recipient_ids.add(str(owner.id))
+
+        elif payload.recipient_type == "specific" and payload.recipient_ids:
+            recipient_ids = set(payload.recipient_ids)
+
+        else:
+            raise HTTPException(status_code=400, detail="Invalid recipient configuration")
+
+        # Exclude sender from recipients
+        recipient_ids.discard(sender_id)
+
+        if not recipient_ids:
+            raise HTTPException(status_code=400, detail="No recipients found")
+
+        notifications = []
+        for recipient_id in recipient_ids:
+            notification = NotificationService.create_notification(
+                recipient_id=recipient_id,
+                recipient_type="staff",
+                notification_type=payload.notification_type,
+                channel=payload.channel,
+                content=payload.content,
+                subject=payload.subject,
+            )
+            notifications.append(notification)
+
+            if payload.send_email:
+                try:
+                    user = User.objects(id=ObjectId(recipient_id)).first()
+                    email = getattr(user, "email", None)
+                    if email:
+                        context = {
+                            "subject": payload.subject or "New Customer Message",
+                            "content": payload.content,
+                            "sender_role": "Customer",
+                        }
+                        run_in_background(
+                            send_email,
+                            to=email,
+                            subject=payload.subject or "New Customer Message",
+                            template="""<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2 style="color: #333;">{subject}</h2>
+                                <p style="color: #555; line-height: 1.6;">{content}</p>
+                                <p style="color: #888; font-size: 12px; margin-top: 20px;">
+                                    Sent by: Customer
+                                </p>
+                            </div>""",
+                            context=context,
+                        )
+                except Exception as email_err:
+                    logger.warning(f"Failed to send email for customer message: {email_err}")
+
+        return {
+            "data": {
+                "sent_count": len(notifications),
+                "recipient_ids": list(recipient_ids),
+                "notification_type": payload.notification_type,
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending customer message: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to send message")
+
+
+# ============================================================================
 # GENERIC ROUTES (must come after specific routes)
 # ============================================================================
 
@@ -345,20 +734,10 @@ async def get_notification(notification_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to get notification: {str(e)}")
 
 
-@router.patch("/{notification_id}/read", response_model=NotificationResponse)
+@router.patch("/{notification_id}/mark-read", response_model=NotificationResponse)
 @tenant_isolated
 async def mark_notification_read(notification_id: str):
     """Mark a notification as read."""
-    notification = NotificationService.mark_notification_read(notification_id)
-    if not notification:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    return NotificationResponse.from_orm(notification)
-
-
-@router.patch("/{notification_id}/mark-read", response_model=NotificationResponse)
-@tenant_isolated
-async def mark_notification_read_alt(notification_id: str):
-    """Mark a notification as read (alternative endpoint)."""
     notification = NotificationService.mark_notification_read(notification_id)
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
@@ -413,4 +792,17 @@ async def retry_notification(notification_id: str):
     notification = NotificationService.retry_notification(notification_id)
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
+    return NotificationResponse.from_orm(notification)
+
+
+@router.patch("/{notification_id}/unread", response_model=NotificationResponse)
+@tenant_isolated
+async def mark_notification_unread(notification_id: str):
+    """Mark a notification as unread."""
+    notification = NotificationService.get_notification(notification_id)
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    notification.is_read = False
+    notification.read_at = None
+    notification.save()
     return NotificationResponse.from_orm(notification)

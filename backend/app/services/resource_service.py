@@ -26,6 +26,7 @@ class ResourceService:
         purchase_date: datetime = None,
         purchase_price: Decimal = None,
         tags: List[str] = None,
+        notes: str = None,
     ) -> Resource:
         """Create a new resource."""
         tenant_id = get_tenant_id()
@@ -41,6 +42,7 @@ class ResourceService:
             purchase_date=purchase_date,
             purchase_price=purchase_price,
             tags=tags or [],
+            notes=notes,
         )
         resource.save()
         return resource
@@ -82,6 +84,9 @@ class ResourceService:
         description: str = None,
         quantity: int = None,
         tags: List[str] = None,
+        status: str = None,
+        location_id: str = None,
+        notes: str = None,
     ) -> Optional[Resource]:
         """Update a resource."""
         tenant_id = get_tenant_id()
@@ -90,12 +95,18 @@ class ResourceService:
         if resource:
             if name:
                 resource.name = name
-            if description:
+            if description is not None:
                 resource.description = description
             if quantity:
                 resource.quantity = quantity
-            if tags:
+            if status:
+                resource.status = status
+            if location_id is not None:
+                resource.location_id = location_id
+            if tags is not None:
                 resource.tags = tags
+            if notes is not None:
+                resource.notes = notes
             resource.save()
 
         return resource

@@ -17,6 +17,10 @@ export interface POSState {
   cartDiscountAmount: number;
   cartTotal: number;
 
+  // Tax and currency
+  taxRate: number;
+  currency: string;
+
   // Transaction state
   currentTransactionId?: string;
   transactionHistory: string[];
@@ -42,6 +46,9 @@ export interface POSState {
   clearCart: () => void;
   calculateCartTotals: () => void;
 
+  setTaxRate: (rate: number) => void;
+  setCurrency: (currency: string) => void;
+
   setPaymentMethod: (method: string) => void;
   setPaymentStatus: (status: string) => void;
 
@@ -65,6 +72,8 @@ export const usePOSStore = create<POSState>((set) => ({
   cartTaxAmount: 0,
   cartDiscountAmount: 0,
   cartTotal: 0,
+  taxRate: 0.1,
+  currency: "NGN",
 
   currentTransactionId: undefined,
   transactionHistory: [],
@@ -103,7 +112,7 @@ export const usePOSStore = create<POSState>((set) => ({
       }
 
       const subtotal = newItems.reduce((sum, i) => sum + i.lineTotal, 0);
-      const taxAmount = subtotal * 0.1;
+      const taxAmount = subtotal * state.taxRate;
       const total = subtotal + taxAmount - state.cartDiscountAmount;
 
       return {
@@ -118,7 +127,7 @@ export const usePOSStore = create<POSState>((set) => ({
     set((state) => {
       const newItems = state.cartItems.filter((i) => i.itemId !== itemId);
       const subtotal = newItems.reduce((sum, i) => sum + i.lineTotal, 0);
-      const taxAmount = subtotal * 0.1;
+      const taxAmount = subtotal * state.taxRate;
       const total = subtotal + taxAmount - state.cartDiscountAmount;
 
       return {
@@ -141,7 +150,7 @@ export const usePOSStore = create<POSState>((set) => ({
           : i,
       );
       const subtotal = newItems.reduce((sum, i) => sum + i.lineTotal, 0);
-      const taxAmount = subtotal * 0.1;
+      const taxAmount = subtotal * state.taxRate;
       const total = subtotal + taxAmount - state.cartDiscountAmount;
 
       return {
@@ -164,7 +173,7 @@ export const usePOSStore = create<POSState>((set) => ({
   calculateCartTotals: () =>
     set((state) => {
       const subtotal = state.cartItems.reduce((sum, i) => sum + i.lineTotal, 0);
-      const taxAmount = subtotal * 0.1; // 10% tax
+      const taxAmount = subtotal * state.taxRate;
       const total = subtotal + taxAmount - state.cartDiscountAmount;
 
       return {
@@ -173,6 +182,9 @@ export const usePOSStore = create<POSState>((set) => ({
         cartTotal: total,
       };
     }),
+
+  setTaxRate: (rate: number) => set({ taxRate: rate }),
+  setCurrency: (currency: string) => set({ currency }),
 
   // Payment actions
   setPaymentMethod: (method: string) => set({ paymentMethod: method as any }),

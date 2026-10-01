@@ -485,6 +485,23 @@ async def _create_booking_from_payment(
         
         logger.info(f"Appointment created: {appointment.id} from payment {payment.id}")
         
+        # Assign selected resources if provided
+        selected_resource_ids = booking_data.get("selectedResourceIds", [])
+        if selected_resource_ids:
+            try:
+                from app.services.resource_service import ResourceService
+                for resource_id in selected_resource_ids:
+                    try:
+                        ResourceService.assign_resource(
+                            appointment_id=str(appointment.id),
+                            resource_id=resource_id,
+                            quantity=1,
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to assign resource {resource_id} to appointment {appointment.id}: {e}")
+            except Exception as e:
+                logger.error(f"Error assigning resources to appointment {appointment.id}: {e}")
+        
         # Store appointment ID in payment metadata
         payment.metadata["appointment_id"] = str(appointment.id)
         payment.save()

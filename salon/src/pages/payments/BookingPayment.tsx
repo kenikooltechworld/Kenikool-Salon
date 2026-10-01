@@ -291,7 +291,7 @@ export function BookingPayment() {
 
   // Query for service details
   const { data: serviceData, isLoading: isLoadingService, error: serviceError } = useQuery({
-    queryKey: ["service", booking?.serviceId],
+    queryKey: ["services", booking?.serviceId],
     queryFn: async () => {
       const response = await apiClient.get(`/services/${booking?.serviceId}`);
       return response.data;
@@ -303,7 +303,7 @@ export function BookingPayment() {
 
   // Query for staff details
   const { data: staffData, isLoading: isLoadingStaff, error: staffError } = useQuery({
-    queryKey: ["staff", booking?.staffId],
+    queryKey: ["staff", "detail", booking?.staffId],
     queryFn: async () => {
       const response = await apiClient.get(`/staff/${booking?.staffId}`);
       return response.data;
