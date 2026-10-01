@@ -112,6 +112,7 @@ import StaffAttendance from "@/pages/staff/Attendance";
 import StaffDocuments from "@/pages/staff/Documents";
 import StaffGoals from "@/pages/staff/Goals";
 import StaffMessages from "@/pages/staff/Messages";
+import StaffComposeMessage from "@/pages/staff/StaffComposeMessage";
 import StaffCommissionDashboardPage from "@/pages/staff/StaffCommissionDashboard";
 
 // Public Booking Pages
@@ -846,6 +847,7 @@ function AppContent() {
           <Route path="/staff/documents" element={<StaffDocuments />} />
           <Route path="/staff/goals" element={<StaffGoals />} />
           <Route path="/staff/messages" element={<StaffMessages />} />
+          <Route path="/staff/messages/compose" element={<StaffComposeMessage />} />
           <Route path="/staff/commissions" element={<StaffCommissionDashboardPage />} />
           <Route
             path="/staff/settings"
