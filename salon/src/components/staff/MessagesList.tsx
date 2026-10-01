@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MessagesListProps {
   limit?: number;
@@ -87,7 +88,7 @@ export default function MessagesList({
     return (
       <div className="space-y-2">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
+          <Skeleton key={i} className="h-24 w-full rounded-lg" />
         ))}
       </div>
     );

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { useSendMessage } from "@/hooks/useMessages";
 import { useStaff } from "@/hooks/useStaff";
@@ -157,7 +158,11 @@ export default function OwnerMessages() {
                 </label>
                 <div className="border border-border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
                   {staffLoading ? (
-                    <p className="text-sm text-muted-foreground">Loading staff...</p>
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full rounded-lg" />
+                      <Skeleton className="h-10 w-full rounded-lg" />
+                      <Skeleton className="h-10 w-full rounded-lg" />
+                    </div>
                   ) : staff.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No staff members found</p>
                   ) : (

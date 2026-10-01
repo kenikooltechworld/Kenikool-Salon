@@ -8,7 +8,6 @@ import {
   Card,
   Button,
   Input,
-  Spinner,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -16,6 +15,7 @@ import {
   Label,
   Textarea,
   Select,
+  Skeleton,
 } from "@/components/ui";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -277,8 +277,10 @@ export default function SocialProof() {
             </div>
 
             {instagramLoading ? (
-              <div className="flex justify-center py-8">
-                <Spinner />
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <Skeleton key={i} className="aspect-square rounded-lg" />
+                ))}
               </div>
             ) : instagramFeed && instagramFeed.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -342,8 +344,10 @@ export default function SocialProof() {
             </div>
 
             {testimonialsLoading ? (
-              <div className="flex justify-center py-8">
-                <Spinner />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="aspect-video rounded-lg" />
+                ))}
               </div>
             ) : videoTestimonials && videoTestimonials.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
