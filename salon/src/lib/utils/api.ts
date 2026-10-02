@@ -119,7 +119,7 @@ export function createApiClient(): AxiosInstance {
   const isPages =
     typeof window !== "undefined" &&
     window.location.hostname.endsWith(".pages.dev");
-  const configuredBaseURL = import.meta.env.VITE_API_URL;
+  const configuredBaseURL = (import.meta.env.VITE_API_URL || "").trim();
   const baseURL = isPages ? "/api/v1" : configuredBaseURL || "/api/v1";
 
   const client = axios.create({
