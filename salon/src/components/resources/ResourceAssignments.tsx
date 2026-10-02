@@ -110,7 +110,7 @@ export default function ResourceAssignments({ appointmentId }: ResourceAssignmen
             <CardContent className="flex items-center justify-between py-4">
               <div>
                 <p className="font-medium">Resource ID: {assignment.resource_id}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Quantity: {assignment.quantity_used} | Status: {assignment.status}
                 </p>
               </div>

@@ -1,7 +1,7 @@
 """Notification routes."""
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import List, Optional
+from typing import List, Optional, Optional
 from datetime import datetime
 from bson import ObjectId
 import logging

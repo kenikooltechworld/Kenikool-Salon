@@ -153,11 +153,11 @@ export default function ResourceMaintenanceSchedule({
             <CardContent className="flex items-center justify-between py-4">
               <div>
                 <p className="font-medium">{record.maintenance_type}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {new Date(record.scheduled_date).toLocaleString()} | Status: {record.status}
                 </p>
                 {record.description && (
-                  <p className="text-xs text-gray-500">{record.description}</p>
+                  <p className="text-xs text-muted-foreground">{record.description}</p>
                 )}
               </div>
               {record.status !== "completed" && (

@@ -1,7 +1,7 @@
 """Settings management routes."""
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Optional, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.services.tenant_settings_service import TenantSettingsService

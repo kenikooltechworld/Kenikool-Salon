@@ -1,6 +1,6 @@
 """Recommendation routes"""
 from fastapi import APIRouter, Depends, Request
-from typing import List, Optional
+from typing import List, Optional, Optional
 from bson import ObjectId
 
 from app.schemas.recommendation import (

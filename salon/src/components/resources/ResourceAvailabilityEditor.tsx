@@ -138,7 +138,7 @@ export default function ResourceAvailabilityEditor({
                 <p className="font-medium">
                   {slot.day_of_week?.charAt(0).toUpperCase() + (slot.day_of_week?.slice(1) || "")}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {slot.start_time} - {slot.end_time}
                 </p>
               </div>

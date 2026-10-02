@@ -6,6 +6,7 @@ import {
 } from "@/hooks/useResources";
 import { Edit, Trash2, WrenchIcon } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ResourceListProps {
   onEdit?: (resourceId: string) => void;
@@ -36,30 +37,30 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200";
+        return "bg-success text-success-foreground";
       case "inactive":
-        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+        return "bg-muted text-muted-foreground";
       case "maintenance":
-        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200";
+        return "bg-warning text-warning-foreground";
       default:
-        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case "room":
-        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200";
+        return "bg-info text-info-foreground";
       case "chair":
         return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200";
       case "equipment":
         return "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200";
       case "tool":
-        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200";
+        return "bg-destructive text-destructive-foreground";
       case "supply":
-        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200";
+        return "bg-success text-success-foreground";
       default:
-        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -67,10 +68,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
     return (
       <div className="space-y-3">
         {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="h-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-          />
+          <Skeleton key={i} className="h-24 w-full" />
         ))}
       </div>
     );
@@ -81,13 +79,13 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Type
           </label>
           <select
             value={selectedType || ""}
             onChange={(e) => setSelectedType(e.target.value || undefined)}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="px-3 py-2 rounded-lg border border-border bg-background text-foreground"
           >
             <option value="">All Types</option>
             <option value="room">Room</option>
@@ -99,13 +97,13 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Status
           </label>
           <select
             value={selectedStatus || ""}
             onChange={(e) => setSelectedStatus(e.target.value || undefined)}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="px-3 py-2 rounded-lg border border-border bg-background text-foreground"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
@@ -117,7 +115,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
 
       {/* Resources List */}
       {resources.length === 0 ? (
-        <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+        <div className="p-8 text-center text-muted-foreground">
           <p>No resources found</p>
         </div>
       ) : (
@@ -125,11 +123,11 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
           {resources.map((resource) => (
             <div
               key={resource.id}
-              className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+              className="p-4 bg-background rounded-lg border border-border"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-foreground">
                     {resource.name}
                   </h3>
                   <div className="flex gap-2 mt-2">
@@ -154,7 +152,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
               </div>
 
               {/* Details */}
-              <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400">
+              <div className="space-y-2 mb-4 text-sm text-muted-foreground">
                 <p>
                   <span className="font-medium">Quantity:</span>{" "}
                   {resource.available_quantity}/{resource.quantity}
@@ -177,7 +175,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
                   <button
                     onClick={() => handleMarkMaintenance(resource.id)}
                     disabled={markMaintenance.isPending}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 text-sm font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-muted text-sm font-medium"
                   >
                     <WrenchIcon className="w-4 h-4" />
                   </button>
@@ -185,7 +183,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
                 <button
                   onClick={() => handleDelete(resource.id)}
                   disabled={deleteResource.isPending}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-muted text-sm font-medium"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

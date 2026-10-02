@@ -1,7 +1,7 @@
 """Membership routes for admin/owner management."""
 
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List
+from typing import List, Optional
 from bson import ObjectId
 
 from app.routes.auth import get_current_user_dependency

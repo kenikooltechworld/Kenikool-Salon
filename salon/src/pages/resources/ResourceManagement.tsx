@@ -72,7 +72,7 @@ export default function ResourceManagement() {
         <TabsContent value="availability" className="mt-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Select Resource
               </label>
               <input
@@ -80,7 +80,7 @@ export default function ResourceManagement() {
                 value={selectedResourceId}
                 onChange={(e) => setSelectedResourceId(e.target.value)}
                 placeholder="Enter Resource ID"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {selectedResourceId && (
@@ -92,7 +92,7 @@ export default function ResourceManagement() {
         <TabsContent value="assignments" className="mt-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Appointment ID
               </label>
               <input
@@ -100,7 +100,7 @@ export default function ResourceManagement() {
                 value={selectedAppointmentId}
                 onChange={(e) => setSelectedAppointmentId(e.target.value)}
                 placeholder="Enter Appointment ID"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {selectedAppointmentId && (

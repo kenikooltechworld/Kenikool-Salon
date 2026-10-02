@@ -1,7 +1,7 @@
 """Waiting room routes."""
 
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
+from typing import List, Optional, Optional
 from datetime import datetime
 from app.schemas.waiting_room import (
     QueueEntryCheckIn,

@@ -1,6 +1,6 @@
 """Customer Portal Routes"""
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
+from typing import List, Optional, Optional
 from bson import ObjectId
 from datetime import datetime
 from app.middleware.customer_auth import get_current_customer

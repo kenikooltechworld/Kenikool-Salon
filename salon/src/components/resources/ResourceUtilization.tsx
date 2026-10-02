@@ -16,7 +16,7 @@ export default function ResourceUtilization({ resourceId }: ResourceUtilizationP
   if (!stats || stats.total_records === 0) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-gray-500">
+        <CardContent className="py-8 text-center text-muted-foreground">
           <BarChart3Icon className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>No utilization data available</p>
         </CardContent>
@@ -28,7 +28,7 @@ export default function ResourceUtilization({ resourceId }: ResourceUtilizationP
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Total Records
           </CardTitle>
         </CardHeader>
@@ -38,7 +38,7 @@ export default function ResourceUtilization({ resourceId }: ResourceUtilizationP
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Average Utilization
           </CardTitle>
         </CardHeader>
@@ -48,7 +48,7 @@ export default function ResourceUtilization({ resourceId }: ResourceUtilizationP
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Peak Utilization
           </CardTitle>
         </CardHeader>
@@ -58,7 +58,7 @@ export default function ResourceUtilization({ resourceId }: ResourceUtilizationP
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Min Utilization
           </CardTitle>
         </CardHeader>

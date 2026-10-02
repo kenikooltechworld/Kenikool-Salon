@@ -1,7 +1,7 @@
 """Public booking API routes for guest appointments via subdomain."""
 
 from datetime import date, datetime
-from typing import List, Optional
+from typing import List, Optional, Optional
 import logging
 
 from fastapi import APIRouter, HTTPException, Request, Depends, Query
