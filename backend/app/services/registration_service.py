@@ -194,6 +194,15 @@ class RegistrationService:
         # Find temporary registration
         temp_reg = TempRegistration.objects(email=email).first()
         if not temp_reg:
+            existing_user = User.objects(email=email).first()
+            if existing_user:
+                tenant = Tenant.objects(id=existing_user.tenant_id).first()
+                return True, None, {
+                    "user_id": str(existing_user.id),
+                    "tenant_id": str(existing_user.tenant_id),
+                    "subdomain": tenant.subdomain if tenant else "",
+                    "full_url": f"https://{tenant.subdomain}.kenikoolsalon.com" if tenant and tenant.subdomain else "",
+                }
             return False, "Registration not found", None
 
         # Check if registration is expired

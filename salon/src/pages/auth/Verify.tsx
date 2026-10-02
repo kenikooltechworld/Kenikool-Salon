@@ -74,7 +74,8 @@ export function Verify() {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  const handleVerify = async () => {
+  const handleVerify = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (code.length !== 6) {
       setError("Please enter all 6 digits");
       return;
