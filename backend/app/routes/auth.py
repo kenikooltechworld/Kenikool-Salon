@@ -40,12 +40,23 @@ def _is_secure_request(request: Request) -> bool:
 
 def _cookie_kwargs(request: Request) -> dict:
     is_secure = _is_secure_request(request)
-    return {
+
+    cookie_kwargs = {
         "secure": is_secure,
         "httponly": True,
         "samesite": "None" if is_secure else "Lax",
         "path": "/",
     }
+
+    host = request.headers.get("host", "")
+    if host:
+        host = host.split(":")[0]
+        if not host.startswith("localhost") and not host.startswith("127."):
+            parts = host.split(".")
+            if len(parts) >= 2:
+                cookie_kwargs["domain"] = "." + ".".join(parts[-2:])
+
+    return cookie_kwargs
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
