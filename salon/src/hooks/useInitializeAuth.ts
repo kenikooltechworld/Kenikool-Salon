@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth";
 import { useTenantStore } from "@/stores/tenant";
 import { apiClient } from "@/lib/utils";
@@ -18,18 +19,13 @@ interface AuthMeResponse {
   permissions: string[];
 }
 
-/**
- * Hook to initialize authentication on app load using React Query
- *
- * Uses /auth/me endpoint with cookie-based session.
- * Caches result so multiple consumers share the same request.
- */
-export function useInitializeAuth() {
+export function useInitializeAuth(): UseQueryResult<AuthMeResponse["user"] | undefined, Error> {
   const setUser = useAuthStore((state) => state.setUser);
   const setPermissions = useAuthStore((state) => state.setPermissions);
   const setTenant = useTenantStore((state) => state.setTenant);
+  const setIsLoading = useAuthStore((state) => state.setIsLoading);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
       const response = await apiClient.get<AuthMeResponse>("/auth/me");
@@ -71,4 +67,12 @@ export function useInitializeAuth() {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  useEffect(() => {
+    if (!query.isLoading) {
+      setIsLoading(false);
+    }
+  }, [query.isLoading, setIsLoading]);
+
+  return query;
 }

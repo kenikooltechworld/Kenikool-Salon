@@ -145,9 +145,10 @@ import PaymentHistoryPage from "@/pages/payments/PaymentHistory";
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
   const { isLoading } = useInitializeAuth();
 
-  if (isLoading) return null;
+  if (!_hasHydrated || isLoading) return null;
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -165,9 +166,10 @@ function RoleBasedRoute({
   allowedRoles: string[];
 }) {
   const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
   const { isLoading } = useInitializeAuth();
 
-  if (isLoading) return null;
+  if (!_hasHydrated || isLoading) return null;
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -194,9 +196,10 @@ function RoleBasedRoute({
 // Public Route Component (redirect to dashboard if already logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
   const { isLoading } = useInitializeAuth();
 
-  if (isLoading) return null;
+  if (!_hasHydrated || isLoading) return null;
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -233,17 +236,19 @@ function isPublicSubdomain(): boolean {
 function NavigationSetup() {
   const { isLoading } = useInitializeAuth();
   const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading) {
-      setNavigationCallback((path: string) => {
-        if (!user) {
-          navigate(path);
-        }
-      });
+    if (!_hasHydrated || isLoading) {
+      return;
     }
-  }, [isLoading, user, navigate]);
+    setNavigationCallback((path: string) => {
+      if (!user) {
+        navigate(path);
+      }
+    });
+  }, [_hasHydrated, isLoading, user, navigate]);
 
   return null;
 }
@@ -252,11 +257,12 @@ function NavigationSetup() {
 function AppContent() {
   const { isLoading } = useInitializeAuth();
   const user = useAuthStore((state) => state.user);
-  const { data: operationalSettings } = useOperationalSettings(!!user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
+  const { data: operationalSettings } = useOperationalSettings(!!user && _hasHydrated);
   const waitingRoomEnabled = operationalSettings?.waiting_room_enabled ?? true;
 
   useEffect(() => {
-    if (user) {
+    if (user && _hasHydrated) {
       const socket = initializeSocket();
       const handler = () => {
         queryClient.invalidateQueries({ queryKey: ["messages"] });
@@ -268,7 +274,7 @@ function AppContent() {
         socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, handler);
       };
     }
-  }, [user]);
+  }, [user, _hasHydrated]);
 
   return (
     <Router>

@@ -34,6 +34,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       permissions: [],
       isLoading: true,
+      _hasHydrated: false,
+      setHasHydrated: (hasHydrated: boolean) => set({ _hasHydrated: hasHydrated }),
 
       setUser: (user) => set({ user }),
       setPermissions: (permissions) => set({ permissions }),
@@ -46,20 +48,16 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          // Call backend to clear httpOnly cookies
           await apiClient.post("/auth/logout");
         } catch (error) {
           console.error("Logout error:", error);
-          // Continue with local logout even if backend call fails
         } finally {
-          // Clear React Query cache to prevent stale data from previous tenant
           queryClient.clear();
-
-          // Clear local state
           set({
             user: null,
             permissions: [],
             isLoading: false,
+            _hasHydrated: true,
           });
         }
       },
@@ -80,6 +78,9 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         permissions: state.permissions,
       }),
+      onRehydrateStorage: () => (store) => {
+        store?.setHasHydrated(true);
+      },
     },
   ),
 );
