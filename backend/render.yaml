@@ -1,0 +1,86 @@
+services:
+  - type: web
+    name: kenikool-salon-backend
+    env: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    rootDir: backend
+    dockerfilePath: backend/Dockerfile
+    envVars:
+      - key: APP_NAME
+        value: Kenikool Salon
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: False
+      - key: API_VERSION
+        value: v1
+      - key: API_TITLE
+        value: Salon/Spa/Gym SaaS Platform
+      - key: API_PREFIX
+        value: /api/v1
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8000
+      - key: DATABASE_URL
+        value: mongodb+srv://princechaawa_db:Princechaawa@cluster0.reqxa6r.mongodb.net/KenkoolSalon?appName=Cluster0
+      - key: DATABASE_NAME
+        value: KenkoolSalon
+      - key: SECRET_KEY
+        value: dev-secret-key-change-in-production-12345678
+      - key: JWT_SECRET_KEY
+        value: dev-secret-key-change-in-production
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+      - key: JWT_REFRESH_TOKEN_EXPIRE_DAYS
+        value: 30
+      - key: CORS_ORIGINS
+        value: http://localhost:3000,http://localhost:8000,https://kenikoolsalon.com,https://www.kenikoolsalon.com
+      - key: CORS_CREDENTIALS
+        value: true
+      - key: CORS_METHODS
+        value: "*"
+      - key: CORS_HEADERS
+        value: "*"
+      - key: FRONTEND_URL
+        value: https://kenikoolsalon.com
+      - key: PLATFORM_DOMAIN
+        value: kenikoolsalon.com
+      - key: LOG_LEVEL
+        value: INFO
+      - key: TERMII_API_KEY
+        value: YOUR_TERMII_API_KEY
+      - key: TERMII_SECRET_KEY
+        value: YOUR_TERMII_SECRET_KEY
+      - key: TERMII_SENDER_ID
+        value: Kenikool
+      - key: TERMII_DEVICE_ID
+        value: YOUR_TERMII_DEVICE_ID
+      - key: TERMII_API_URL
+        value: https://v3.api.termii.com
+      - key: PAYSTACK_LIVE_SECRET_KEY
+        value: YOUR_PAYSTACK_LIVE_SECRET_KEY
+      - key: PAYSTACK_LIVE_PUBLIC_KEY
+        value: YOUR_PAYSTACK_LIVE_PUBLIC_KEY
+      - key: PAYSTACK_WEBHOOK_SECRET
+        value: YOUR_PAYSTACK_WEBHOOK_SECRET
+      - key: PAYSTACK_CALLBACK_URL
+        value: https://paystack-webhook-router.kenikool.workers.dev/payments/booking-payment
+      - key: PAYSTACK_WEBHOOK_URL
+        value: https://paystack-webhook-router.kenikool.workers.dev/api/v1/webhooks/paystack
+      - key: RESEND_API_KEY
+        value: YOUR_RESEND_API_KEY
+      - key: EMAIL_FROM
+        value: Kenikool Salon &lt;noreply@earn9ja.site&gt;
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dys1ne26g
+      - key: CLOUDINARY_API_KEY
+        value: YOUR_CLOUDINARY_API_KEY
+      - key: CLOUDINARY_API_SECRET
+        value: YOUR_CLOUDINARY_API_SECRET
+      - key: NGROK_AUTHTOKEN
+        value: YOUR_NGROK_AUTHTOKEN
