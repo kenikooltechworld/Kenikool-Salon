@@ -16,14 +16,15 @@ export function useServices(filters?: ServiceFilters) {
     queryKey: ["services", filtersKey],
     queryFn: async () => {
       try {
+        const config = filters && Object.keys(filters).length > 0
+          ? { params: filters }
+          : undefined;
         const response = await get<{
           services: Service[];
           total: number;
           page: number;
           page_size: number;
-        }>("/services", {
-          params: filters,
-        });
+        }>("/services", config);
         return response.services || [];
       } catch (error) {
         console.error("Error fetching services:", error);

@@ -145,6 +145,9 @@ import PaymentHistoryPage from "@/pages/payments/PaymentHistory";
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
+  const { isLoading } = useInitializeAuth();
+
+  if (isLoading) return null;
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -162,6 +165,9 @@ function RoleBasedRoute({
   allowedRoles: string[];
 }) {
   const user = useAuthStore((state) => state.user);
+  const { isLoading } = useInitializeAuth();
+
+  if (isLoading) return null;
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
@@ -188,6 +194,9 @@ function RoleBasedRoute({
 // Public Route Component (redirect to dashboard if already logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
+  const { isLoading } = useInitializeAuth();
+
+  if (isLoading) return null;
 
   if (user) {
     return <Navigate to="/dashboard" replace />;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import MessagesList from "@/components/staff/MessagesList";
 import MessageDetail from "@/components/staff/MessageDetail";
 import type { Notification } from "@/types/notification";
-import { MessageSquareIcon } from "@/components/icons";
+import { MessageSquareIcon, ChevronLeftIcon } from "@/components/icons";
 
 export default function Messages() {
   const [selectedMessage, setSelectedMessage] = useState<Notification | null>(
@@ -33,6 +33,15 @@ export default function Messages() {
             View messages and announcements from your manager
           </p>
         </div>
+        {showDetail && (
+          <button
+            onClick={handleCloseDetail}
+            className="lg:hidden flex items-center gap-1 text-sm text-primary hover:text-primary/80 font-medium"
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+            Back to list
+          </button>
+        )}
       </div>
 
       {/* Messages Content */}
@@ -40,7 +49,7 @@ export default function Messages() {
         {/* Messages List */}
         <div
           className={`${
-            showDetail ? "lg:col-span-1" : "lg:col-span-3"
+            showDetail ? "hidden lg:block" : ""
           } transition-all`}
         >
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">

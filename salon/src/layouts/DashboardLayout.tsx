@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
 import { useTenantStore } from "@/stores/tenant";
@@ -106,11 +106,11 @@ export function DashboardLayout() {
   const tenantName = useTenantStore((state) => state.tenantName());
   const logout = useAuthStore((state) => state.logout);
   const { data: operationalSettings } = useOperationalSettings();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState<boolean>(() => window.innerWidth < 768);
 
   // Get filtered menu items based on user role
   const waitingRoomEnabled = operationalSettings?.waiting_room_enabled ?? true;
@@ -120,12 +120,33 @@ export function DashboardLayout() {
 
   const { refreshHandler } = usePageRefresh();
 
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (mobileMenuOpen) {
+      document.addEventListener("keydown", handleEscape);
+      // Prevent body scroll when mobile menu is open
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       if (mobile) {
-        setSidebarOpen(false);
+        setSidebarCollapsed(false);
+        setMobileMenuOpen(false);
       }
     };
 
@@ -135,7 +156,6 @@ export function DashboardLayout() {
 
   const handleLogout = async () => {
     await logout();
-    // Clear session-related items (tenant context comes from httpOnly cookie)
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/");
@@ -162,48 +182,62 @@ export function DashboardLayout() {
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? "w-64" : "w-20"
-        } bg-card border-r border-border transition-all duration-300 flex flex-col fixed md:relative h-full z-40 md:z-0 ${
-          !mobileMenuOpen && isMobile ? "-translate-x-full" : "translate-x-0"
-        } md:translate-x-0`}
+        className={[
+          "bg-card border-r border-border transition-all duration-300 ease-in-out flex flex-col",
+          // Base mobile: fixed full-height sidebar that slides in from left
+          "fixed inset-y-0 left-0 z-40",
+          "h-full",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+          // Desktop: relative positioning
+          "md:relative md:translate-x-0",
+          sidebarCollapsed ? "md:w-20" : "md:w-64",
+          "w-[280px]",
+          "safe-area-inset-left",
+        ].join(" ")}
       >
-         {/* Sidebar Header */}
-         <div className="h-16 border-b border-border flex items-center justify-between px-4">
-           {sidebarOpen && (
-             <div className="flex items-center gap-2">
-               <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-                 <span className="text-white font-bold text-lg">K</span>
-               </div>
-               <span className="font-bold text-lg text-foreground">
-                 {tenantName || "Kenikool"}
-               </span>
-             </div>
-           )}
+        {/* Sidebar Header */}
+        <div className="h-16 border-b border-border flex items-center justify-between px-4">
+          {(sidebarCollapsed === false || mobileMenuOpen) && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">K</span>
+              </div>
+              <span className="font-bold text-lg text-foreground">
+                {tenantName || "Kenikool"}
+              </span>
+            </div>
+          )}
           <button
             onClick={() => {
               if (isMobile) {
                 setMobileMenuOpen(false);
               } else {
-                setSidebarOpen(!sidebarOpen);
+                setSidebarCollapsed((prev) => !prev);
               }
             }}
-            className="p-2 hover:bg-muted rounded-md transition cursor-pointer"
-            aria-label="Toggle sidebar"
+            className="p-2 -mr-2 hover:bg-muted rounded-lg transition cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label={isMobile ? "Close menu" : "Toggle sidebar"}
           >
-            {sidebarOpen ? <XIcon size={20} /> : <MenuIcon size={20} />}
+            {isMobile && mobileMenuOpen ? (
+              <XIcon size={24} />
+            ) : sidebarCollapsed ? (
+              <MenuIcon size={20} />
+            ) : (
+              <XIcon size={20} />
+            )}
           </button>
         </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
           {filteredMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPath === item.path;
@@ -211,16 +245,17 @@ export function DashboardLayout() {
               <button
                 key={item.path}
                 onClick={() => handleNavigation(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition cursor-pointer ${
+                className={[
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition cursor-pointer min-h-[44px]",
                   isActive
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-                title={!sidebarOpen ? item.label : ""}
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                ].join(" ")}
+                title={!sidebarCollapsed ? "" : item.label}
               >
-                <Icon size={20} className="flex-shrink-0" />
-                {sidebarOpen && (
-                  <span className="text-sm font-medium">{item.label}</span>
+                <Icon size={22} className="flex-shrink-0" />
+                {(sidebarCollapsed === false || mobileMenuOpen) && (
+                  <span className="text-sm font-medium truncate">{item.label}</span>
                 )}
               </button>
             );
@@ -228,14 +263,16 @@ export function DashboardLayout() {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="border-t border-border p-2 space-y-2">
+        <div className="border-t border-border p-2">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition cursor-pointer"
-            title={!sidebarOpen ? "Logout" : ""}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/10 transition cursor-pointer min-h-[44px]"
+            title={!sidebarCollapsed ? "" : "Logout"}
           >
-            <LogOutIcon size={20} className="flex-shrink-0" />
-            {sidebarOpen && <span className="text-sm font-medium">Logout</span>}
+            <LogOutIcon size={22} className="flex-shrink-0" />
+            {(sidebarCollapsed === false || mobileMenuOpen) && (
+              <span className="text-sm font-medium">Logout</span>
+            )}
           </button>
         </div>
       </aside>
@@ -243,24 +280,25 @@ export function DashboardLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden w-full">
         {/* Top Navbar */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-4">
+        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-3 md:px-6 safe-area-inset-top">
+          <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-muted rounded-lg transition cursor-pointer"
+              className="md:hidden p-2 -ml-2 hover:bg-muted rounded-xl transition cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Toggle mobile menu"
+              aria-expanded={mobileMenuOpen}
             >
-              <MenuIcon size={20} className="text-muted-foreground" />
+              <MenuIcon size={22} className="text-foreground" />
             </button>
 
-            <h1 className="text-lg font-semibold text-foreground truncate">
+            <h1 className="text-base font-semibold text-foreground truncate md:text-lg">
               {filteredMenuItems.find((item) => item.path === currentPath)
                 ?.label || "Dashboard"}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-1 md:gap-3">
             {/* Notifications */}
             <NotificationBadge
               onClick={() => setNotificationCenterOpen(true)}
@@ -276,13 +314,14 @@ export function DashboardLayout() {
             {/* User Menu - Hidden on mobile */}
             <button
               onClick={() => handleNavigation(getUserProfilePath())}
-              className="hidden sm:flex items-center gap-3 pl-4 border-l border-border cursor-pointer bg-transparent hover:bg-muted/50 rounded-lg transition p-2 -mr-2"
+              className="hidden sm:flex items-center gap-3 pl-3 md:pl-4 border-l border-border cursor-pointer bg-transparent hover:bg-muted/50 rounded-xl transition p-2 -mr-2"
               title="My Account"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center flex-shrink-0">
-                <UserIcon size={20} className="text-white" />
+              <div className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                <UserIcon size={18} className="text-white md:hidden" />
+                <UserIcon size={20} className="text-white hidden md:block" />
               </div>
-              <div className="hidden sm:block text-left">
+              <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-foreground truncate">
                   {user?.firstName}
                 </p>
@@ -302,7 +341,7 @@ export function DashboardLayout() {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-4 md:p-6">
+          <div className="p-3 md:p-6">
             <Outlet />
           </div>
         </main>

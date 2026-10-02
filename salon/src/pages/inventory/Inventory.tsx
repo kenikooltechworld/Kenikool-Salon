@@ -191,32 +191,48 @@ export default function Inventory() {
     return <InventorySkeleton />;
   }
 
+  const getStatusBadge = (item: any) => {
+    if (item.quantity === 0) {
+      return <Badge variant="destructive">Out of Stock</Badge>;
+    }
+    if (item.quantity <= item.reorder_level) {
+      return (
+        <Badge variant="outline" className="text-warning border-warning">
+          Low Stock
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-success border-success">
+        In Stock
+      </Badge>
+    );
+  };
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Inventory Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Inventory Management</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Track and manage your products and supplies
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={openCreateModal} className="gap-2">
-            <PlusIcon size={20} />
-            Add Item
-          </Button>
-        </div>
+        <Button onClick={openCreateModal} className="gap-2 w-full sm:w-auto">
+          <PlusIcon size={20} />
+          Add Item
+        </Button>
       </div>
 
       {/* Alerts Summary */}
       {!isLoadingAlerts && alerts.length > 0 && (
-        <Card className="bg-red-50 border-red-200 p-4">
+        <Card className="bg-destructive/10 border-destructive/20 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangleIcon className="text-red-600 mt-1" size={20} />
+            <AlertTriangleIcon className="text-destructive mt-0.5" size={20} />
             <div>
-              <h3 className="font-semibold text-red-900">Stock Alerts</h3>
-              <p className="text-red-700 text-sm">
+              <h3 className="font-semibold text-destructive-foreground">Stock Alerts</h3>
+              <p className="text-destructive text-sm">
                 {alerts.length} item{alerts.length !== 1 ? "s" : ""} need
                 attention
               </p>
@@ -232,21 +248,21 @@ export default function Inventory() {
             <TrendingDownIcon size={18} />
             Low Stock Items
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {lowStockItems.slice(0, 3).map((item: any) => (
               <div
                 key={item.id}
-                className="bg-yellow-50 border border-yellow-200 rounded p-3"
+                className="bg-warning/10 border border-warning/20 rounded-md p-3"
               >
                 <p className="font-medium text-sm">{item.name}</p>
-                <p className="text-xs text-gray-600">SKU: {item.sku}</p>
+                <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
                 <div className="mt-2 flex justify-between items-center">
                   <span className="text-sm font-semibold">
                     {item.quantity} left
                   </span>
                   <Badge
                     variant="outline"
-                    className="text-yellow-700 border-yellow-300"
+                    className="text-warning border-warning"
                   >
                     Reorder: {item.reorder_level}
                   </Badge>
@@ -257,21 +273,77 @@ export default function Inventory() {
         </Card>
       )}
 
-      {/* Search and Filter */}
-      <div className="flex gap-4">
+      {/* Search */}
+      <div>
         <Input
           placeholder="Search by name or SKU..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1"
+          className="w-full"
         />
       </div>
 
-      {/* Inventory Table */}
+      {/* Inventory List */}
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile / Tablet Card List */}
+        <div className="lg:hidden divide-y divide-border">
+          {filteredInventory.length === 0 ? (
+            <p className="p-6 text-center text-muted-foreground text-sm">
+              No inventory items found.
+            </p>
+          ) : (
+            filteredInventory.map((item: any) => (
+              <div key={item.id} className="p-4 space-y-3">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                  </div>
+                  {getStatusBadge(item)}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Qty</span>
+                    <p className="font-semibold">{item.quantity}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reorder</span>
+                    <p className="font-semibold">{item.reorder_level}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Unit Cost</span>
+                    <p className="font-semibold">${item.unit_cost.toFixed(2)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditModal(item)}
+                    className="flex-1"
+                  >
+                    <Edit2Icon size={16} />
+                    <span className="ml-1">Edit</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive flex-1"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Trash2Icon size={16} />
+                    <span className="ml-1">Delete</span>
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-muted border-b">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold">
                   Name
@@ -298,9 +370,9 @@ export default function Inventory() {
             </thead>
             <tbody>
               {filteredInventory.map((item: any) => (
-                <tr key={item.id} className="border-b hover:bg-gray-50">
+                <tr key={item.id} className="border-b hover:bg-muted/50">
                   <td className="px-6 py-4 text-sm font-medium">{item.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-6 py-4 text-sm text-muted-foreground">
                     {item.sku}
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold">
@@ -311,23 +383,7 @@ export default function Inventory() {
                     ${item.unit_cost.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {item.quantity === 0 ? (
-                      <Badge variant="destructive">Out of Stock</Badge>
-                    ) : item.quantity <= item.reorder_level ? (
-                      <Badge
-                        variant="outline"
-                        className="text-yellow-700 border-yellow-300"
-                      >
-                        Low Stock
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-green-700 border-green-300"
-                      >
-                        In Stock
-                      </Badge>
-                    )}
+                    {getStatusBadge(item)}
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <div className="flex gap-2">
@@ -341,7 +397,7 @@ export default function Inventory() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-600"
+                        className="text-destructive"
                         onClick={() => handleDelete(item.id)}
                       >
                         <Trash2Icon size={16} />
@@ -350,16 +406,23 @@ export default function Inventory() {
                   </td>
                 </tr>
               ))}
+              {filteredInventory.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground text-sm">
+                    No inventory items found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-between items-center px-6 py-4 border-t bg-gray-50">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 sm:px-6 py-4 border-t bg-muted/50">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
             Page {currentPage} of {totalPages} ({inventoryTotal} total items)
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center">
             <Button
               variant="outline"
               size="sm"
@@ -540,7 +603,7 @@ export default function Inventory() {
           <DialogHeader>
             <DialogTitle>Delete Inventory Item</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Are you sure you want to delete this inventory item? This action
             cannot be undone.
           </p>

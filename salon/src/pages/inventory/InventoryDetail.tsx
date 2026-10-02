@@ -89,7 +89,7 @@ export default function InventoryDetail() {
         </Button>
         <div className="flex-1">
           <h1 className="text-3xl font-bold">{item.name}</h1>
-          <p className="text-gray-600">SKU: {item.sku}</p>
+          <p className="text-muted-foreground">SKU: {item.sku}</p>
         </div>
       </div>
 
@@ -100,35 +100,35 @@ export default function InventoryDetail() {
             <h2 className="text-xl font-semibold mb-4">Item Details</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Current Quantity</p>
+                <p className="text-sm text-muted-foreground">Current Quantity</p>
                 <p className="text-2xl font-bold">{item.quantity}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Reorder Level</p>
+                <p className="text-sm text-muted-foreground">Reorder Level</p>
                 <p className="text-2xl font-bold">{item.reorder_level}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Unit Cost</p>
+                <p className="text-sm text-muted-foreground">Unit Cost</p>
                 <p className="text-2xl font-bold">
                   ${item.unit_cost.toFixed(2)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Value</p>
+                <p className="text-sm text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">
                   ${(item.quantity * item.unit_cost).toFixed(2)}
                 </p>
               </div>
               <div className="col-span-2">
-                <p className="text-sm text-gray-600">Status</p>
+                <p className="text-sm text-muted-foreground">Status</p>
                 {item.quantity === 0 ? (
                   <Badge variant="destructive">Out of Stock</Badge>
                 ) : item.quantity <= item.reorder_level ? (
-                  <Badge variant="outline" className="text-yellow-700">
+                  <Badge variant="outline" className="text-warning border-warning">
                     Low Stock
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-green-700">
+                  <Badge variant="outline" className="text-success border-success">
                     In Stock
                   </Badge>
                 )}
@@ -149,7 +149,7 @@ export default function InventoryDetail() {
                   onChange={(e) =>
                     setQuantity(Math.max(1, parseInt(e.target.value) || 1))
                   }
-                  className="w-full px-3 py-2 border rounded-md mt-1"
+                  className="w-full px-3 py-2 border-border rounded-md mt-1 bg-background text-foreground"
                 />
               </div>
               <div className="flex gap-2">
@@ -201,15 +201,15 @@ export default function InventoryDetail() {
 
           <Card className="p-4">
             <h3 className="font-semibold mb-3">Quick Info</h3>
-            <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Last Updated</span>
+                <span className="text-muted-foreground">Last Updated</span>
                 <span className="font-medium">
                   {new Date(item.updatedAt).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Created</span>
+                <span className="text-muted-foreground">Created</span>
                 <span className="font-medium">
                   {new Date(item.createdAt).toLocaleDateString()}
                 </span>

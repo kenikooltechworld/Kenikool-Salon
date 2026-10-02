@@ -26,11 +26,11 @@ export default function ResourceManagement() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
         Resource Management
       </h1>
-      <p className="text-gray-600 dark:text-gray-400 mb-6">
+      <p className="text-sm sm:text-base text-muted-foreground mb-6">
         Manage physical resources, equipment, and supplies
       </p>
 
@@ -40,7 +40,7 @@ export default function ResourceManagement() {
         defaultValue="list"
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
           <TabsTrigger value="list">Resources</TabsTrigger>
           <TabsTrigger value="create">Create</TabsTrigger>
           {editingResourceId && (
