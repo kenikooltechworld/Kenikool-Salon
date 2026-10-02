@@ -39,7 +39,7 @@ services:
       - key: JWT_REFRESH_TOKEN_EXPIRE_DAYS
         value: 30
       - key: CORS_ORIGINS
-        value: http://localhost:3000,http://localhost:8000,https://kenikoolsalon.com,https://www.kenikoolsalon.com
+        value: http://localhost:3000,http://localhost:8000,https://kenikoolsalon.com,https://www.kenikoolsalon.com,https://api.kenikoolsalon.com
       - key: CORS_CREDENTIALS
         value: true
       - key: CORS_METHODS
