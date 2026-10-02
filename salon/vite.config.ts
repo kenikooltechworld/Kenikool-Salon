@@ -21,7 +21,7 @@ export default defineConfig({
     middlewareMode: false,
     proxy: {
       "/api": {
-        target: "https://kenikool-salon-backend.fly.dev",
+        target: "https://kenikoolsalon.onrender.com",
         changeOrigin: true,
         rewrite: (path) => path,
         configure: (proxy, _options) => {
@@ -44,7 +44,7 @@ export default defineConfig({
         },
       },
       "/socket.io": {
-        target: "https://kenikool-salon-backend.fly.dev",
+        target: "https://kenikoolsalon.onrender.com",
         changeOrigin: true,
         ws: true,
       },
