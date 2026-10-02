@@ -122,6 +122,8 @@ async def get_current_user_dependency(
     access_token = request.cookies.get("access_token")
     refresh_token = request.cookies.get("refresh_token")
 
+    logger.info(f"[AUTH_ME] cookies access_token_present={access_token is not None} refresh_token_present={refresh_token is not None} host={request.headers.get('host')} path={request.url.path}")
+
     # If no access token, try to refresh using refresh token
     if not access_token:
         if not refresh_token:
