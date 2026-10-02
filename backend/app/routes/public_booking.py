@@ -1,7 +1,7 @@
 """Public booking API routes for guest appointments via subdomain."""
 
 from datetime import date, datetime
-from typing import List
+from typing import List, Optional
 import logging
 
 from fastapi import APIRouter, HTTPException, Request, Depends, Query
@@ -25,7 +25,7 @@ from app.schemas.public_booking import (
     AvailabilitySlot,
 )
 from app.utils.availability_calculator import AvailabilityCalculator
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/public", tags=["public_booking"])
