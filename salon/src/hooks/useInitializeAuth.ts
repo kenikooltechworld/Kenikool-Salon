@@ -65,6 +65,10 @@ export function useInitializeAuth() {
       return userData;
     },
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

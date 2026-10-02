@@ -11,6 +11,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useTenantStore } from "@/stores/tenant";
 import { useToast } from "@/components/ui/toast";
 import { apiClient } from "@/lib/utils/api";
+import { queryClient } from "@/lib/react-query";
 import { AuthHeader } from "@/components/auth/AuthHeader";
 import { FormFieldWithValidation } from "@/components/auth/FormFieldWithValidation";
 import { TrustIndicators } from "@/components/auth/TrustIndicators";
@@ -97,6 +98,9 @@ export default function Login() {
             status: "active",
             isPublished: false,
           });
+
+          // Update React Query cache so auth init doesn't use stale cached data
+          queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
 
           // Show success toast
           showToast({
