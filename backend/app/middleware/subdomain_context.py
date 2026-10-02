@@ -44,7 +44,7 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Skip subdomain extraction for hosting platform domains
-        hosting_domains = {"fly.dev", "workers.dev", "cloudflare", "vercel.app", "netlify.app", "herokuapp.com"}
+        hosting_domains = {"fly.dev", "workers.dev", "cloudflare", "vercel.app", "netlify.app", "herokuapp.com", "onrender.com"}
         if any(hostname_without_port.endswith("." + domain) or hostname_without_port == domain for domain in hosting_domains):
             logger.info(f"[SubdomainContext] Hosting platform domain detected, skipping subdomain extraction")
             return await call_next(request)
@@ -57,6 +57,12 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
         # Extract subdomain from hostname
         subdomain = self._extract_subdomain(hostname_without_port)
         logger.info(f"[SubdomainContext] Extracted subdomain: {subdomain}")
+        
+        # Skip subdomain extraction for API/infrastructure subdomains
+        excluded_subdomains = {"api"}
+        if subdomain in excluded_subdomains:
+            logger.info(f"[SubdomainContext] Excluded subdomain '{subdomain}', proceeding without tenant context")
+            return await call_next(request)
         
         if not subdomain:
             # No subdomain found, allow request to proceed
