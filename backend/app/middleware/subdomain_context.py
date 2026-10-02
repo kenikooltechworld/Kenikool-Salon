@@ -59,7 +59,7 @@ class SubdomainContextMiddleware(BaseHTTPMiddleware):
         logger.info(f"[SubdomainContext] Extracted subdomain: {subdomain}")
         
         # Skip subdomain extraction for API/infrastructure subdomains
-        excluded_subdomains = {"api"}
+        excluded_subdomains = {"api", "www"}
         if subdomain in excluded_subdomains:
             logger.info(f"[SubdomainContext] Excluded subdomain '{subdomain}', proceeding without tenant context")
             return await call_next(request)
