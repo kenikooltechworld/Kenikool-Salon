@@ -76,10 +76,10 @@ export default function ResourceAvailabilityEditor({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Add Availability Slot</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Add Availability Slot</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
             <div>
               <Label>Day</Label>
               <Select
@@ -120,7 +120,7 @@ export default function ResourceAvailabilityEditor({
                 }
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end sm:col-span-2 md:col-span-1">
               <Button onClick={handleAdd} className="w-full">
                 <PlusIcon className="w-4 h-4 mr-2" />
                 Add
@@ -133,9 +133,9 @@ export default function ResourceAvailabilityEditor({
       <div className="space-y-2">
         {availabilities.map((slot) => (
           <Card key={slot.id}>
-            <CardContent className="flex items-center justify-between py-4">
+            <CardContent className="flex items-center justify-between py-3 sm:py-4">
               <div>
-                <p className="font-medium">
+                <p className="font-medium text-sm sm:text-base">
                   {slot.day_of_week?.charAt(0).toUpperCase() + (slot.day_of_week?.slice(1) || "")}
                 </p>
                 <p className="text-sm text-muted-foreground">

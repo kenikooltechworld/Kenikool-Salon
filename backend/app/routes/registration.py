@@ -2,6 +2,7 @@
 
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from app.services.registration_service import RegistrationService
 from app.services.auth_service import AuthenticationService
 from app.services.rbac_service import RBACService
@@ -35,6 +36,32 @@ def get_auth_service() -> AuthenticationService:
 def get_rbac_service() -> RBACService:
     """Get RBAC service."""
     return RBACService()
+
+
+def _set_auth_cookies(response: JSONResponse, access_token: str, refresh_token: str, session_id: str, tenant_id: str, user_id: str, request: Request, auth_service: AuthenticationService) -> None:
+    """Set authentication cookies on response."""
+    cookie_kwargs = {}
+    try:
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        if forwarded_proto:
+            cookie_kwargs["secure"] = forwarded_proto.lower() == "https"
+        else:
+            cookie_kwargs["secure"] = request.url.scheme == "https"
+    except Exception:
+        cookie_kwargs["secure"] = settings.environment != "development"
+    
+    cookie_kwargs["httponly"] = True
+    cookie_kwargs["samesite"] = "None" if cookie_kwargs["secure"] else "Lax"
+    cookie_kwargs["path"] = "/"
+    
+    for key, value, max_age in [
+        ("access_token", access_token, auth_service.access_token_expire_minutes * 60),
+        ("refresh_token", refresh_token, auth_service.refresh_token_expire_days * 24 * 60 * 60),
+        ("session_id", session_id, auth_service.access_token_expire_minutes * 60),
+        ("tenant_id", tenant_id, auth_service.access_token_expire_minutes * 60),
+        ("user_id", user_id, auth_service.access_token_expire_minutes * 60),
+    ]:
+        response.set_cookie(key=key, value=value, max_age=max_age, **cookie_kwargs)
 
 
 @router.post("/register", response_model=RegisterResponse)
@@ -172,10 +199,11 @@ async def verify_code(
 
         logger.info(f"Registration verified for {verify_request.email}")
 
-        return VerifyCodeResponse(
-            success=True,
-            message="Registration verified successfully",
-            data={
+        # Create response with cookies
+        response_data = {
+            "success": True,
+            "message": "Registration verified successfully",
+            "data": {
                 "tenant_id": account_data["tenant_id"],
                 "subdomain": account_data["subdomain"],
                 "full_url": account_data["full_url"],
@@ -184,7 +212,40 @@ async def verify_code(
                 "refresh_token": refresh_token,
                 "token_type": "bearer",
             },
+        }
+        
+        response = JSONResponse(content=response_data, status_code=200)
+
+        # Get client IP and user agent
+        client_ip = request.client.host if request.client else "unknown"
+        user_agent = request.headers.get("user-agent", "unknown")
+
+        # Create session
+        session = auth_service.create_session(
+            user_id=account_data["user_id"],
+            tenant_id=account_data["tenant_id"],
+            token=access_token,
+            refresh_token=refresh_token,
+            ip_address=client_ip,
+            user_agent=user_agent,
         )
+
+        if session:
+            csrf_token = session.csrf_token if hasattr(session, "csrf_token") else auth_service.generate_csrf_token()
+            _set_auth_cookies(
+                response,
+                access_token,
+                refresh_token,
+                str(session.id),
+                account_data["tenant_id"],
+                account_data["user_id"],
+                request,
+                auth_service,
+            )
+        else:
+            logger.error("Failed to create session for verified user")
+
+        return response
 
     except Exception as e:
         logger.error(f"Error verifying code: {str(e)}")

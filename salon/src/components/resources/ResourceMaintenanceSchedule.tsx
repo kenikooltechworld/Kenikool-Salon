@@ -62,10 +62,10 @@ export default function ResourceMaintenanceSchedule({
       {!resourceId && (
         <Card>
           <CardHeader>
-            <CardTitle>Schedule Maintenance</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Schedule Maintenance</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <div>
                 <Label>Resource ID</Label>
                 <Input
@@ -150,9 +150,9 @@ export default function ResourceMaintenanceSchedule({
       <div className="space-y-2">
         {maintenanceRecords.map((record) => (
           <Card key={record.id}>
-            <CardContent className="flex items-center justify-between py-4">
+            <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 sm:py-4">
               <div>
-                <p className="font-medium">{record.maintenance_type}</p>
+                <p className="font-medium text-sm sm:text-base">{record.maintenance_type}</p>
                 <p className="text-sm text-muted-foreground">
                   {new Date(record.scheduled_date).toLocaleString()} | Status: {record.status}
                 </p>
@@ -165,6 +165,7 @@ export default function ResourceMaintenanceSchedule({
                   variant="outline"
                   size="sm"
                   onClick={() => handleComplete(record.id)}
+                  className="w-full sm:w-auto"
                 >
                   Complete
                 </Button>

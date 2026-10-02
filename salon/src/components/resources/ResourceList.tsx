@@ -75,17 +75,17 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Filters - stacked on mobile, row on sm+ */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="flex-1">
           <label className="block text-sm font-medium text-foreground mb-2">
             Type
           </label>
           <select
             value={selectedType || ""}
             onChange={(e) => setSelectedType(e.target.value || undefined)}
-            className="px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+            className="w-full px-3 py-2 sm:px-3 sm:py-2 rounded-lg border border-border bg-background text-foreground"
           >
             <option value="">All Types</option>
             <option value="room">Room</option>
@@ -96,14 +96,14 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
           </select>
         </div>
 
-        <div>
+        <div className="flex-1">
           <label className="block text-sm font-medium text-foreground mb-2">
             Status
           </label>
           <select
             value={selectedStatus || ""}
             onChange={(e) => setSelectedStatus(e.target.value || undefined)}
-            className="px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+            className="w-full px-3 py-2 sm:px-3 sm:py-2 rounded-lg border border-border bg-background text-foreground"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
@@ -115,19 +115,19 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
 
       {/* Resources List */}
       {resources.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
+        <div className="p-6 sm:p-8 text-center text-muted-foreground">
           <p>No resources found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {resources.map((resource) => (
             <div
               key={resource.id}
-              className="p-4 bg-background rounded-lg border border-border"
+              className="p-3 sm:p-4 bg-background rounded-lg border border-border"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">
+                  <h3 className="font-semibold text-foreground text-sm sm:text-base">
                     {resource.name}
                   </h3>
                   <div className="flex gap-2 mt-2">
@@ -152,7 +152,7 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
               </div>
 
               {/* Details */}
-              <div className="space-y-2 mb-4 text-sm text-muted-foreground">
+              <div className="space-y-2 mb-3 sm:mb-4 text-xs sm:text-sm text-muted-foreground">
                 <p>
                   <span className="font-medium">Quantity:</span>{" "}
                   {resource.available_quantity}/{resource.quantity}
@@ -162,8 +162,8 @@ export default function ResourceList({ onEdit }: ResourceListProps) {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-2">
+              {/* Actions - stacked on mobile, row on sm+ */}
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   onClick={() => onEdit?.(resource.id)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"

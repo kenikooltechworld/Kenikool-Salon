@@ -144,15 +144,15 @@ export default function ResourceForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto p-6 bg-background rounded-lg border border-border"
+      className="max-w-2xl mx-auto p-4 sm:p-6 bg-background rounded-lg border border-border"
     >
-      <h2 className="text-2xl font-bold text-foreground mb-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6">
         {resourceId ? "Edit Resource" : "Create Resource"}
       </h2>
 
       {showSuccess && (
-        <div className="mb-4 p-4 bg-success/10 border border-success/20 rounded-lg flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-success shrink-0 mt-0.5" />
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-success/10 border border-success/20 rounded-lg flex items-start gap-3">
+          <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success shrink-0 mt-0.5" />
           <p className="text-sm text-success-foreground">
             Resource {resourceId ? "updated" : "created"} successfully!
           </p>
@@ -160,13 +160,13 @@ export default function ResourceForm({
       )}
 
       {error && (
-        <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive shrink-0 mt-0.5" />
           <p className="text-sm text-destructive-foreground">{error}</p>
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* Name */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -179,7 +179,7 @@ export default function ResourceForm({
             onChange={handleChange}
             placeholder="e.g., Treatment Room A"
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           />
@@ -195,7 +195,7 @@ export default function ResourceForm({
             value={formData.type}
             onChange={handleChange}
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           >
@@ -217,7 +217,7 @@ export default function ResourceForm({
             value={formData.status}
             onChange={handleChange}
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           >
@@ -239,7 +239,7 @@ export default function ResourceForm({
             onChange={handleChange}
             placeholder="e.g., location-123"
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           />
@@ -257,7 +257,7 @@ export default function ResourceForm({
             placeholder="Enter resource description"
             rows={3}
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           />
@@ -275,7 +275,7 @@ export default function ResourceForm({
             onChange={handleChange}
             min="1"
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           />
@@ -293,7 +293,7 @@ export default function ResourceForm({
             onChange={handleChange}
             placeholder="e.g., premium, new, high-priority"
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           />
@@ -311,7 +311,7 @@ export default function ResourceForm({
             placeholder="Additional notes about this resource"
             rows={2}
             className={cn(
-              "w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
+              "w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
             )}
           />

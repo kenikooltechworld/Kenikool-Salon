@@ -96,7 +96,7 @@ class RegistrationService:
             return False, "Phone already in registration process"
 
         # Check salon name uniqueness (case-insensitive)
-        if Tenant.objects(name__iexact=salon_name).first():
+        if Tenant.objects(name__iexact=salon_name, deletion_status="active").first():
             return False, "Salon name already taken"
 
         return True, None

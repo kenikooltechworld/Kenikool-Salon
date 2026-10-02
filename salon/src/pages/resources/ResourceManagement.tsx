@@ -26,11 +26,11 @@ export default function ResourceManagement() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+    <div className="max-w-6xl mx-auto p-3 sm:p-4 md:p-6">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-1 sm:mb-2">
         Resource Management
       </h1>
-      <p className="text-sm sm:text-base text-muted-foreground mb-6">
+      <p className="text-xs sm:text-sm md:text-base text-muted-foreground mb-4 sm:mb-6">
         Manage physical resources, equipment, and supplies
       </p>
 
@@ -40,28 +40,63 @@ export default function ResourceManagement() {
         defaultValue="list"
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
-          <TabsTrigger value="list">Resources</TabsTrigger>
-          <TabsTrigger value="create">Create</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto snap-x snap-mandatory gap-1 rounded-lg bg-muted p-1 sm:grid sm:grid-cols-4 md:grid-cols-7">
+          <TabsTrigger
+            value="list"
+            className="flex-shrink-0 snap-start text-xs sm:text-sm"
+          >
+            Resources
+          </TabsTrigger>
+          <TabsTrigger
+            value="create"
+            className="flex-shrink-0 snap-start text-xs sm:text-sm"
+          >
+            Create
+          </TabsTrigger>
           {editingResourceId && (
-            <TabsTrigger value="edit">Edit</TabsTrigger>
+            <TabsTrigger
+              value="edit"
+              className="flex-shrink-0 snap-start text-xs sm:text-sm"
+            >
+              Edit
+            </TabsTrigger>
           )}
-          <TabsTrigger value="availability">Availability</TabsTrigger>
-          <TabsTrigger value="assignments">Assignments</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="utilization">Utilization</TabsTrigger>
+          <TabsTrigger
+            value="availability"
+            className="flex-shrink-0 snap-start text-xs sm:text-sm"
+          >
+            Availability
+          </TabsTrigger>
+          <TabsTrigger
+            value="assignments"
+            className="flex-shrink-0 snap-start text-xs sm:text-sm"
+          >
+            Assignments
+          </TabsTrigger>
+          <TabsTrigger
+            value="maintenance"
+            className="flex-shrink-0 snap-start text-xs sm:text-sm"
+          >
+            Maintenance
+          </TabsTrigger>
+          <TabsTrigger
+            value="utilization"
+            className="flex-shrink-0 snap-start text-xs sm:text-sm"
+          >
+            Utilization
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-6">
+        <TabsContent value="list" className="mt-4 sm:mt-6">
           <ResourceList onEdit={handleEdit} />
         </TabsContent>
 
-        <TabsContent value="create" className="mt-6">
+        <TabsContent value="create" className="mt-4 sm:mt-6">
           <ResourceForm onSuccess={handleFormSuccess} />
         </TabsContent>
 
         {editingResourceId && (
-          <TabsContent value="edit" className="mt-6">
+          <TabsContent value="edit" className="mt-4 sm:mt-6">
             <ResourceForm
               resourceId={editingResourceId}
               onSuccess={handleFormSuccess}
@@ -69,7 +104,7 @@ export default function ResourceManagement() {
           </TabsContent>
         )}
 
-        <TabsContent value="availability" className="mt-6">
+        <TabsContent value="availability" className="mt-4 sm:mt-6">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -80,7 +115,7 @@ export default function ResourceManagement() {
                 value={selectedResourceId}
                 onChange={(e) => setSelectedResourceId(e.target.value)}
                 placeholder="Enter Resource ID"
-                className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {selectedResourceId && (
@@ -89,7 +124,7 @@ export default function ResourceManagement() {
           </div>
         </TabsContent>
 
-        <TabsContent value="assignments" className="mt-6">
+        <TabsContent value="assignments" className="mt-4 sm:mt-6">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -100,7 +135,7 @@ export default function ResourceManagement() {
                 value={selectedAppointmentId}
                 onChange={(e) => setSelectedAppointmentId(e.target.value)}
                 placeholder="Enter Appointment ID"
-                className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {selectedAppointmentId && (
@@ -109,11 +144,11 @@ export default function ResourceManagement() {
           </div>
         </TabsContent>
 
-        <TabsContent value="maintenance" className="mt-6">
+        <TabsContent value="maintenance" className="mt-4 sm:mt-6">
           <ResourceMaintenanceSchedule resourceId={selectedResourceId || undefined} />
         </TabsContent>
 
-        <TabsContent value="utilization" className="mt-6">
+        <TabsContent value="utilization" className="mt-4 sm:mt-6">
           <ResourceUtilization resourceId={selectedResourceId || undefined} />
         </TabsContent>
       </Tabs>

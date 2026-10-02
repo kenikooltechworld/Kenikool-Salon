@@ -207,7 +207,7 @@ export function StaffLayout() {
         <div className="border-t border-border p-2">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/10 transition cursor-pointer min-h-[44px]"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition cursor-pointer min-h-[44px]"
             title={!sidebarCollapsed ? "" : "Logout"}
           >
             <LogOutIcon size={22} className="flex-shrink-0" />

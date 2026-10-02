@@ -65,7 +65,7 @@ const TabsList = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--muted)] p-1 gap-1",
+      "flex h-10 overflow-x-auto snap-x snap-mandatory scrollbar-hide items-center rounded-[var(--radius-lg)] bg-[var(--muted)] p-1 gap-1",
       className
     )}
     {...props}
@@ -91,7 +91,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         aria-selected={isActive}
         onClick={() => setActiveTab(value)}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-all duration-200",
+          "inline-flex flex-shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-all duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
           isActive
@@ -120,7 +120,7 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       <div
         ref={ref}
         role="tabpanel"
-        className={cn("mt-4 focus-visible:outline-none", className)}
+        className={cn("mt-3 sm:mt-4 focus-visible:outline-none", className)}
         {...props}
       />
     );

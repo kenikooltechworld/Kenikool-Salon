@@ -63,10 +63,10 @@ export default function ResourceAssignments({ appointmentId }: ResourceAssignmen
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Assign Resource</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Assign Resource</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <Label>Resource</Label>
               <Select value={selectedResourceId} onValueChange={setSelectedResourceId}>
@@ -107,9 +107,9 @@ export default function ResourceAssignments({ appointmentId }: ResourceAssignmen
       <div className="space-y-2">
         {assignments.map((assignment) => (
           <Card key={assignment.id}>
-            <CardContent className="flex items-center justify-between py-4">
+            <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 sm:py-4">
               <div>
-                <p className="font-medium">Resource ID: {assignment.resource_id}</p>
+                <p className="font-medium text-sm sm:text-base">Resource ID: {assignment.resource_id}</p>
                 <p className="text-sm text-muted-foreground">
                   Quantity: {assignment.quantity_used} | Status: {assignment.status}
                 </p>
@@ -119,6 +119,7 @@ export default function ResourceAssignments({ appointmentId }: ResourceAssignmen
                   variant="outline"
                   size="sm"
                   onClick={() => handleRelease(assignment.id)}
+                  className="w-full sm:w-auto"
                 >
                   Release
                 </Button>

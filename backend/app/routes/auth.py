@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 def _is_secure_request(request: Request) -> bool:
     try:
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        if forwarded_proto:
+            return forwarded_proto.lower() == "https"
         return request.url.scheme == "https"
     except Exception:
         return settings.environment != "development"
@@ -154,8 +157,8 @@ async def get_current_user_dependency(
     # Fetch user from database (only fields we need)
     try:
         user = User.objects(id=user_id, tenant_id=tenant_id).only(
-            'email', 'first_name', 'last_name', 'phone', 'role_ids', 
-            'status', 'mfa_enabled', 'created_at'
+            'email', 'first_name', 'last_name', 'phone', 'role_ids',
+            'status', 'mfa_enabled', 'created_at', 'tenant_id'
         ).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
