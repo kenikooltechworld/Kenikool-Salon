@@ -34,7 +34,7 @@ def service_to_response(service: Service) -> ServiceResponse:
         name=service.name,
         description=service.description,
         duration_minutes=service.duration_minutes,
-        price=float(service.price),
+        price=float(service.price) if service.price is not None else 0.0,
         category=service.category,
         color=service.color,
         icon=service.icon,

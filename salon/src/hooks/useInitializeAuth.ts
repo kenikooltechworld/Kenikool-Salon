@@ -4,15 +4,17 @@ import { useTenantStore } from "@/stores/tenant";
 import { apiClient } from "@/lib/utils";
 
 interface AuthMeResponse {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  role: string;
-  roleNames: string[];
-  tenantId: string;
-  avatar?: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    role: string;
+    roleNames: string[];
+    tenantId: string;
+    avatar?: string;
+  };
   permissions: string[];
 }
 
@@ -31,7 +33,8 @@ export function useInitializeAuth() {
     queryKey: ["auth", "me"],
     queryFn: async () => {
       const response = await apiClient.get<AuthMeResponse>("/auth/me");
-      const userData = response.data;
+      const userData = response.data.user;
+      const permissions = response.data.permissions || [];
 
       if (userData && userData.id) {
         setUser({
@@ -44,7 +47,7 @@ export function useInitializeAuth() {
           roleNames: userData.roleNames,
           tenantId: userData.tenantId,
         });
-        setPermissions(userData.permissions || []);
+        setPermissions(permissions);
         setTenant({
           id: userData.tenantId,
           name: "",

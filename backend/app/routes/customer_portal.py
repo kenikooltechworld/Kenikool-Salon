@@ -32,7 +32,7 @@ async def get_booking_history(
     if status_filter:
         query["status"] = status_filter
     
-    appointments = Appointment.objects(__raw__=query).order_by("-booking_date").skip(skip).limit(limit)
+    appointments = Appointment.objects(__raw__=query).order_by("-start_time").skip(skip).limit(limit)
     
     bookings = []
     for appointment in appointments:
@@ -44,11 +44,11 @@ async def get_booking_history(
             id=str(appointment.id),
             service_name=service.name if service else "Unknown Service",
             staff_name=f"{staff.first_name} {staff.last_name}" if staff else "Unknown Staff",
-            booking_date=str(appointment.booking_date),
-            booking_time=appointment.booking_time,
+            booking_date=appointment.start_time.strftime("%Y-%m-%d"),
+            booking_time=appointment.start_time.strftime("%H:%M"),
             status=appointment.status,
             payment_status=appointment.payment_status if hasattr(appointment, 'payment_status') else None,
-            total_price=float(appointment.total_price) if hasattr(appointment, 'total_price') else 0.0,
+            total_price=float(appointment.total_price) if hasattr(appointment, 'total_price') and appointment.total_price is not None else 0.0,
             notes=appointment.notes if hasattr(appointment, 'notes') else None,
             created_at=appointment.created_at
         ))
@@ -96,11 +96,11 @@ async def get_booking_details(
         id=str(appointment.id),
         service_name=service.name if service else "Unknown Service",
         staff_name=f"{staff.first_name} {staff.last_name}" if staff else "Unknown Staff",
-        booking_date=str(appointment.booking_date),
-        booking_time=appointment.booking_time,
+        booking_date=appointment.start_time.strftime("%Y-%m-%d"),
+        booking_time=appointment.start_time.strftime("%H:%M"),
         status=appointment.status,
         payment_status=appointment.payment_status if hasattr(appointment, 'payment_status') else None,
-        total_price=float(appointment.total_price) if hasattr(appointment, 'total_price') else 0.0,
+        total_price=float(appointment.total_price) if hasattr(appointment, 'total_price') and appointment.total_price is not None else 0.0,
         notes=appointment.notes if hasattr(appointment, 'notes') else None,
         created_at=appointment.created_at
     )
