@@ -48,7 +48,7 @@ def _cookie_kwargs(request: Request) -> dict:
         "path": "/",
     }
 
-    host = request.headers.get("host", "")
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
     if host:
         host = host.split(":")[0]
         if not host.startswith("localhost") and not host.startswith("127."):
@@ -124,39 +124,40 @@ async def get_current_user_dependency(
 
     logger.info(f"[AUTH_ME] cookies access_token_present={access_token is not None} refresh_token_present={refresh_token is not None} host={request.headers.get('host')} path={request.url.path}")
 
-    # If no access token, try to refresh using refresh token
-    if not access_token:
+    # Verify token and extract claims (or refresh if needed)
+    payload = None
+    if access_token:
+        payload = auth_service.verify_token(access_token)
+
+    # If no valid access token, try to refresh using refresh token
+    if not payload:
         if not refresh_token:
+            for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
+                response.delete_cookie(name, **cookie_kwargs)
             raise HTTPException(status_code=401, detail="Unauthorized")
 
         # Try to refresh the access token
         try:
             new_access_token = auth_service.refresh_access_token(refresh_token)
             if not new_access_token:
-                # Clear all invalid tokens immediately
                 for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
                     response.delete_cookie(name, **cookie_kwargs)
                 raise HTTPException(status_code=401, detail="Unauthorized")
 
-            # Set new access token in response cookie
             response.set_cookie(
                 "access_token",
                 new_access_token,
                 max_age=auth_service.access_token_expire_minutes * 60,
                 **cookie_kwargs,
             )
-            access_token = new_access_token
+            payload = auth_service.verify_token(new_access_token)
         except Exception as e:
             logger.error(f"Token refresh failed: {str(e)}", exc_info=True)
-            # Clear all invalid tokens on refresh failure
             for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
                 response.delete_cookie(name, **cookie_kwargs)
             raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Verify token and extract claims
-    payload = auth_service.verify_token(access_token)
     if not payload:
-        # Token is invalid or expired - clear all cookies
         for name in ["refresh_token", "access_token", "session_id", "tenant_id", "user_id"]:
             response.delete_cookie(name, **cookie_kwargs)
         raise HTTPException(status_code=401, detail="Invalid token")

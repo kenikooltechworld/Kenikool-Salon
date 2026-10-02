@@ -212,29 +212,10 @@ export function createApiClient(): AxiosInstance {
         originalRequest._retry = true;
 
         try {
-          // Check if user has a refresh token before attempting refresh
-          // This prevents infinite loops for unauthenticated users
-          const refreshToken = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("refresh_token="))
-            ?.split("=")[1];
-
-          if (!refreshToken) {
-            // No refresh token - user is not authenticated
-            // Don't attempt refresh, just reject
-            return Promise.reject(error);
-          }
-
-          // Try to refresh the access token
           await client.post("/auth/refresh");
 
-          // Retry the original request with new token
           return client(originalRequest);
         } catch (refreshError) {
-          // Refresh failed - only redirect if user is trying to access protected content
-          // Don't redirect on landing page or public pages
-
-          // Only redirect to login if we're already initialized and not on a public page
           if (navigationCallback && isInitializationComplete) {
             const currentPath = window.location.pathname;
             const isPublicPage =
