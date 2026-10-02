@@ -30,7 +30,6 @@ class TempRegistration(Document):
             "email",
             "phone",
             "subdomain",
-            {"fields": ["expires_at"], "expireAfterSeconds": 0},
         ],
     }
 
