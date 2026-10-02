@@ -1,7 +1,21 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { useAuthStore } from "@/stores/auth";
 import { useInitializeAuth } from "./useInitializeAuth";
 import type { User } from "@/stores/auth";
+
+interface AuthMePayload {
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    role: string;
+    roleNames: string[];
+    tenantId: string;
+    avatar?: string;
+  };
+  permissions: string[];
+}
 
 export function useAuthMe(): UseQueryResult<User | null, Error> {
   const authQuery = useInitializeAuth();

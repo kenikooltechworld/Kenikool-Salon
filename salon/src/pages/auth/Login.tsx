@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import { useAuthStore } from "@/stores/auth";
 import { useTenantStore } from "@/stores/tenant";
 import { useToast } from "@/components/ui/toast";
 import { apiClient } from "@/lib/utils/api";
@@ -76,17 +75,20 @@ export default function Login() {
           const userData = userResponse.data.user || userResponse.data;
           const roleNames = userData.roleNames || [];
 
-          // Set user in auth store
-          setUser({
-            id: userData.id,
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            phone: userData.phone,
-            role: roleNames[0] || "user",
-            roleNames: roleNames,
-            tenantId: userData.tenantId,
-          });
+          // Set auth query data so useInitializeAuth picks it up
+          queryClient.setQueryData(["/auth/me"], () => ({
+            user: {
+              id: userData.id,
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              phone: userData.phone,
+              role: roleNames[0] || "user",
+              roleNames: roleNames,
+              tenantId: userData.tenantId,
+            },
+            permissions: [],
+          }));
 
           // Set tenant in store (minimal tenant object with just ID)
           // Tenant context comes from httpOnly cookie, no need for localStorage
@@ -98,9 +100,6 @@ export default function Login() {
             status: "active",
             isPublished: false,
           });
-
-          // Update React Query cache so auth init doesn't use stale cached data
-          queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
 
           // Show success toast
           showToast({
