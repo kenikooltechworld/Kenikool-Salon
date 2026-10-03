@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { queryClient } from "@/lib/react-query";
 import { useTenantStore } from "@/stores/tenant";
 import { ThemeSelector } from "@/components/ui/theme-selector";
 import NotificationBadge from "@/components/notifications/NotificationBadge";
@@ -45,9 +46,8 @@ const staffMenuItems = [
 
 export function StaffLayout() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
   const tenantName = useTenantStore((state) => state.tenantName());
-  const logout = useAuthStore((state) => state.logout);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
@@ -94,7 +94,7 @@ export function StaffLayout() {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
+    queryClient.removeQueries({ queryKey: ["auth", "me"] });
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/");

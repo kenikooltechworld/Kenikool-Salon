@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface Goal {
   id: string;
@@ -56,7 +56,7 @@ export interface BonusIncentive {
  * Displays personal sales targets, commission targets, and progress
  */
 export function useGoals() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-goals"],
@@ -82,7 +82,7 @@ export function useGoals() {
  * Fetch goal achievement history for current staff member
  */
 export function useGoalAchievements() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-goal-achievements"],
@@ -101,7 +101,7 @@ export function useGoalAchievements() {
  * Fetch available bonuses and incentives
  */
 export function useBonusIncentives() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["bonus-incentives"],
@@ -119,7 +119,7 @@ export function useBonusIncentives() {
  * Fetch performance metrics relative to targets
  */
 export function usePerformanceVsTargets() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["performance-vs-targets"],

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import type { Appointment } from "./useAppointments";
 
 export interface StaffAppointment {
@@ -30,7 +30,7 @@ interface MyAppointmentFilters {
  * Automatically filters by staff_id from authenticated user
  */
 export function useMyAppointments(filters?: MyAppointmentFilters) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-appointments", filters],
@@ -54,7 +54,7 @@ export function useMyAppointments(filters?: MyAppointmentFilters) {
  * Fetch single appointment by ID (staff view)
  */
 export function useMyAppointment(id: string) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-appointments", id],

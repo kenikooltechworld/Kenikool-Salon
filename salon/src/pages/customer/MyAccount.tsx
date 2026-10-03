@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useAppointments } from "@/hooks/useAppointments";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { useTenantSettings } from "@/hooks/owner/useTenantSettings";
 import { useCustomerProfile, useUpdateCustomerProfile } from "@/hooks/useCustomerAuth";
 import { useAuthMe } from "@/hooks/useAuthMe";
@@ -17,8 +17,7 @@ import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function MyAccountPage() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const setUser = useAuthStore((state) => state.setUser);
+  const { data: user } = useAuthUser();
   const { showToast } = useToast();
   const { data: appointments = [], isLoading: appointmentsLoading, refetch: refetchAppointments } = useAppointments();
   const { data: tenantSettings, isLoading: settingsLoading } = useTenantSettings();

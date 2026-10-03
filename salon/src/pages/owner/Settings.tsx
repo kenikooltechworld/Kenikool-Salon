@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import {
   SettingsIcon,
   CreditCardIcon,
@@ -98,7 +98,7 @@ function getSettingsNavForRole(roleNames: string[]): SettingsNavItem[] {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

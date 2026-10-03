@@ -1,5 +1,4 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { useTenantStore } from "@/stores/tenant";
 import { apiClient } from "@/lib/utils";
 
 interface AuthMeResponse {
@@ -17,28 +16,12 @@ interface AuthMeResponse {
   permissions: string[];
 }
 
-export function useInitializeAuth(): UseQueryResult<AuthMeResponse["user"] | undefined, Error> {
-  const setTenant = useTenantStore((state) => state.setTenant);
-
+export function useAuthUser(): UseQueryResult<AuthMeResponse["user"] | undefined, Error> {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
       const response = await apiClient.get<AuthMeResponse>("/auth/me");
-      const userData = response.data.user;
-      const permissions = response.data.permissions || [];
-
-      if (userData && userData.id) {
-        setTenant({
-          id: userData.tenantId,
-          name: "",
-          subdomain: "",
-          subscriptionTier: "starter",
-          status: "active",
-          isPublished: false,
-        });
-      }
-
-      return userData;
+      return response.data.user;
     },
     retry: false,
     staleTime: 0,

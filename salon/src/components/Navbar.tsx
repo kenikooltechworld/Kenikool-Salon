@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { queryClient } from "@/lib/react-query";
 import { MenuIcon, XIcon } from "@/components/icons";
 import { ThemeSelector } from "@/components/ui/theme-selector";
 import NotificationBadge from "@/components/notifications/NotificationBadge";
@@ -9,14 +10,12 @@ import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 export function Navbar() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const { data: user } = useAuthUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    // Clear session-related items (tenant context comes from httpOnly cookie)
+    queryClient.removeQueries({ queryKey: ["auth", "me"] });
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/");

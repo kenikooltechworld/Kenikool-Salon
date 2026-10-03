@@ -21,7 +21,7 @@ import {
 import { StaffEarningsChart } from "@/components/staff/StaffEarningsChart";
 import { StaffEarningsBreakdown } from "@/components/staff/StaffEarningsBreakdown";
 import { useMyEarnings, useMyEarningsSummary } from "@/hooks/useMyEarnings";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { apiClient } from "@/lib/utils/api";
 import { getMonthStart, getMonthEnd, addDays } from "@/lib/utils/date";
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
@@ -165,7 +165,7 @@ export default function Earnings() {
     refetch: refetchSummary,
   } = useMyEarningsSummary();
 
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   const {
     data: paymentStructure,

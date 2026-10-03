@@ -19,7 +19,7 @@ import {
   useVerifyRegistrationCode,
   useResendVerificationCode,
 } from "@/hooks/useRegistration";
-import { useAuthStore } from "@/stores/auth";
+import { queryClient } from "@/lib/react-query";
 import { useToast } from "@/components/ui/toast";
 
 export function Verify() {
@@ -37,7 +37,6 @@ export function Verify() {
   } | null>(null);
 
   const email = searchParams.get("email") || "";
-  const setUser = useAuthStore((state) => state.setUser);
 
   const verifyMutation = useVerifyRegistrationCode();
   const resendMutation = useResendVerificationCode();
@@ -90,16 +89,16 @@ export function Verify() {
 
       if (response.success && response.data) {
         // Store user data (tokens are handled by httpOnly cookies)
-        setUser({
-          id: response.data.user_id,
-          email,
-          firstName: "",
-          lastName: "",
-          phone: "",
-          role: "owner",
-          roleNames: ["Owner"],
-          tenantId: response.data.tenant_id,
-        });
+          queryClient.setQueryData(["auth", "me"], () => ({
+            id: response.data.user_id,
+            email,
+            firstName: "",
+            lastName: "",
+            phone: "",
+            role: "owner",
+            roleNames: ["Owner"],
+            tenantId: response.data.tenant_id,
+          }));
 
         // Show success toast
         showToast({

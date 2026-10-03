@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 interface MyTimeOffFilters {
   status?: string;
@@ -17,7 +17,7 @@ interface CreateMyTimeOffData {
  * Automatically filters by staff_id from authenticated user
  */
 export function useMyTimeOffRequests(filters?: MyTimeOffFilters) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-time-off-requests", filters],
@@ -38,7 +38,7 @@ export function useMyTimeOffRequests(filters?: MyTimeOffFilters) {
  * Fetch single time off request by ID (staff view)
  */
 export function useMyTimeOffRequest(id: string) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-time-off-requests", id],
@@ -55,7 +55,7 @@ export function useMyTimeOffRequest(id: string) {
  */
 export function useCreateMyTimeOffRequest() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useMutation({
     mutationFn: async (requestData: CreateMyTimeOffData) => {

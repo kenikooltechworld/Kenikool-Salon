@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface ActivityEvent {
   id: string;
@@ -18,7 +18,7 @@ export interface ActivityEvent {
  * Implements exponential backoff retry strategy for failed requests
  */
 export function useActivityFeed(limit: number = 10) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["activity-feed", limit],

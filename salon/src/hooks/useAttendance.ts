@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface AttendanceRecord {
   id: string;
@@ -35,7 +35,7 @@ export interface ClockOutData {
  * Automatically filters by staff_id from authenticated user
  */
 export function useMyAttendance(filters?: AttendanceFilters) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-attendance", filters],
@@ -56,7 +56,7 @@ export function useMyAttendance(filters?: AttendanceFilters) {
  * Get current attendance status (if staff is currently clocked in)
  */
 export function useCurrentAttendanceStatus() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["current-attendance-status"],
@@ -81,7 +81,7 @@ export function useCurrentAttendanceStatus() {
  */
 export function useClockIn() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useMutation({
     mutationFn: async (clockInData?: ClockInData) => {
@@ -109,7 +109,7 @@ export function useClockIn() {
  */
 export function useClockOut() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useMutation({
     mutationFn: async (clockOutData?: ClockOutData) => {
@@ -138,7 +138,7 @@ export function useClockOut() {
 export function useAttendanceSummary(
   period: "week" | "month" | "year" = "month",
 ) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["attendance-summary", period],

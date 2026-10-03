@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/react-query";
-import { useAuthStore } from "@/stores/auth";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { PageRefreshProvider } from "@/contexts/PageRefreshContext";
@@ -144,8 +143,7 @@ import PaymentHistoryPage from "@/pages/payments/PaymentHistory";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore((state) => state.user);
-  const { isLoading } = useInitializeAuth();
+  const { data: user, isLoading } = useInitializeAuth();
 
   if (isLoading) return null;
 
@@ -164,8 +162,7 @@ function RoleBasedRoute({
   children: React.ReactNode;
   allowedRoles: string[];
 }) {
-  const user = useAuthStore((state) => state.user);
-  const { isLoading } = useInitializeAuth();
+  const { data: user, isLoading } = useInitializeAuth();
 
   if (isLoading) return null;
 
@@ -193,8 +190,7 @@ function RoleBasedRoute({
 
 // Public Route Component (redirect to dashboard if already logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore((state) => state.user);
-  const { isLoading } = useInitializeAuth();
+  const { data: user, isLoading } = useInitializeAuth();
 
   if (isLoading) return null;
 
@@ -231,8 +227,7 @@ function isPublicSubdomain(): boolean {
 
 // Navigation setup component (inside Router)
 function NavigationSetup() {
-  const { isLoading } = useInitializeAuth();
-  const user = useAuthStore((state) => state.user);
+  const { isLoading, data: user } = useInitializeAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -251,8 +246,7 @@ function NavigationSetup() {
 
 // Main app content component
 function AppContent() {
-  const { isLoading } = useInitializeAuth();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useInitializeAuth();
   const { data: operationalSettings } = useOperationalSettings(!!user);
   const waitingRoomEnabled = operationalSettings?.waiting_room_enabled ?? true;
 

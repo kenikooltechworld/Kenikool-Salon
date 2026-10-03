@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface PerformanceMetrics {
   averageRating: number;
@@ -24,7 +24,7 @@ export interface PerformanceMetrics {
 }
 
 export function usePerformanceMetrics() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["performance-metrics", user?.id],
@@ -56,7 +56,7 @@ export function usePerformanceMetrics() {
 }
 
 export function usePerformanceReviews(limit: number = 50) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["performance-reviews", user?.id, limit],

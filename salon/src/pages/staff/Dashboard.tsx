@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { useStaffMetrics } from "@/hooks/useStaffMetrics";
 import { useActivityFeed } from "@/hooks/useActivityFeed";
 import { MetricCard } from "@/components/staff/MetricCard";
@@ -17,7 +17,7 @@ import {
 import { usePageRefresh } from "@/contexts/PageRefreshContext";
 
 export default function StaffDashboard() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { setRefreshHandler } = usePageRefresh();

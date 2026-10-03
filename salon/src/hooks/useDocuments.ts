@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface Document {
   id: string;
@@ -27,7 +27,7 @@ interface UpdateStaffRequest {
  * Hook for managing staff documents and certifications
  */
 export function useDocuments() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
   const queryClient = useQueryClient();
 
   // Fetch staff documents

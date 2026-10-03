@@ -32,7 +32,6 @@ export default function Login() {
   const [emailError, setEmailError] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
 
-  const setUser = useAuthStore((state) => state.setUser);
   const setTenant = useTenantStore((state) => state.setTenant);
 
   // Validate form
@@ -76,7 +75,7 @@ export default function Login() {
           const roleNames = userData.roleNames || [];
 
           // Set auth query data so useInitializeAuth picks it up
-          queryClient.setQueryData(["/auth/me"], () => ({
+          queryClient.setQueryData(["auth", "me"], () => ({
             user: {
               id: userData.id,
               email: userData.email,

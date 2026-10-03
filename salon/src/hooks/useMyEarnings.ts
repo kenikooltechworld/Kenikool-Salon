@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface Commission {
   id: string;
@@ -36,7 +36,7 @@ interface EarningsSummary {
  * Phase 1: Basic version with date range filtering
  */
 export function useMyEarnings(filters?: MyEarningsFilters) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-earnings", filters],
@@ -63,7 +63,7 @@ export function useMyEarnings(filters?: MyEarningsFilters) {
  * Fetch earnings summary for current staff member
  */
 export function useMyEarningsSummary() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-earnings-summary"],
@@ -87,7 +87,7 @@ export function useMyEarningsBreakdown(
   breakdownType: "service" | "date" = "service",
   filters?: MyEarningsFilters,
 ) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-earnings-breakdown", breakdownType, filters],
@@ -127,7 +127,7 @@ export function useMyEarningsByDateRange(
   aggregation: "daily" | "weekly" | "monthly" = "daily",
   serviceType?: string,
 ) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: [

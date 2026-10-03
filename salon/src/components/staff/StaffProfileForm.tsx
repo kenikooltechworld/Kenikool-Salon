@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "@/components/icons";
 import { useToast } from "@/components/ui/toast";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import {
   useStaffSettings,
   useUpdateStaffSettings,
@@ -10,7 +10,7 @@ import {
 
 export default function StaffProfileForm() {
   const { addToast } = useToast();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
   const { data: staffSettings, isLoading } = useStaffSettings();
   const { mutate: updateSettings, isPending } = useUpdateStaffSettings();
   const [profile, setProfile] = useState({

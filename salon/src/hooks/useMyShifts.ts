@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import type { Shift } from "./useShifts";
 
 interface MyShiftFilters {
@@ -14,7 +14,7 @@ interface MyShiftFilters {
  * Automatically filters by staff_id from authenticated user
  */
 export function useMyShifts(filters?: MyShiftFilters) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-shifts", filters],
@@ -35,7 +35,7 @@ export function useMyShifts(filters?: MyShiftFilters) {
  * Fetch single shift by ID (staff view)
  */
 export function useMyShift(id: string) {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["my-shifts", id],

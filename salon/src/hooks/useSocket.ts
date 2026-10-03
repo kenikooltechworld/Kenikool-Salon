@@ -4,13 +4,13 @@ import {
   initializeSocket,
   disconnectSocket,
 } from "@/services/socket";
-import { useAuthStore } from "@/stores";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 /**
  * Hook to initialize and manage Socket.io connection
  */
 export function useSocket() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   useEffect(() => {
     if (user) {

@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { useSendStaffMessage } from "@/hooks/useMessages";
 import { useStaff } from "@/hooks/useStaff";
 import { useRoles } from "@/hooks/useRoles";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { Send, Users } from "@/components/icons";
 
 type RecipientType = "owner" | "specific_staff" | "role";
@@ -21,7 +21,7 @@ export default function StaffComposeMessage() {
   const sendMessage = useSendStaffMessage();
   const { data: staff = [], isLoading: staffLoading } = useStaff({ status: "active" });
   const { data: roles = [], isLoading: rolesLoading } = useRoles();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   const [recipientType, setRecipientType] = useState<RecipientType>("owner");
   const [selectedRoleId, setSelectedRoleId] = useState("");

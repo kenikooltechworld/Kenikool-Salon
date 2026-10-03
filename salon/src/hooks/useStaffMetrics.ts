@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export interface StaffMetrics {
   todayAppointments: number;
@@ -20,7 +20,7 @@ export interface StaffMetrics {
  * Implements exponential backoff retry strategy for failed requests
  */
 export function useStaffMetrics() {
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useAuthUser();
 
   return useQuery({
     queryKey: ["staff-metrics"],

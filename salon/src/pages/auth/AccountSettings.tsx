@@ -8,14 +8,14 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { queryClient } from "@/lib/react-query";
 import { apiClient } from "@/lib/utils/api";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const setUser = useAuthStore((state) => state.setUser);
-  const logout = useAuthStore((state) => state.logout);
+  const { data: user } = useAuthUser();
+
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -67,12 +67,12 @@ export default function AccountSettings() {
         phone,
       });
 
-      setUser({
+      queryClient.setQueryData(["auth", "me"], () => ({
         ...user!,
         firstName,
         lastName,
         phone,
-      });
+      }));
 
       setSuccess("Profile updated successfully");
     } catch (err: any) {
@@ -142,7 +142,9 @@ export default function AccountSettings() {
 
     try {
       await apiClient.post("/auth/delete-account", {});
-      await logout();
+      await queryClient.removeQueries({ queryKey: ["auth", "me"] });
+      localStorage.removeItem("csrfToken");
+      localStorage.removeItem("sessionId");
       navigate("/auth/login");
     } catch (err: any) {
       setError(
@@ -155,8 +157,7 @@ export default function AccountSettings() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    // Clear session-related items (tenant context comes from httpOnly cookie)
+    await queryClient.removeQueries({ queryKey: ["auth", "me"] });
     localStorage.removeItem("csrfToken");
     localStorage.removeItem("sessionId");
     navigate("/auth/login");

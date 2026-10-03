@@ -8,13 +8,12 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { apiClient } from "@/lib/utils/api";
-import { useAuthStore } from "@/stores/auth";
+import { queryClient } from "@/lib/react-query";
 import { useTenantStore } from "@/stores/tenant";
 
 export default function ChangePasswordRequired() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const setUser = useAuthStore((state) => state.setUser);
   const setTenant = useTenantStore((state) => state.setTenant);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -60,7 +59,7 @@ export default function ChangePasswordRequired() {
           const roleNames = userData.roleNames || [];
 
           // Set user in auth store
-          setUser({
+          queryClient.setQueryData(["auth", "me"], () => ({
             id: userData.id,
             email: userData.email,
             firstName: userData.firstName,
@@ -69,7 +68,7 @@ export default function ChangePasswordRequired() {
             role: roleNames[0] || "user",
             roleNames: roleNames,
             tenantId: userData.tenantId,
-          });
+          }));
 
           // Set tenant in store
           setTenant({

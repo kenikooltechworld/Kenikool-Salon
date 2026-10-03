@@ -9,7 +9,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { queryClient } from "@/lib/react-query";
 import { apiClient } from "@/lib/utils/api";
 import {
   UserIcon,
@@ -52,8 +53,7 @@ interface ActivityStats {
 
 export default function OwnerProfile() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const setUser = useAuthStore((state) => state.setUser);
+  const { data: user } = useAuthUser();
   const { showToast } = useToast();
 
   const [profile, setProfile] = useState<OwnerProfile>({
@@ -161,12 +161,12 @@ export default function OwnerProfile() {
         phone: profile.phone,
       });
 
-      setUser({
+      queryClient.setQueryData(["auth", "me"], () => ({
         ...user!,
         firstName: profile.firstName,
         lastName: profile.lastName,
         phone: profile.phone,
-      });
+      }));
 
       setSuccess("Profile updated successfully");
       showToast({
