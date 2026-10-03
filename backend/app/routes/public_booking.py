@@ -281,19 +281,20 @@ async def get_booking_testimonials(request: Request, limit: int = Query(5, ge=1,
         
         if not tenant_id:
             logger.error(f"[PublicBooking] tenant_id not found in scope. Scope keys: {list(request.scope.keys())}")
-            raise HTTPException(status_code=403, detail="Tenant not found")
+            return []
 
         try:
             tenant_id_obj = ObjectId(tenant_id)
             logger.info(f"[PublicBooking] testimonials - Successfully converted tenant_id to ObjectId: {tenant_id_obj}")
         except (TypeError, ValueError) as e:
             logger.error(f"[PublicBooking] testimonials - Invalid tenant_id format: {tenant_id} (type: {type(tenant_id).__name__}) - {e}")
-            raise HTTPException(status_code=400, detail="Invalid tenant ID")
+            return []
 
         # Verify tenant is active and published
         tenant = Tenant.objects(id=tenant_id_obj).first()
         if not tenant or not tenant.is_published:
-            raise HTTPException(status_code=404, detail="Salon not found")
+            logger.warning(f"[PublicBooking] testimonials - Tenant not found or not published: {tenant_id}")
+            return []
 
         # Get testimonials from video testimonials
         video_testimonials = VideoTestimonial.objects(
@@ -317,7 +318,7 @@ async def get_booking_testimonials(request: Request, limit: int = Query(5, ge=1,
         raise
     except Exception as e:
         logger.error(f"[PublicBooking] testimonials - Unexpected error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        return []
 
 
 class StatisticsResponse(BaseModel):
